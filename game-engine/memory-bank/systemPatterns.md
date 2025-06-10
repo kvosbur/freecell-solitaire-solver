@@ -1,64 +1,268 @@
-# systemPatterns.md
+# System Patterns: Game Engine Library Architecture
 
-**Purpose:**  
-Documents system architecture, key technical decisions, design patterns in use, component relationships, and critical implementation paths.
+## Library Architecture
 
----
+### Pure Library Design
+The game engine follows a strict library-only architecture:
+- **No main.rs**: Pure library crate with no executable entry point
+- **No I/O Dependencies**: No user interface, file system, or network operations
+- **Pure Functions**: Game logic implemented as stateless, side-effect-free functions
+- **API-First**: All functionality exposed through well-defined public interfaces
 
-## System Architecture
+### Modular Component Structure
+```rust
+pub struct GameState {
+    pub tableau: Tableau,      // 8 columns of cards
+    pub freecells: FreeCells,  // 4 temporary storage cells
+    pub foundations: Foundations, // 4 suit-based foundation piles
+}
+```
 
-- **Modular Rust Library Design:**  
-  - All core game logic, rule validation, and game state management are separated for testability and maintainability.
-  - The engine is implemented as a pure Rust library crate, fully decoupled from any user interface or I/O.
-  - All rule logic is implemented as pure functions, making them easy to test, reuse, and integrate with external consumers (UIs, solvers, etc.).
+Each component is self-contained with clear responsibilities:
+- **Tableau**: Manages 8 main playing columns and cascading rules
+- **FreeCells**: Manages 4 temporary storage cells with occupancy rules
+- **Foundations**: Manages 4 suit-based completion piles with sequence rules
 
-- **Rules Engine:**  
-  - Each FreeCell rule (tableau stacking, foundation stacking, free cell, empty tableau, foundation immutability) is implemented as a dedicated function.
-  - Rules are validated independently, supporting both unit and integration testing.
+## Core Data Patterns
 
-- **Testing Patterns:**  
-  - TDD (Test-Driven Development) is the primary workflow.
-  - Parameterized tests using `rstest` provide comprehensive coverage for all rule functions.
-  - Each rule is tested with both valid and invalid scenarios.
+### Card Representation
+```rust
+pub struct Card {
+    pub rank: u8,    // 1-13 (Ace through King)
+    pub suit: Suit,  // Hearts, Diamonds, Clubs, Spades
+}
 
-- **Game State Layer:**  
-  - The `GameState` struct represents tableau, free cells, and foundations, and exposes all state and move APIs.
-  - Move validation and execution are methods on `GameState`, leveraging the rules engine.
-  - The API is designed for easy integration with UIs, solvers, and other applications.
+pub enum Suit {
+    Hearts, Diamonds, Clubs, Spades
+}
 
-## Key Technical Decisions
+impl Card {
+    pub fn color(&self) -> Color {
+        // Red/Black color determination
+    }
+}
+```
 
-- **Pure Functions for Rules:**  
-  - All rule logic is stateless and side-effect free.
-  - This enables easy testing and seamless integration with UIs, solvers, and other consumers.
+### Move System Architecture
+```rust
+pub enum Move {
+    TableauToFoundation { from_column: usize, to_pile: usize },
+    TableauToFreecell { from_column: usize, to_cell: usize },
+    TableauToTableau { from_column: usize, to_column: usize },
+    FreecellToFoundation { from_cell: usize, to_pile: usize },
+    FreecellToTableau { from_cell: usize, to_column: usize },
+}
+```
 
-- **Library-First Architecture:**  
-  - The engine is a library crate only, with no built-in UI or direct user interaction.
-  - All APIs are designed for reusability and extensibility by downstream applications.
+## Rule Engine Patterns
 
-- **Idiomatic Rust:**  
-  - Use of enums, pattern matching, and strong typing for clarity and safety.
-  - Consistent use of Rust best practices (clippy, rustfmt, documentation).
+### Pure Function Rule Validation
+Each FreeCell rule is implemented as an independent, testable function:
+```rust
+pub fn can_place_on_tableau(card: &Card, target_card: &Card) -> bool {
+    // Alternating colors and descending rank validation
+}
 
-- **Documentation-First:**  
-  - All architectural and technical decisions are documented in the Memory Bank for session resilience.
+pub fn can_place_on_foundation(card: &Card, foundation_top: Option<&Card>) -> bool {
+    // Same suit and ascending rank validation
+}
+```
 
-## Component Relationships
+### Validation Before Mutation
+```rust
+impl GameState {
+    pub fn execute_move(&mut self, move_to_make: &Move) -> Result<(), String> {
+        // 1. Validate move using rule functions
+        if !self.is_move_valid(move_to_make) {
+            return Err("Invalid move".to_string());
+        }
+        
+        // 2. Execute move only after validation passes
+        self.apply_move(move_to_make);
+        Ok(())
+    }
+}
+```
 
-- **Card**: Fundamental struct, used by all rule functions.
-- **Rule Functions**: Operate on Card(s), used by tests and GameState.
-- **GameState**: Aggregates tableau, free cells, and foundations, and uses rule functions for move validation and execution.
-- **External Consumers**: UIs, solvers, and other applications interact with the engine solely through the public API.
+## API Design Patterns
 
-## Critical Implementation Paths
+### Result-Based Error Handling
+```rust
+pub fn execute_move(&mut self, move_to_make: &Move) -> Result<(), String> {
+    // Returns Result for graceful error handling
+}
 
-- **Rule Validation**:  
-  - All movement and placement rules are validated before any game state mutation.
-  - Foundation is treated as immutable for moves out.
+pub fn get_available_moves(&self) -> Vec<Move> {
+    // Returns all valid moves for current state
+}
+```
 
-- **API Design**:  
-  - All state, move, and inspection APIs are exposed for use by UIs and solvers.
-  - No UI or I/O logic is present in the engine crate.
+### Immutable State Inspection
+```rust
+impl GameState {
+    pub fn is_game_won(&self) -> bool {
+        // Non-mutating win condition check
+    }
+    
+    pub fn get_tableau_column(&self, column: usize) -> Option<&Vec<Card>> {
+        // Safe, immutable access to game state
+    }
+}
+```
 
-- **Testing**:  
-  - All rules are covered by parameterized tests, ensuring correctness and preventing regressions.
+### Builder Pattern for Initialization
+```rust
+impl GameState {
+    pub fn new() -> Self {
+        // Creates properly initialized game state
+    }
+    
+    pub fn new_with_deal(deal_number: u32) -> Self {
+        // Creates game with specific Microsoft-compatible deal
+    }
+}
+```
+
+## Component Interaction Patterns
+
+### Encapsulation and Delegation
+```rust
+impl GameState {
+    fn validate_tableau_move(&self, from: usize, to: usize) -> bool {
+        // Delegates to tableau component for validation
+        self.tableau.can_move_sequence(from, to)
+    }
+    
+    fn execute_tableau_move(&mut self, from: usize, to: usize) {
+        // Delegates to tableau component for execution
+        self.tableau.move_sequence(from, to);
+    }
+}
+```
+
+### Component Boundaries
+- **GameState**: Orchestrates moves and maintains overall game state
+- **Tableau**: Handles column-specific logic and cascading moves
+- **FreeCells**: Manages temporary storage with occupancy rules
+- **Foundations**: Manages completion piles with suit/rank rules
+
+## Testing Patterns
+
+### Test-Driven Development
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_valid_tableau_placement() {
+        let red_king = Card { rank: 13, suit: Suit::Hearts };
+        let black_queen = Card { rank: 12, suit: Suit::Spades };
+        assert!(can_place_on_tableau(&black_queen, &red_king));
+    }
+}
+```
+
+### Parameterized Testing
+```rust
+use rstest::rstest;
+
+#[rstest]
+#[case(Card { rank: 1, suit: Suit::Hearts }, None, true)]
+#[case(Card { rank: 2, suit: Suit::Hearts }, Some(&Card { rank: 1, suit: Suit::Hearts }), true)]
+#[case(Card { rank: 3, suit: Suit::Hearts }, Some(&Card { rank: 1, suit: Suit::Hearts }), false)]
+fn test_foundation_placement(
+    #[case] card: Card,
+    #[case] foundation_top: Option<&Card>,
+    #[case] expected: bool
+) {
+    assert_eq!(can_place_on_foundation(&card, foundation_top), expected);
+}
+```
+
+## Performance Patterns
+
+### Efficient State Representation
+- Cards are small structs (8 bytes each)
+- Game state is compact and stack-allocatable
+- Move validation is O(1) for most operations
+- No unnecessary heap allocations during gameplay
+
+### Lazy Evaluation
+```rust
+impl GameState {
+    pub fn get_available_moves(&self) -> Vec<Move> {
+        // Only compute moves when requested
+        // Cache results if performance becomes critical
+    }
+}
+```
+
+## Error Handling Patterns
+
+### Comprehensive Validation
+```rust
+impl GameState {
+    fn validate_move_indices(&self, move_to_make: &Move) -> Result<(), String> {
+        // Validate all array indices before accessing
+        // Return descriptive error messages
+    }
+}
+```
+
+### Graceful Degradation
+- Invalid moves return errors without panicking
+- Game state remains consistent after any operation
+- All public methods handle edge cases gracefully
+
+## Integration Patterns
+
+### Consumer-Friendly API
+```rust
+// Simple initialization
+let mut game = GameState::new();
+
+// Clear move execution
+let move_cmd = Move::TableauToFreecell { from_column: 0, to_cell: 0 };
+match game.execute_move(&move_cmd) {
+    Ok(()) => println!("Move successful"),
+    Err(msg) => println!("Invalid move: {}", msg),
+}
+
+// Easy state inspection
+if game.is_game_won() {
+    println!("Congratulations!");
+}
+```
+
+### Extensibility Points
+- Move enum can be extended for new move types
+- Rule functions can be composed for complex validations
+- Component traits allow for alternative implementations
+
+## Documentation Patterns
+
+### API Documentation
+```rust
+/// Executes a move if it's valid according to FreeCell rules.
+/// 
+/// # Arguments
+/// * `move_to_make` - The move to attempt
+/// 
+/// # Returns
+/// * `Ok(())` if the move was executed successfully
+/// * `Err(String)` with a description if the move is invalid
+/// 
+/// # Examples
+/// ```
+/// let mut game = GameState::new();
+/// let move_cmd = Move::TableauToFreecell { from_column: 0, to_cell: 0 };
+/// game.execute_move(&move_cmd)?;
+/// ```
+pub fn execute_move(&mut self, move_to_make: &Move) -> Result<(), String>
+```
+
+### Internal Documentation
+- Complex algorithms documented with inline comments
+- Design decisions explained in code comments
+- Performance considerations noted where relevant

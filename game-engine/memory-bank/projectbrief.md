@@ -1,28 +1,95 @@
-# projectbrief.md
+# Project Brief: FreeCell Game Engine Library
 
-**Purpose:**  
-This is the foundation document for the project Memory Bank. It defines the core requirements, goals, and scope of the project. All other context files build upon the information established here.
+## Component Mission
+Provide a robust, reusable FreeCell game engine library that serves as the foundation for all FreeCell applications in the workspace.
 
----
+## Component Focus
+The `game-engine/` component is a pure Rust library that:
+- Implements all FreeCell game rules and logic
+- Provides a clean, well-documented API for game state management
+- Remains completely decoupled from user interface concerns
+- Serves as the single source of truth for FreeCell gameplay
 
-## Project Brief
+## Core Requirements
 
-This project is a reusable, modular FreeCell game engine library written in Rust. The primary goal is to provide a robust, idiomatic, and well-tested core for FreeCell gameplay that can be integrated into various applications, such as terminal UIs, graphical UIs, and AI solvers. The project also serves as a learning platform for Rust development.
+### Functional Requirements
+- **Complete FreeCell Rules**: Implement all standard FreeCell gameplay rules
+- **Game State Management**: Provide comprehensive game state tracking
+- **Move Validation**: Validate all possible FreeCell moves according to rules
+- **Move Execution**: Execute valid moves and update game state
+- **Win Detection**: Automatically detect game completion
+- **Microsoft Compatibility**: Support original Microsoft FreeCell deal numbering
 
-### Core Requirements
-- Implement all rules and gameplay logic for FreeCell as a pure Rust library crate.
-- Expose a clear, well-documented API for game state management, move validation/execution, and state inspection.
-- Ensure the engine is fully decoupled from any user interface or input/output concerns.
-- Provide compatibility with the original Microsoft FreeCell deals for any given game number (using the same algorithm/seed logic).
-- Focus on code clarity, idiomatic Rust, and maintainability to support both learning and reusability.
+### Technical Requirements
+- **Pure Library**: No main.rs, no direct user interaction
+- **Clean API**: Well-documented public interface for consumers
+- **Idiomatic Rust**: Follow Rust best practices and patterns
+- **Zero Dependencies**: Minimize external dependencies where possible
+- **Comprehensive Testing**: Full test coverage for all game logic
 
-### Goals
-- Gain hands-on experience with Rust, including its syntax, ownership model, and ecosystem.
-- Build a functional, robust FreeCell game engine that can be reused by UIs, solvers, and other applications.
-- Ensure compatibility with the original Microsoft FreeCell deals for any given game number.
-- Document the development process and key learnings throughout the project.
+## API Design Goals
 
-### Scope
-- The project is a library crate only; it does not include a user interface or direct user interaction.
-- The engine is designed for integration with terminal UIs, graphical UIs, AI solvers, and other consumers.
-- The codebase will serve as a reference for Rust programming patterns and best practices.
+### Core Types
+- `GameState`: Central game state container
+- `Card`: Individual playing card representation
+- `Move`: Enumeration of all possible move types
+- `Suit`: Card suit enumeration
+- Component types: `Tableau`, `FreeCells`, `Foundations`
+
+### Key Operations
+- Game initialization and setup
+- Move validation and execution
+- Game state inspection
+- Win condition checking
+- Card dealing and shuffling
+
+## Success Criteria
+1. All FreeCell rules correctly implemented and tested
+2. Clean, intuitive API that's easy for consumers to use
+3. Comprehensive documentation with examples
+4. Zero runtime panics in normal usage
+5. Performance suitable for interactive gameplay
+6. Compatible with Microsoft FreeCell deal generation
+
+## Current Status
+- ✅ Core data structures implemented (GameState, Card, Move)
+- ✅ Component architecture established (Tableau, FreeCells, Foundations)
+- ✅ Basic move system defined
+- ✅ Library structure and API foundation complete
+- 🔄 Move validation and execution logic needs completion
+- ⏳ Win detection implementation
+- ⏳ Microsoft deal compatibility
+- ⏳ Comprehensive testing suite
+
+## Library Design Principles
+
+### Separation of Concerns
+- Game logic only - no UI, no I/O, no user interaction
+- Pure functions where possible
+- Clear boundaries between components
+
+### API Usability
+- Intuitive method names and signatures
+- Comprehensive error messages
+- Examples in documentation
+- Consistent patterns across the API
+
+### Robustness
+- All public methods handle edge cases gracefully
+- Invalid operations return errors rather than panicking
+- Game state remains consistent after any operation
+- Comprehensive input validation
+
+## Integration Considerations
+
+### Consumer Applications
+- **game/**: Interactive FreeCell gameplay
+- **solver/**: Automated solution finding
+- **appAutomation/**: Mobile app integration
+- Future applications as needed
+
+### API Stability
+- Maintain backward compatibility when possible
+- Document breaking changes clearly
+- Version appropriately for semantic versioning
+- Consider consumer needs when evolving API
