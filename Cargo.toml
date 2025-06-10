@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "game-engine",
+    "solver", 
+    "game"
+]
+resolver = "2"
+
+[workspace.dependencies]
+# Shared dependencies across the workspace
+rstest = "0.18"
+
+[workspace.metadata]
+description = "FreeCell Solitaire Solver - A mono repo with game engine, solver, and game applications"

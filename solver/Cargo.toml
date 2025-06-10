@@ -1,0 +1,12 @@
+[package]
+name = "freecell-solver"
+version = "0.1.0"
+edition = "2021"
+description = "FreeCell solitaire solver that finds solutions to games"
+
+[[bin]]
+name = "solver"
+path = "src/main.rs"
+
+[dependencies]
+freecell-game-engine = { path = "../game-engine" }
