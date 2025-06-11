@@ -1,26 +1,45 @@
 //! GameState struct for FreeCell, combining tableau, freecells, and foundations.
 
-use crate::tableau::Tableau;
-use crate::freecells::FreeCells;
 use crate::foundations::Foundations;
+use crate::freecells::FreeCells;
+use crate::tableau::Tableau;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Move {
-    TableauToFoundation { from_column: usize, to_pile: usize },
-    TableauToFreecell { from_column: usize, to_cell: usize },
-    FreecellToTableau { from_cell: usize, to_column: usize },
-    FreecellToFoundation { from_cell: usize, to_pile: usize },
-    TableauToTableau { from_column: usize, to_column: usize, card_count: usize },
+    TableauToFoundation {
+        from_column: usize,
+        to_pile: usize,
+    },
+    TableauToFreecell {
+        from_column: usize,
+        to_cell: usize,
+    },
+    FreecellToTableau {
+        from_cell: usize,
+        to_column: usize,
+    },
+    FreecellToFoundation {
+        from_cell: usize,
+        to_pile: usize,
+    },
+    TableauToTableau {
+        from_column: usize,
+        to_column: usize,
+        card_count: usize,
+    },
 }
-
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum GameError {
     InvalidMove(String),
-    IndexOutOfBounds { component: &'static str, index: usize },
+    IndexOutOfBounds {
+        component: &'static str,
+        index: usize,
+    },
     EmptySource,
 }
 
+#[derive(Debug)]
 pub struct GameState {
     pub tableau: Tableau,
     pub freecells: FreeCells,
@@ -39,7 +58,10 @@ impl GameState {
         // Tableau to Foundation
         for from_col in 0..self.tableau.column_count() {
             for to_pile in 0..self.foundations.pile_count() {
-                let m = Move::TableauToFoundation { from_column: from_col, to_pile };
+                let m = Move::TableauToFoundation {
+                    from_column: from_col,
+                    to_pile,
+                };
                 if self.is_move_valid(&m).is_ok() {
                     moves.push(m);
                 }
@@ -48,7 +70,10 @@ impl GameState {
         // Tableau to Freecell
         for from_col in 0..self.tableau.column_count() {
             for to_cell in 0..self.freecells.cell_count() {
-                let m = Move::TableauToFreecell { from_column: from_col, to_cell };
+                let m = Move::TableauToFreecell {
+                    from_column: from_col,
+                    to_cell,
+                };
                 if self.is_move_valid(&m).is_ok() {
                     moves.push(m);
                 }
@@ -57,7 +82,10 @@ impl GameState {
         // Freecell to Tableau
         for from_cell in 0..self.freecells.cell_count() {
             for to_col in 0..self.tableau.column_count() {
-                let m = Move::FreecellToTableau { from_cell, to_column: to_col };
+                let m = Move::FreecellToTableau {
+                    from_cell,
+                    to_column: to_col,
+                };
                 if self.is_move_valid(&m).is_ok() {
                     moves.push(m);
                 }
@@ -75,8 +103,14 @@ impl GameState {
         // Tableau to Tableau (single card)
         for from_col in 0..self.tableau.column_count() {
             for to_col in 0..self.tableau.column_count() {
-                if from_col == to_col { continue; }
-                let m = Move::TableauToTableau { from_column: from_col, to_column: to_col, card_count: 1 };
+                if from_col == to_col {
+                    continue;
+                }
+                let m = Move::TableauToTableau {
+                    from_column: from_col,
+                    to_column: to_col,
+                    card_count: 1,
+                };
                 if self.is_move_valid(&m).is_ok() {
                     moves.push(m);
                 }
@@ -96,45 +130,80 @@ impl GameState {
     pub fn execute_move(&mut self, m: &Move) -> Result<(), GameError> {
         use Move::*;
         match m {
-            TableauToFoundation { from_column, to_pile } => {
-                let card = self.tableau.get_top_card(*from_column)
-                    .ok_or(GameError::EmptySource)?.clone();
-                self.is_move_valid(m).map_err(|e| GameError::InvalidMove(e.to_string()))?;
+            TableauToFoundation {
+                from_column,
+                to_pile,
+            } => {
+                let card = self
+                    .tableau
+                    .get_top_card(*from_column)
+                    .ok_or(GameError::EmptySource)?
+                    .clone();
+                self.is_move_valid(m)
+                    .map_err(|e| GameError::InvalidMove(e.to_string()))?;
                 self.tableau.remove_card_from_column(*from_column);
                 self.foundations.add_card(*to_pile, card);
                 Ok(())
             }
-            TableauToFreecell { from_column, to_cell } => {
-                let card = self.tableau.get_top_card(*from_column)
-                    .ok_or(GameError::EmptySource)?.clone();
-                self.is_move_valid(m).map_err(|e| GameError::InvalidMove(e.to_string()))?;
+            TableauToFreecell {
+                from_column,
+                to_cell,
+            } => {
+                let card = self
+                    .tableau
+                    .get_top_card(*from_column)
+                    .ok_or(GameError::EmptySource)?
+                    .clone();
+                self.is_move_valid(m)
+                    .map_err(|e| GameError::InvalidMove(e.to_string()))?;
                 self.tableau.remove_card_from_column(*from_column);
                 self.freecells.add_card(*to_cell, card);
                 Ok(())
             }
-            FreecellToTableau { from_cell, to_column } => {
-                let card = self.freecells.get_card(*from_cell)
-                    .ok_or(GameError::EmptySource)?.clone();
-                self.is_move_valid(m).map_err(|e| GameError::InvalidMove(e.to_string()))?;
+            FreecellToTableau {
+                from_cell,
+                to_column,
+            } => {
+                let card = self
+                    .freecells
+                    .get_card(*from_cell)
+                    .ok_or(GameError::EmptySource)?
+                    .clone();
+                self.is_move_valid(m)
+                    .map_err(|e| GameError::InvalidMove(e.to_string()))?;
                 self.freecells.remove_card(*from_cell);
                 self.tableau.add_card_to_column(*to_column, card);
                 Ok(())
             }
             FreecellToFoundation { from_cell, to_pile } => {
-                let card = self.freecells.get_card(*from_cell)
-                    .ok_or(GameError::EmptySource)?.clone();
-                self.is_move_valid(m).map_err(|e| GameError::InvalidMove(e.to_string()))?;
+                let card = self
+                    .freecells
+                    .get_card(*from_cell)
+                    .ok_or(GameError::EmptySource)?
+                    .clone();
+                self.is_move_valid(m)
+                    .map_err(|e| GameError::InvalidMove(e.to_string()))?;
                 self.freecells.remove_card(*from_cell);
                 self.foundations.add_card(*to_pile, card);
                 Ok(())
             }
-            TableauToTableau { from_column, to_column, card_count } => {
+            TableauToTableau {
+                from_column,
+                to_column,
+                card_count,
+            } => {
                 if *card_count != 1 {
-                    return Err(GameError::InvalidMove("Only single card moves supported".to_string()));
+                    return Err(GameError::InvalidMove(
+                        "Only single card moves supported".to_string(),
+                    ));
                 }
-                let card = self.tableau.get_top_card(*from_column)
-                    .ok_or(GameError::EmptySource)?.clone();
-                self.is_move_valid(m).map_err(|e| GameError::InvalidMove(e.to_string()))?;
+                let card = self
+                    .tableau
+                    .get_top_card(*from_column)
+                    .ok_or(GameError::EmptySource)?
+                    .clone();
+                self.is_move_valid(m)
+                    .map_err(|e| GameError::InvalidMove(e.to_string()))?;
                 self.tableau.remove_card_from_column(*from_column);
                 self.tableau.add_card_to_column(*to_column, card);
                 Ok(())
@@ -146,8 +215,13 @@ impl GameState {
     pub fn is_move_valid(&self, m: &Move) -> Result<(), &'static str> {
         use Move::*;
         match m {
-            TableauToFoundation { from_column, to_pile } => {
-                let card = self.tableau.get_top_card(*from_column)
+            TableauToFoundation {
+                from_column,
+                to_pile,
+            } => {
+                let card = self
+                    .tableau
+                    .get_top_card(*from_column)
                     .ok_or("No card in tableau column")?;
                 let foundation_top = self.foundations.get_top_card(*to_pile);
                 if crate::rules::can_move_to_foundation(card, foundation_top) {
@@ -156,14 +230,24 @@ impl GameState {
                     Err("Invalid move: cannot move card to foundation")
                 }
             }
-            TableauToFreecell { from_column, to_cell } => {
-                let card = self.tableau.get_top_card(*from_column)
+            TableauToFreecell {
+                from_column,
+                to_cell,
+            } => {
+                let card = self
+                    .tableau
+                    .get_top_card(*from_column)
                     .ok_or("No card in tableau column")?;
                 let cell = self.freecells.get_card(*to_cell);
                 crate::rules::can_move_to_freecell(card, cell)
             }
-            FreecellToTableau { from_cell, to_column } => {
-                let card = self.freecells.get_card(*from_cell)
+            FreecellToTableau {
+                from_cell,
+                to_column,
+            } => {
+                let card = self
+                    .freecells
+                    .get_card(*from_cell)
                     .ok_or("No card in freecell")?;
                 let tableau_top = self.tableau.get_top_card(*to_column);
                 if let Some(top) = tableau_top {
@@ -177,7 +261,9 @@ impl GameState {
                 }
             }
             FreecellToFoundation { from_cell, to_pile } => {
-                let card = self.freecells.get_card(*from_cell)
+                let card = self
+                    .freecells
+                    .get_card(*from_cell)
                     .ok_or("No card in freecell")?;
                 let foundation_top = self.foundations.get_top_card(*to_pile);
                 if crate::rules::can_move_to_foundation(card, foundation_top) {
@@ -186,12 +272,18 @@ impl GameState {
                     Err("Invalid move: cannot move card to foundation")
                 }
             }
-            TableauToTableau { from_column, to_column, card_count } => {
+            TableauToTableau {
+                from_column,
+                to_column,
+                card_count,
+            } => {
                 // Only allow single card moves for now
                 if *card_count != 1 {
                     return Err("Only single card moves supported");
                 }
-                let card = self.tableau.get_top_card(*from_column)
+                let card = self
+                    .tableau
+                    .get_top_card(*from_column)
                     .ok_or("No card in tableau column")?;
                 let dest_top = self.tableau.get_top_card(*to_column);
                 if let Some(top) = dest_top {
@@ -234,9 +326,15 @@ mod tests {
     fn can_validate_tableau_to_foundation_move() {
         use crate::card::{Card, Suit};
         let mut state = GameState::new();
-        let card = Card { rank: 1, suit: Suit::Hearts };
+        let card = Card {
+            rank: 1,
+            suit: Suit::Hearts,
+        };
         state.tableau.add_card_to_column(0, card.clone());
-        let m = Move::TableauToFoundation { from_column: 0, to_pile: 0 };
+        let m = Move::TableauToFoundation {
+            from_column: 0,
+            to_pile: 0,
+        };
         assert!(state.is_move_valid(&m).is_ok());
     }
 
@@ -244,9 +342,15 @@ mod tests {
     fn can_execute_tableau_to_foundation_move() {
         use crate::card::{Card, Suit};
         let mut state = GameState::new();
-        let card = Card { rank: 1, suit: Suit::Hearts };
+        let card = Card {
+            rank: 1,
+            suit: Suit::Hearts,
+        };
         state.tableau.add_card_to_column(0, card.clone());
-        let m = Move::TableauToFoundation { from_column: 0, to_pile: 0 };
+        let m = Move::TableauToFoundation {
+            from_column: 0,
+            to_pile: 0,
+        };
         assert!(state.execute_move(&m).is_ok());
         assert!(state.tableau.is_column_empty(0));
         assert_eq!(state.foundations.get_top_card(0), Some(&card));
@@ -259,7 +363,13 @@ mod tests {
         // Fill all foundations with 13 cards of the same suit
         for pile in 0..4 {
             for rank in 1..=13 {
-                state.foundations.add_card(pile, Card { rank, suit: Suit::Hearts });
+                state.foundations.add_card(
+                    pile,
+                    Card {
+                        rank,
+                        suit: Suit::Hearts,
+                    },
+                );
             }
         }
         assert!(state.is_game_won());
@@ -270,10 +380,19 @@ mod tests {
         use crate::card::{Card, Suit};
         let mut state = GameState::new();
         // Place an Ace in tableau column 0
-        let card = Card { rank: 1, suit: Suit::Hearts };
+        let card = Card {
+            rank: 1,
+            suit: Suit::Hearts,
+        };
         state.tableau.add_card_to_column(0, card.clone());
         let moves = state.get_available_moves();
         // Should include TableauToFoundation move for column 0, pile 0
-        assert!(moves.iter().any(|m| matches!(m, Move::TableauToFoundation { from_column: 0, to_pile: 0 })));
+        assert!(moves.iter().any(|m| matches!(
+            m,
+            Move::TableauToFoundation {
+                from_column: 0,
+                to_pile: 0
+            }
+        )));
     }
 }

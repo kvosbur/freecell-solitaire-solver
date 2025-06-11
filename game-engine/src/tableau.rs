@@ -3,6 +3,7 @@
 use crate::card::Card;
 use crate::rules;
 
+#[derive(Debug)]
 pub struct Tableau {
     columns: [Vec<Card>; 8],
 }
@@ -32,6 +33,10 @@ impl Tableau {
                 panic!("Invalid tableau move: must alternate color and descend in rank");
             }
         }
+        self.columns[index].push(card);
+    }
+
+    pub fn initial_addition_of_card(&mut self, index: usize, card: Card) {
         self.columns[index].push(card);
     }
 
@@ -72,7 +77,10 @@ mod tests {
     #[test]
     fn can_add_card_to_empty_column() {
         let mut tableau = Tableau::new();
-        let card = Card { rank: 7, suit: Suit::Hearts };
+        let card = Card {
+            rank: 7,
+            suit: Suit::Hearts,
+        };
         tableau.add_card_to_column(0, card.clone());
         assert_eq!(tableau.column_length(0), 1);
         assert!(!tableau.is_column_empty(0));
@@ -82,8 +90,14 @@ mod tests {
     #[test]
     fn can_stack_valid_card_on_tableau() {
         let mut tableau = Tableau::new();
-        let card1 = Card { rank: 8, suit: Suit::Spades }; // Black 8
-        let card2 = Card { rank: 7, suit: Suit::Hearts }; // Red 7
+        let card1 = Card {
+            rank: 8,
+            suit: Suit::Spades,
+        }; // Black 8
+        let card2 = Card {
+            rank: 7,
+            suit: Suit::Hearts,
+        }; // Red 7
         tableau.add_card_to_column(0, card1.clone());
         tableau.add_card_to_column(0, card2.clone());
         assert_eq!(tableau.column_length(0), 2);
@@ -94,8 +108,14 @@ mod tests {
     #[should_panic(expected = "Invalid tableau move")]
     fn cannot_stack_invalid_card_on_tableau() {
         let mut tableau = Tableau::new();
-        let card1 = Card { rank: 8, suit: Suit::Spades }; // Black 8
-        let card2 = Card { rank: 7, suit: Suit::Clubs };  // Black 7 (same color)
+        let card1 = Card {
+            rank: 8,
+            suit: Suit::Spades,
+        }; // Black 8
+        let card2 = Card {
+            rank: 7,
+            suit: Suit::Clubs,
+        }; // Black 7 (same color)
         tableau.add_card_to_column(0, card1.clone());
         tableau.add_card_to_column(0, card2.clone());
     }
@@ -104,8 +124,14 @@ mod tests {
     #[should_panic(expected = "Invalid tableau move")]
     fn cannot_stack_wrong_rank_on_tableau() {
         let mut tableau = Tableau::new();
-        let card1 = Card { rank: 8, suit: Suit::Spades }; // Black 8
-        let card2 = Card { rank: 6, suit: Suit::Hearts }; // Red 6 (should be 7)
+        let card1 = Card {
+            rank: 8,
+            suit: Suit::Spades,
+        }; // Black 8
+        let card2 = Card {
+            rank: 6,
+            suit: Suit::Hearts,
+        }; // Red 6 (should be 7)
         tableau.add_card_to_column(0, card1.clone());
         tableau.add_card_to_column(0, card2.clone());
     }
@@ -113,8 +139,14 @@ mod tests {
     #[test]
     fn can_remove_card_from_column() {
         let mut tableau = Tableau::new();
-        let card1 = Card { rank: 7, suit: Suit::Hearts };
-        let card2 = Card { rank: 6, suit: Suit::Spades };
+        let card1 = Card {
+            rank: 7,
+            suit: Suit::Hearts,
+        };
+        let card2 = Card {
+            rank: 6,
+            suit: Suit::Spades,
+        };
         tableau.add_card_to_column(0, card1.clone());
         tableau.add_card_to_column(0, card2.clone());
         let removed_card = tableau.remove_card_from_column(0);
@@ -133,9 +165,18 @@ mod tests {
     #[test]
     fn multiple_adds_and_removes_are_lifo() {
         let mut tableau = Tableau::new();
-        let card1 = Card { rank: 7, suit: Suit::Hearts };
-        let card2 = Card { rank: 6, suit: Suit::Spades };
-        let card3 = Card { rank: 5, suit: Suit::Diamonds };
+        let card1 = Card {
+            rank: 7,
+            suit: Suit::Hearts,
+        };
+        let card2 = Card {
+            rank: 6,
+            suit: Suit::Spades,
+        };
+        let card3 = Card {
+            rank: 5,
+            suit: Suit::Diamonds,
+        };
         tableau.add_card_to_column(0, card1.clone());
         tableau.add_card_to_column(0, card2.clone());
         tableau.add_card_to_column(0, card3.clone());
@@ -150,7 +191,13 @@ mod tests {
         // Each closure must own its own Tableau to be UnwindSafe
         let result = std::panic::catch_unwind(|| {
             let mut tableau = Tableau::new();
-            tableau.add_card_to_column(8, Card { rank: 2, suit: Suit::Clubs });
+            tableau.add_card_to_column(
+                8,
+                Card {
+                    rank: 2,
+                    suit: Suit::Clubs,
+                },
+            );
         });
         assert!(result.is_err());
 

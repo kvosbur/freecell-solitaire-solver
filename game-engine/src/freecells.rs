@@ -1,10 +1,11 @@
 //! FreeCells implementation for FreeCell game state.
-//! 
+//!
 //! FreeCells are the 4 temporary storage slots where single cards can be placed.
 
 use crate::card::Card;
 use crate::rules;
 
+#[derive(Debug)]
 pub struct FreeCells {
     cells: [Option<Card>; 4],
 }
@@ -53,7 +54,11 @@ mod tests {
     fn freecells_initialize_with_four_empty_cells() {
         let freecells = FreeCells::new();
         assert_eq!(freecells.cell_count(), 4, "FreeCells should have 4 cells");
-        assert_eq!(freecells.empty_cell_count(), 4, "All cells should be empty initially");
+        assert_eq!(
+            freecells.empty_cell_count(),
+            4,
+            "All cells should be empty initially"
+        );
         for i in 0..freecells.cell_count() {
             assert!(
                 freecells.is_cell_empty(i),
@@ -66,7 +71,10 @@ mod tests {
     #[test]
     fn can_add_card_to_empty_freecell() {
         let mut freecells = FreeCells::new();
-        let card = Card { rank: 7, suit: Suit::Hearts };
+        let card = Card {
+            rank: 7,
+            suit: Suit::Hearts,
+        };
         freecells.add_card(0, card.clone());
         assert!(!freecells.is_cell_empty(0));
         assert_eq!(freecells.empty_cell_count(), 3);
@@ -76,7 +84,10 @@ mod tests {
     #[test]
     fn can_remove_card_from_freecell() {
         let mut freecells = FreeCells::new();
-        let card = Card { rank: 7, suit: Suit::Hearts };
+        let card = Card {
+            rank: 7,
+            suit: Suit::Hearts,
+        };
         freecells.add_card(0, card.clone());
         let removed_card = freecells.remove_card(0);
         assert_eq!(removed_card, Some(card));
@@ -97,8 +108,14 @@ mod tests {
     #[should_panic(expected = "Cell is already occupied")]
     fn adding_card_to_occupied_freecell_panics() {
         let mut freecells = FreeCells::new();
-        let card1 = Card { rank: 7, suit: Suit::Hearts };
-        let card2 = Card { rank: 6, suit: Suit::Spades };
+        let card1 = Card {
+            rank: 7,
+            suit: Suit::Hearts,
+        };
+        let card2 = Card {
+            rank: 6,
+            suit: Suit::Spades,
+        };
         freecells.add_card(0, card1);
         freecells.add_card(0, card2); // Should panic
     }
@@ -108,7 +125,13 @@ mod tests {
         // Each closure must own its own FreeCells to be UnwindSafe
         let result = std::panic::catch_unwind(|| {
             let mut freecells = FreeCells::new();
-            freecells.add_card(4, Card { rank: 2, suit: Suit::Clubs });
+            freecells.add_card(
+                4,
+                Card {
+                    rank: 2,
+                    suit: Suit::Clubs,
+                },
+            );
         });
         assert!(result.is_err());
 
