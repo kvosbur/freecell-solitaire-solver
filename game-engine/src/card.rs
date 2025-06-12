@@ -1,12 +1,53 @@
 //! Card-related types and functionality for FreeCell.
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Card {
-    pub rank: u8,
+    pub rank: Rank,
     pub suit: Suit,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum Rank {
+    Ace = 1,
+    Two,
+    Three,
+    Four,
+    Five,
+    Six,
+    Seven,
+    Eight,
+    Nine,
+    Ten,
+    Jack,
+    Queen,
+    King,
+}
+
+impl TryFrom<u8> for Rank {
+    type Error = ();
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(Rank::Ace),
+            2 => Ok(Rank::Two),
+            3 => Ok(Rank::Three),
+            4 => Ok(Rank::Four),
+            5 => Ok(Rank::Five),
+            6 => Ok(Rank::Six),
+            7 => Ok(Rank::Seven),
+            8 => Ok(Rank::Eight),
+            9 => Ok(Rank::Nine),
+            10 => Ok(Rank::Ten),
+            11 => Ok(Rank::Jack),
+            12 => Ok(Rank::Queen),
+            13 => Ok(Rank::King),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Suit {
     Spades,
     Hearts,
@@ -14,7 +55,7 @@ pub enum Suit {
     Clubs,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Color {
     Red,
     Black,
@@ -26,10 +67,6 @@ impl Card {
             Suit::Hearts | Suit::Diamonds => Color::Red,
             Suit::Spades | Suit::Clubs => Color::Black,
         }
-    }
-
-    pub fn is_valid_rank(&self) -> bool {
-        self.rank >= 1 && self.rank <= 13
     }
 }
 
@@ -44,19 +81,7 @@ mod tests {
     #[case(Suit::Spades, Color::Black)]
     #[case(Suit::Clubs, Color::Black)]
     fn card_has_correct_color(#[case] suit: Suit, #[case] expected_color: Color) {
-        let card = Card { rank: 7, suit };
+        let card = Card { rank: Rank::Ace, suit };
         assert_eq!(card.color(), expected_color);
-    }
-
-    #[rstest]
-    #[case(1, true)]
-    #[case(7, true)]
-    #[case(11, true)]
-    #[case(13, true)]
-    #[case(0, false)]
-    #[case(14, false)]
-    fn card_validates_rank(#[case] rank: u8, #[case] expected: bool) {
-        let card = Card { rank, suit: Suit::Hearts };
-        assert_eq!(card.is_valid_rank(), expected);
     }
 }

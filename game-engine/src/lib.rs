@@ -12,7 +12,7 @@ pub mod rules;
 pub mod tableau;
 
 // Re-export commonly used types for convenience
-pub use card::{Card, Color, Suit};
+pub use card::{Card, Color, Rank, Suit};
 pub use foundations::Foundations;
 pub use freecells::FreeCells;
 pub use game_state::GameState;

@@ -1,17 +1,15 @@
-//! Game rules and validation logic for FreeCell moves.
-
 use crate::card::Card;
 
 /// Returns true if `moving` can be placed on `target` in the tableau (alternating color, descending rank).
 pub fn can_stack_on_tableau(moving: &Card, target: &Card) -> bool {
-    (moving.rank + 1 == target.rank) && (moving.color() != target.color())
+    (moving.rank as u8 + 1 == target.rank as u8) && (moving.color() != target.color())
 }
 
 /// Returns true if `card` can be placed on the foundation with the given top card (or empty).
 pub fn can_move_to_foundation(card: &Card, foundation_top: Option<&Card>) -> bool {
     match foundation_top {
-        None => card.rank == 1,
-        Some(top) => card.suit == top.suit && card.rank == top.rank + 1,
+        None => card.rank as u8 == 1,
+        Some(top) => card.suit == top.suit && (card.rank as u8) == (top.rank as u8 + 1),
     }
 }
 
@@ -37,17 +35,17 @@ pub fn can_move_from_foundation() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::card::{Card, Suit};
+    use crate::card::{Card, Rank, Suit};
     use rstest::rstest;
 
     #[rstest]
-    #[case(Card{rank: 7, suit: Suit::Hearts}, Card{rank: 8, suit: Suit::Spades}, true)]   // Red 7 on Black 8
-    #[case(Card{rank: 6, suit: Suit::Clubs}, Card{rank: 7, suit: Suit::Diamonds}, true)]  // Black 6 on Red 7
-    #[case(Card{rank: 1, suit: Suit::Hearts}, Card{rank: 2, suit: Suit::Clubs}, true)]    // Red Ace on Black 2
-    #[case(Card{rank: 8, suit: Suit::Hearts}, Card{rank: 7, suit: Suit::Spades}, false)]  // Wrong rank order
-    #[case(Card{rank: 7, suit: Suit::Hearts}, Card{rank: 8, suit: Suit::Diamonds}, false)] // Same color
-    #[case(Card{rank: 7, suit: Suit::Hearts}, Card{rank: 7, suit: Suit::Spades}, false)]  // Same rank
-    #[case(Card{rank: 7, suit: Suit::Hearts}, Card{rank: 9, suit: Suit::Spades}, false)]  // Gap in ranks
+    #[case(Card{rank: Rank::Seven, suit: Suit::Hearts}, Card{rank: Rank::Eight, suit: Suit::Spades}, true)]
+    #[case(Card{rank: Rank::Six, suit: Suit::Clubs}, Card{rank: Rank::Seven, suit: Suit::Diamonds}, true)]
+    #[case(Card{rank: Rank::Ace, suit: Suit::Hearts}, Card{rank: Rank::Two, suit: Suit::Clubs}, true)]
+    #[case(Card{rank: Rank::Eight, suit: Suit::Hearts}, Card{rank: Rank::Seven, suit: Suit::Spades}, false)]
+    #[case(Card{rank: Rank::Seven, suit: Suit::Hearts}, Card{rank: Rank::Eight, suit: Suit::Diamonds}, false)]
+    #[case(Card{rank: Rank::Seven, suit: Suit::Hearts}, Card{rank: Rank::Seven, suit: Suit::Spades}, false)]
+    #[case(Card{rank: Rank::Seven, suit: Suit::Hearts}, Card{rank: Rank::Nine, suit: Suit::Spades}, false)]
     fn can_stack_on_tableau_test(
         #[case] moving_card: Card,
         #[case] target_card: Card,
@@ -57,13 +55,13 @@ mod tests {
     }
 
     #[rstest]
-    #[case(Card{rank: 1, suit: Suit::Hearts}, None, true)] // Ace on empty
-    #[case(Card{rank: 2, suit: Suit::Hearts}, Some(Card{rank: 1, suit: Suit::Hearts}), true)] // 2 on Ace, same suit
-    #[case(Card{rank: 13, suit: Suit::Spades}, Some(Card{rank: 12, suit: Suit::Spades}), true)] // King on Queen, same suit
-    #[case(Card{rank: 2, suit: Suit::Hearts}, None, false)] // Non-Ace on empty
-    #[case(Card{rank: 2, suit: Suit::Spades}, Some(Card{rank: 1, suit: Suit::Hearts}), false)] // Different suit
-    #[case(Card{rank: 3, suit: Suit::Hearts}, Some(Card{rank: 1, suit: Suit::Hearts}), false)] // Skip rank
-    #[case(Card{rank: 1, suit: Suit::Hearts}, Some(Card{rank: 1, suit: Suit::Hearts}), false)] // Ace on Ace
+    #[case(Card{rank: Rank::Ace, suit: Suit::Hearts}, None, true)]
+    #[case(Card{rank: Rank::Two, suit: Suit::Hearts}, Some(Card{rank: Rank::Ace, suit: Suit::Hearts}), true)]
+    #[case(Card{rank: Rank::King, suit: Suit::Spades}, Some(Card{rank: Rank::Queen, suit: Suit::Spades}), true)]
+    #[case(Card{rank: Rank::Two, suit: Suit::Hearts}, None, false)]
+    #[case(Card{rank: Rank::Two, suit: Suit::Spades}, Some(Card{rank: Rank::Ace, suit: Suit::Hearts}), false)]
+    #[case(Card{rank: Rank::Three, suit: Suit::Hearts}, Some(Card{rank: Rank::Ace, suit: Suit::Hearts}), false)]
+    #[case(Card{rank: Rank::Ace, suit: Suit::Hearts}, Some(Card{rank: Rank::Ace, suit: Suit::Hearts}), false)]
     fn can_move_to_foundation_test(
         #[case] card: Card,
         #[case] foundation_top: Option<Card>,
@@ -74,8 +72,8 @@ mod tests {
     }
 
     #[rstest]
-    #[case(Card{rank: 5, suit: Suit::Hearts}, None, true)] // Any card to empty free cell
-    #[case(Card{rank: 7, suit: Suit::Spades}, Some(Card{rank: 2, suit: Suit::Clubs}), false)] // Can't place on occupied free cell
+    #[case(Card{rank: Rank::Five, suit: Suit::Hearts}, None, true)]
+    #[case(Card{rank: Rank::Seven, suit: Suit::Spades}, Some(Card{rank: Rank::Two, suit: Suit::Clubs}), false)]
     fn can_move_to_freecell_test(
         #[case] card: Card,
         #[case] freecell: Option<Card>,
@@ -91,7 +89,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case(Card{rank: 3, suit: Suit::Diamonds}, true)] // Any card to empty tableau
+    #[case(Card{rank: Rank::Three, suit: Suit::Diamonds}, true)]
     fn can_move_to_empty_tableau_test(
         #[case] card: Card,
         #[case] expected: bool

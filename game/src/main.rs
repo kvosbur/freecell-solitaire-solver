@@ -3,7 +3,7 @@
 //! This application provides an interactive FreeCell solitaire game using the
 //! shared game-engine library.
 
-use freecell_game_engine::{generation::GameGenerator, Card, Suit};
+use freecell_game_engine::{generation::GameGenerator, Card, Suit, Rank};
 
 fn main() {
     println!("FreeCell Game starting...");
@@ -27,7 +27,7 @@ fn main() {
 
     // Example of creating a card using the shared library
     let card = Card {
-        rank: 13,
+        rank: Rank::King,
         suit: Suit::Spades,
     }; // King of Spades
     println!("Created card: {:?}", card);

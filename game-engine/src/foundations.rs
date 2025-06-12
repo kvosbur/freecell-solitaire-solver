@@ -5,14 +5,14 @@
 use crate::card::Card;
 use crate::rules;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Foundations {
     piles: [Vec<Card>; 4],
 }
 
 impl Foundations {
     /// Returns the top card of the given pile, or None if the pile is empty.
-    pub fn get_top_card(&self, pile: usize) -> Option<&crate::card::Card> {
+    pub fn get_top_card(&self, pile: usize) -> Option<&Card> {
         self.piles[pile].last()
     }
     pub fn new() -> Self {
@@ -51,12 +51,6 @@ impl Foundations {
         if pile.len() != 13 {
             return false;
         }
-        let suit = pile[0].suit.clone();
-        for (i, card) in pile.iter().enumerate() {
-            if card.suit != suit || card.rank != (i as u8 + 1) {
-                return false;
-            }
-        }
         true
     }
 }
@@ -64,7 +58,7 @@ impl Foundations {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::card::{Card, Suit};
+    use crate::{card::{Card, Suit}, Rank};
 
     #[test]
     fn foundations_initialize_with_four_empty_piles() {
@@ -87,9 +81,9 @@ mod tests {
     fn can_add_card_to_empty_foundation() {
         let mut foundations = Foundations::new();
         let card = Card {
-            rank: 1,
+            rank: Rank::Ace,
             suit: Suit::Hearts,
-        }; // Ace is rank 1
+        };
         foundations.add_card(0, card.clone());
         assert!(!foundations.is_pile_empty(0));
         assert_eq!(foundations.get_card(0), Some(&card));
@@ -99,17 +93,17 @@ mod tests {
     fn can_build_foundation_stack() {
         let mut foundations = Foundations::new();
         let ace = Card {
-            rank: 1,
+            rank: Rank::Ace,
             suit: Suit::Hearts,
-        }; // Ace is rank 1
+        };
         let two = Card {
-            rank: 2,
+            rank: Rank::Two,
             suit: Suit::Hearts,
-        }; // Two is rank 2
+        };
         let three = Card {
-            rank: 3,
+            rank: Rank::Three,
             suit: Suit::Hearts,
-        }; // Three is rank 3
+        };
 
         foundations.add_card(0, ace.clone());
         assert_eq!(foundations.get_card(0), Some(&ace));
@@ -126,7 +120,7 @@ mod tests {
     fn cannot_add_non_ace_to_empty_foundation() {
         let mut foundations = Foundations::new();
         let not_ace = Card {
-            rank: 5,
+            rank: Rank::Five,
             suit: Suit::Hearts,
         };
         foundations.add_card(0, not_ace);
@@ -137,11 +131,11 @@ mod tests {
     fn cannot_add_wrong_rank_or_suit_to_foundation() {
         let mut foundations = Foundations::new();
         let ace = Card {
-            rank: 1,
+            rank: Rank::Ace,
             suit: Suit::Hearts,
         };
         let two_wrong_suit = Card {
-            rank: 2,
+            rank: Rank::Two,
             suit: Suit::Spades,
         };
 
@@ -156,7 +150,7 @@ mod tests {
             foundations.add_card(
                 0,
                 Card {
-                    rank,
+                    rank: Rank::try_from(rank).unwrap(),
                     suit: Suit::Hearts,
                 },
             );
@@ -171,14 +165,11 @@ mod tests {
             foundations.add_card(
                 0,
                 Card {
-                    rank,
+                    rank: Rank::try_from(rank).unwrap(),
                     suit: Suit::Hearts,
                 },
             );
         }
         assert!(!foundations.is_pile_complete(0));
     }
-
-    // Removed: pile_is_not_complete_if_wrong_suit
-    // This test is unnecessary because the public API prevents constructing an invalid pile.
 }

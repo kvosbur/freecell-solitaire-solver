@@ -3,7 +3,7 @@
 //! This application finds solutions to FreeCell solitaire games using the
 //! shared game-engine library.
 
-use freecell_game_engine::{GameState, Card, Suit};
+use freecell_game_engine::{GameState, Card, Suit, Rank};
 
 fn main() {
     println!("FreeCell Solver starting...");
@@ -13,7 +13,7 @@ fn main() {
     println!("Created new game state");
     
     // Example of creating a card using the shared library
-    let card = Card { rank: 1, suit: Suit::Hearts }; // Ace of Hearts
+    let card = Card { rank: Rank::Ace, suit: Suit::Hearts }; // Ace of Hearts
     println!("Created card: {:?}", card);
     
     // TODO: Implement actual solving algorithm

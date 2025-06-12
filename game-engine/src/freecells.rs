@@ -5,7 +5,7 @@
 use crate::card::Card;
 use crate::rules;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct FreeCells {
     cells: [Option<Card>; 4],
 }
@@ -48,7 +48,7 @@ impl FreeCells {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::card::{Card, Suit};
+    use crate::{card::{Card, Suit}, Rank};
 
     #[test]
     fn freecells_initialize_with_four_empty_cells() {
@@ -72,7 +72,7 @@ mod tests {
     fn can_add_card_to_empty_freecell() {
         let mut freecells = FreeCells::new();
         let card = Card {
-            rank: 7,
+            rank: Rank::Seven,
             suit: Suit::Hearts,
         };
         freecells.add_card(0, card.clone());
@@ -85,7 +85,7 @@ mod tests {
     fn can_remove_card_from_freecell() {
         let mut freecells = FreeCells::new();
         let card = Card {
-            rank: 7,
+            rank: Rank::Seven,
             suit: Suit::Hearts,
         };
         freecells.add_card(0, card.clone());
@@ -109,11 +109,11 @@ mod tests {
     fn adding_card_to_occupied_freecell_panics() {
         let mut freecells = FreeCells::new();
         let card1 = Card {
-            rank: 7,
+            rank: Rank::Seven,
             suit: Suit::Hearts,
         };
         let card2 = Card {
-            rank: 6,
+            rank: Rank::Six,
             suit: Suit::Spades,
         };
         freecells.add_card(0, card1);
@@ -128,7 +128,7 @@ mod tests {
             freecells.add_card(
                 4,
                 Card {
-                    rank: 2,
+                    rank: Rank::Two,
                     suit: Suit::Clubs,
                 },
             );

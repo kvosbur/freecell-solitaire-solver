@@ -303,6 +303,7 @@ impl GameState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::card::{Rank};
 
     #[test]
     fn game_state_initializes_with_empty_components() {
@@ -327,7 +328,7 @@ mod tests {
         use crate::card::{Card, Suit};
         let mut state = GameState::new();
         let card = Card {
-            rank: 1,
+            rank: Rank::Ace,
             suit: Suit::Hearts,
         };
         state.tableau.add_card_to_column(0, card.clone());
@@ -343,7 +344,7 @@ mod tests {
         use crate::card::{Card, Suit};
         let mut state = GameState::new();
         let card = Card {
-            rank: 1,
+            rank: Rank::Ace,
             suit: Suit::Hearts,
         };
         state.tableau.add_card_to_column(0, card.clone());
@@ -366,7 +367,7 @@ mod tests {
                 state.foundations.add_card(
                     pile,
                     Card {
-                        rank,
+                        rank: Rank::try_from(rank).unwrap(),
                         suit: Suit::Hearts,
                     },
                 );
@@ -381,7 +382,7 @@ mod tests {
         let mut state = GameState::new();
         // Place an Ace in tableau column 0
         let card = Card {
-            rank: 1,
+            rank: Rank::Ace,
             suit: Suit::Hearts,
         };
         state.tableau.add_card_to_column(0, card.clone());
