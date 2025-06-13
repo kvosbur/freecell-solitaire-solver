@@ -1,6 +1,6 @@
 //! Tableau implementation for FreeCell game state.
 
-use crate::card::{Card, Rank};
+use crate::card::{Card};
 use crate::rules;
 
 #[derive(Debug)]

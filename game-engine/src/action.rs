@@ -1,7 +1,7 @@
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Move {
+pub enum Action {
     TableauToFoundation { from_column: usize, to_pile: usize },
     TableauToFreecell { from_column: usize, to_cell: usize },
     FreecellToTableau { from_cell: usize, to_column: usize },
@@ -9,22 +9,22 @@ pub enum Move {
     TableauToTableau { from_column: usize, to_column: usize, card_count: usize },
 }
 
-impl fmt::Display for Move {
+impl fmt::Display for Action {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Move::TableauToFoundation { from_column, to_pile } => {
+            Action::TableauToFoundation { from_column, to_pile } => {
                 write!(f, "Tableau {} to Foundation {}", from_column, to_pile)
             },
-            Move::TableauToFreecell { from_column, to_cell } => {
+            Action::TableauToFreecell { from_column, to_cell } => {
                 write!(f, "Tableau {} to Freecell {}", from_column, to_cell)
             },
-            Move::FreecellToTableau { from_cell, to_column } => {
+            Action::FreecellToTableau { from_cell, to_column } => {
                 write!(f, "Freecell {} to Tableau {}", from_cell, to_column)
             },
-            Move::FreecellToFoundation { from_cell, to_pile } => {
+            Action::FreecellToFoundation { from_cell, to_pile } => {
                 write!(f, "Freecell {} to Foundation {}", from_cell, to_pile)
             },
-            Move::TableauToTableau { from_column, to_column, card_count } => {
+            Action::TableauToTableau { from_column, to_column, card_count } => {
                 write!(f, "Tableau {} to Tableau {}, moving {} cards", from_column, to_column, card_count)
             },
         }
