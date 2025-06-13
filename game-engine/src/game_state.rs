@@ -39,7 +39,7 @@ pub enum GameError {
     EmptySource,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GameState {
     pub tableau: Tableau,
     pub freecells: FreeCells,
@@ -303,7 +303,7 @@ impl GameState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::card::{Rank};
+    use crate::card::Rank;
 
     #[test]
     fn game_state_initializes_with_empty_components() {

@@ -1,21 +1,17 @@
 //! FreeCell Solitaire Solver
-//! 
+//!
 //! This application finds solutions to FreeCell solitaire games using the
 //! shared game-engine library.
+mod strategies;
 
-use freecell_game_engine::{GameState, Card, Suit, Rank};
+use freecell_game_engine::generation::GameGenerator;
+use strategies::strat1::solve;
 
 fn main() {
     println!("FreeCell Solver starting...");
-    
-    // Example of using the game engine
-    let game_state = GameState::new();
-    println!("Created new game state");
-    
-    // Example of creating a card using the shared library
-    let card = Card { rank: Rank::Ace, suit: Suit::Hearts }; // Ace of Hearts
-    println!("Created card: {:?}", card);
-    
-    // TODO: Implement actual solving algorithm
-    println!("Solver logic will be implemented here");
+
+    let mut game_generator = GameGenerator::new(1);
+    game_generator.generate();
+    let game_state = game_generator.game_state.clone();
+    solve::solve(game_state);
 }
