@@ -106,13 +106,10 @@ impl GameState {
                 }
             }
         }
-        // Tableau to Freecell
-        for from_col in 0..self.tableau.column_count() {
-            for to_cell in 0..self.freecells.cell_count() {
-                let m = Move::TableauToFreecell {
-                    from_column: from_col,
-                    to_cell,
-                };
+        // Freecell to Foundation
+        for from_cell in 0..self.freecells.cell_count() {
+            for to_pile in 0..self.foundations.pile_count() {
+                let m = Move::FreecellToFoundation { from_cell, to_pile };
                 if self.is_move_valid(&m).is_ok() {
                     moves.push(m);
                 }
@@ -125,15 +122,6 @@ impl GameState {
                     from_cell,
                     to_column: to_col,
                 };
-                if self.is_move_valid(&m).is_ok() {
-                    moves.push(m);
-                }
-            }
-        }
-        // Freecell to Foundation
-        for from_cell in 0..self.freecells.cell_count() {
-            for to_pile in 0..self.foundations.pile_count() {
-                let m = Move::FreecellToFoundation { from_cell, to_pile };
                 if self.is_move_valid(&m).is_ok() {
                     moves.push(m);
                 }
@@ -155,8 +143,21 @@ impl GameState {
                 }
             }
         }
+        // Tableau to Freecell
+        for from_col in 0..self.tableau.column_count() {
+            for to_cell in 0..self.freecells.cell_count() {
+                let m = Move::TableauToFreecell {
+                    from_column: from_col,
+                    to_cell,
+                };
+                if self.is_move_valid(&m).is_ok() {
+                    moves.push(m);
+                }
+            }
+        }
         moves
     }
+
     pub fn new() -> Self {
         Self {
             tableau: Tableau::new(),

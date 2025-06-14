@@ -1,5 +1,3 @@
-use std::str::MatchIndices;
-
 use freecell_game_engine::game_state::Move;
 
 pub fn get_game_solution(seed: u64) -> Vec<Move> {
