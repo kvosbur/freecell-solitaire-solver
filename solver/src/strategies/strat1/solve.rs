@@ -16,10 +16,10 @@ pub fn solve(game: GameState) {
         start: Instant::now(),
     };
     if dfs(game, &mut path, &mut counter) {
-        println!("Solution found!");
-        for m in path {
-            println!("{:?}", m);
-        }
+        println!("Solution found! {:?} moves", path.len());
+        // for m in path {
+        //     println!("{:?}", m);
+        // }
     } else {
         println!("No solution found.");
     }

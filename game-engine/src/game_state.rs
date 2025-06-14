@@ -3,6 +3,7 @@
 use crate::foundations::Foundations;
 use crate::freecells::FreeCells;
 use crate::tableau::Tableau;
+use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Move {
@@ -39,11 +40,49 @@ pub enum GameError {
     EmptySource,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct GameState {
     pub tableau: Tableau,
     pub freecells: FreeCells,
     pub foundations: Foundations,
+}
+
+impl fmt::Debug for GameState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "GameState:")?;
+        writeln!(f, "  Tableau:")?;
+        for col in 0..self.tableau.column_count() {
+            write!(f, "    Column {}: ", col)?;
+            let len = self.tableau.column_length(col);
+            if len == 0 {
+                writeln!(f, "[empty]")?;
+            } else {
+                for i in 0..len {
+                    if let Some(card) = self.tableau.get_card_at(col, i) {
+                        write!(f, "{:?} ", card)?;
+                    }
+                }
+                writeln!(f)?;
+            }
+        }
+        writeln!(f, "  FreeCells:")?;
+        for cell in 0..self.freecells.cell_count() {
+            write!(f, "    Cell {}: ", cell)?;
+            match self.freecells.get_card(cell) {
+                Some(card) => writeln!(f, "{:?}", card)?,
+                None => writeln!(f, "[empty]")?,
+            }
+        }
+        writeln!(f, "  Foundations:")?;
+        for pile in 0..self.foundations.pile_count() {
+            write!(f, "    Pile {}: ", pile)?;
+            match self.foundations.get_top_card(pile) {
+                Some(card) => writeln!(f, "top: {:?}", card)?,
+                None => writeln!(f, "[empty]")?,
+            }
+        }
+        Ok(())
+    }
 }
 
 impl GameState {

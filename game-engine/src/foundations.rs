@@ -58,7 +58,10 @@ impl Foundations {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{card::{Card, Suit}, Rank};
+    use crate::{
+        card::{Card, Suit},
+        Rank,
+    };
 
     #[test]
     fn foundations_initialize_with_four_empty_piles() {
