@@ -10,3 +10,6 @@ path = "src/main.rs"
 
 [dependencies]
 freecell-game-engine = { path = "../game-engine" }
+
+[profile.release]
+debug = "line-tables-only"
