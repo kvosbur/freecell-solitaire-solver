@@ -45,8 +45,8 @@ fn do_benchmark() {
 
 fn do_adhoc() {
     let seed = 1;
-    let move_count_to_undue = 23; // Change this to test different scenarios
-    let allowed_timeout_secs = 60 * 10; // 10 minutes
+    let move_count_to_undue = 22; // Change this to test different scenarios
+    let allowed_timeout_secs = 20;
     let mut game_generator = GameGenerator::new(seed);
     game_generator.generate();
     let solution = game_prep::get_game_solution(seed);

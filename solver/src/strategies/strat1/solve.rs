@@ -19,7 +19,15 @@ pub fn solve_with_cancel(
         start: Instant::now(),
         cancel_flag: Some(cancel_flag.clone()),
     };
-    return dfs(game_state, &mut path, &mut counter);
+    let result = dfs(game_state, &mut path, &mut counter);
+    if result {
+        println!(
+            "Solution found! {:?} moves {:?} time",
+            path.len(),
+            counter.start.elapsed()
+        );
+    }
+    return result;
 }
 
 /// Attempts to solve the given FreeCell game state using recursive DFS.
@@ -32,7 +40,11 @@ pub fn solve(game: GameState) {
         cancel_flag: None,
     };
     if dfs(game, &mut path, &mut counter) {
-        println!("Solution found! {:?} moves", path.len());
+        println!(
+            "Solution found! {:?} moves {:?} time",
+            path.len(),
+            counter.start.elapsed()
+        );
         // for m in path {
         //     println!("{:?}", m);
         // }
