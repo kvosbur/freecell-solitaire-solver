@@ -52,6 +52,14 @@ impl Tableau {
     pub fn remove_card_from_column(&mut self, index: usize) -> Option<Card> {
         self.columns[index].pop()
     }
+
+    pub fn remove_top_card(&mut self, col: usize) -> Option<Card> {
+        if col < self.columns.len() {
+            self.columns[col].pop()
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]

@@ -16,8 +16,16 @@ pub fn harness(game_state: freecell_game_engine::game_state::GameState, timeout_
     while start.elapsed() < timeout {
         if handle.is_finished() {
             println!("Solve completed within timeout.");
-            let _ = handle.join();
-            return true;
+            match handle.join() {
+                Ok(val) => {
+                    println!("Solve completed: {:?}", val);
+                    return val;
+                }
+                Err(e) => {
+                    println!("Error during solve: {:?}", e);
+                    return false;
+                }
+            }
         }
         thread::sleep(Duration::from_millis(100));
     }

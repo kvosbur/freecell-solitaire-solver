@@ -53,6 +53,14 @@ impl Foundations {
         }
         true
     }
+
+    pub fn remove_top_card(&mut self, pile: usize) -> Option<Card> {
+        if pile < self.piles.len() {
+            self.piles[pile].pop()
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]

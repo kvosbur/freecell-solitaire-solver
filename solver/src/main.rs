@@ -7,7 +7,7 @@ mod harness;
 mod strategies;
 
 use freecell_game_engine::generation::GameGenerator;
-use strategies::strat2::solve;
+use strategies::strat3::solve;
 
 fn do_benchmark() {
     let allowed_timeout_secs = 60 * 10; // 10 minutes
@@ -45,7 +45,7 @@ fn do_benchmark() {
 
 fn do_adhoc() {
     let seed = 1;
-    let move_count_to_undue = 29; // Change this to test different scenarios
+    let move_count_to_undue = 15; // Change this to test different scenarios
     let allowed_timeout_secs = 60 * 2;
     let mut game_generator = GameGenerator::new(seed);
     game_generator.generate();
@@ -77,8 +77,8 @@ fn main() {
     println!("FreeCell Solver starting...");
 
     // Run benchmark to find the maximum number of moves that can be undone
-    // do_benchmark();
+    do_benchmark();
 
     // Run adhoc test with a specific seed and move count to undue
-    do_adhoc();
+    // do_adhoc();
 }

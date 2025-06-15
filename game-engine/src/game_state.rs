@@ -338,6 +338,62 @@ impl GameState {
             }
         }
     }
+
+    /// Undoes a move, reversing its effect on the game state.
+    pub fn undo_move(&mut self, m: &Move) {
+        use Move::*;
+        match m {
+            TableauToFoundation {
+                from_column,
+                to_pile,
+            } => {
+                let card = self
+                    .foundations
+                    .remove_top_card(*to_pile)
+                    .expect("Undo: foundation not empty");
+                self.tableau.initial_addition_of_card(*from_column, card);
+            }
+            TableauToFreecell {
+                from_column,
+                to_cell,
+            } => {
+                let card = self
+                    .freecells
+                    .remove_card(*to_cell)
+                    .expect("Undo: freecell not empty");
+                self.tableau.initial_addition_of_card(*from_column, card);
+            }
+            FreecellToTableau {
+                from_cell,
+                to_column,
+            } => {
+                let card = self
+                    .tableau
+                    .remove_top_card(*to_column)
+                    .expect("Undo: tableau not empty");
+                self.freecells.add_card(*from_cell, card);
+            }
+            FreecellToFoundation { from_cell, to_pile } => {
+                let card = self
+                    .foundations
+                    .remove_top_card(*to_pile)
+                    .expect("Undo: foundation not empty");
+                self.freecells.add_card(*from_cell, card);
+            }
+            TableauToTableau {
+                from_column,
+                to_column,
+                card_count,
+            } => {
+                assert_eq!(*card_count, 1, "Undo only supports single card moves");
+                let card = self
+                    .tableau
+                    .remove_top_card(*to_column)
+                    .expect("Undo: tableau not empty");
+                self.tableau.initial_addition_of_card(*from_column, card);
+            }
+        }
+    }
 }
 
 #[cfg(test)]
