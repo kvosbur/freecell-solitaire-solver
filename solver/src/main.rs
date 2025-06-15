@@ -7,7 +7,7 @@ mod harness;
 mod strategies;
 
 use freecell_game_engine::generation::GameGenerator;
-use strategies::strat3::solve;
+use strategies::strat4::solve;
 
 fn do_benchmark() {
     let allowed_timeout_secs = 60 * 10; // 10 minutes
