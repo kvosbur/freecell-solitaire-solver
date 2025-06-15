@@ -40,7 +40,7 @@ pub enum GameError {
     EmptySource,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct GameState {
     pub tableau: Tableau,
     pub freecells: FreeCells,

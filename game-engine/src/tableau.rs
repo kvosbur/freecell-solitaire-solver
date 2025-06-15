@@ -3,7 +3,7 @@
 use crate::card::Card;
 use crate::rules;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Tableau {
     columns: [Vec<Card>; 8],
 }

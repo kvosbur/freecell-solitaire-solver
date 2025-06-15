@@ -5,7 +5,7 @@
 use crate::card::Card;
 use crate::rules;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FreeCells {
     cells: [Option<Card>; 4],
 }
@@ -48,7 +48,10 @@ impl FreeCells {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{card::{Card, Suit}, Rank};
+    use crate::{
+        card::{Card, Suit},
+        Rank,
+    };
 
     #[test]
     fn freecells_initialize_with_four_empty_cells() {

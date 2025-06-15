@@ -1,13 +1,12 @@
 //! Card-related types and functionality for FreeCell.
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Card {
     pub rank: Rank,
     pub suit: Suit,
 }
 
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Rank {
     Ace = 1,
     Two,
@@ -47,7 +46,7 @@ impl TryFrom<u8> for Rank {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Suit {
     Spades,
     Hearts,
@@ -81,7 +80,10 @@ mod tests {
     #[case(Suit::Spades, Color::Black)]
     #[case(Suit::Clubs, Color::Black)]
     fn card_has_correct_color(#[case] suit: Suit, #[case] expected_color: Color) {
-        let card = Card { rank: Rank::Ace, suit };
+        let card = Card {
+            rank: Rank::Ace,
+            suit,
+        };
         assert_eq!(card.color(), expected_color);
     }
 }
