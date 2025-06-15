@@ -7,12 +7,12 @@ mod harness;
 mod strategies;
 
 use freecell_game_engine::generation::GameGenerator;
-use strategies::strat4::solve;
+use strategies::strat5::solve;
 
 fn do_benchmark() {
-    let allowed_timeout_secs = 60 * 10; // 10 minutes
+    let allowed_timeout_secs = 60 * 60 * 24; // 24 hours
     let seed = 1;
-    let mut move_count_to_undue: usize = 24;
+    let mut move_count_to_undue: usize = 32;
     let mut game_generator = GameGenerator::new(seed);
     game_generator.generate();
     let solution = game_prep::get_game_solution(seed);
@@ -45,8 +45,8 @@ fn do_benchmark() {
 
 fn do_adhoc() {
     let seed = 1;
-    let move_count_to_undue = 15; // Change this to test different scenarios
-    let allowed_timeout_secs = 60 * 2;
+    let move_count_to_undue = 40; // Change this to test different scenarios
+    let allowed_timeout_secs = 60 * 60 * 24; // 24 hours
     let mut game_generator = GameGenerator::new(seed);
     game_generator.generate();
     let solution = game_prep::get_game_solution(seed);

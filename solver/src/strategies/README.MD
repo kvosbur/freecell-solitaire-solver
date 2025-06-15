@@ -16,3 +16,11 @@ Evaluation moves: 28
 strat2 + minimizes clones by using single game state and undoing after recursive call
 Limit hit not in execution time, but memory. It used up 40 gb which is the limit I have set for it and then it just went down to a standstill going no where.
 Evaluation moves: 28
+
+## strat4
+strat3 + reduce state in hash set by packing state before saving. Still hit limit of ram at a higher move count
+Evaluation moves: 32
+
+## strat5
+strat4 except set a cap on cache size so that ram isn't overrun. Allowed program to run for a long time, but still didn't get any further
+Evaluation moves: 32
