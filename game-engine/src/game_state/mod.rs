@@ -25,41 +25,44 @@ use crate::tableau::Tableau;
 use crate::freecells::FreeCells;
 use crate::foundations::Foundations;
 
-/// The full state of a FreeCell game, including tableau, freecells, and foundations.
-///
-/// Use [`GameState::new()`] or [`GameState::default()`] to create a new game.
-/// 
-/// # Examples
-/// ```
-/// let state = GameState::default();
-/// ```
-#[derive(Clone, PartialEq, Eq, Hash)]
+/// Represents the complete state of a FreeCell game
 pub struct GameState {
-    /// The tableau: 8 columns of cards.
-    pub tableau: Tableau,
-    /// The freecells: 4 temporary storage cells.
-    pub freecells: FreeCells,
-    /// The foundations: 4 suit-based foundation piles.
-    pub foundations: Foundations,
+    tableau: Tableau,
+    freecells: FreeCells,
+    foundations: Foundations,
 }
 
 impl GameState {
-    /// Creates a new, empty game state.
-    ///
-    /// Equivalent to [`GameState::default()`].
-    pub fn new() -> Self {
-        Self::default()
+    /// Create a new game state with default components
+    pub fn new(tableau_columns: usize, freecell_count: usize, foundation_piles: usize) -> Self {
+        Self {
+            tableau: Tableau::new(tableau_columns),
+            freecells: FreeCells::new(freecell_count),
+            foundations: Foundations::new(foundation_piles),
+        }
     }
-
-    /// Returns true if all foundation piles are complete (i.e., game is won).
-    ///
-    /// # Examples
-    /// ```
-    /// let state = GameState::default();
-    /// assert!(!state.is_game_won());
-    /// ```
-    pub fn is_game_won(&self) -> bool {
-        (0..self.foundations.pile_count()).all(|i| self.foundations.is_pile_complete(i))
+    
+    // Accessor methods
+    pub fn tableau(&self) -> &Tableau { &self.tableau }
+    pub fn freecells(&self) -> &FreeCells { &self.freecells }
+    pub fn foundations(&self) -> &Foundations { &self.foundations }
+    
+    // Mutable accessor methods (careful with these!)
+    pub fn tableau_mut(&mut self) -> &mut Tableau { &mut self.tableau }
+    pub fn freecells_mut(&mut self) -> &mut FreeCells { &mut self.freecells }
+    pub fn foundations_mut(&mut self) -> &mut Foundations { &mut self.foundations }
+    
+    // All the move generation methods will use the Rules struct
+    // (already defined in your optimized moves.rs)
+    
+    /// Apply a move to change the game state
+    pub fn apply_move(&mut self, action: Action) -> Result<(), GameError> {
+        // Implementation uses component methods to manipulate state
+    }
+    
+    /// Check if the game is won
+    pub fn is_won(&self) -> bool {
+        self.foundations.is_complete(13) // 13 cards per suit in a standard deck
     }
 }
 

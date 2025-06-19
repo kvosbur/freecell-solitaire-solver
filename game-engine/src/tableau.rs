@@ -4,60 +4,77 @@ use crate::card::Card;
 use crate::rules;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
+/// Represents the main play area with multiple columns of cards
 pub struct Tableau {
-    columns: [Vec<Card>; 8],
+    columns: Vec<Vec<Card>>,
 }
 
 impl Tableau {
-    pub fn new() -> Self {
-        Self {
-            columns: Default::default(),
-        }
+    /// Create a new tableau with the specified number of columns
+    pub fn new(columns: usize) -> Self {
+        Self { columns: vec![Vec::new(); columns] }
     }
-
+    
+    /// Add a card to the specified column
+    pub fn push_card(&mut self, column: usize, card: Card) -> Result<(), TableauError> {
+        if column >= self.columns.len() {
+            return Err(TableauError::InvalidColumn);
+        }
+        self.columns[column].push(card);
+        Ok(())
+    }
+    
+    /// Remove and return the top card from the specified column
+    pub fn pop_card(&mut self, column: usize) -> Option<Card> {
+        if column >= self.columns.len() || self.columns[column].is_empty() {
+            return None;
+        }
+        self.columns[column].pop()
+    }
+    
+    /// Get a reference to the top card in a column without removing it
+    pub fn get_top_card(&self, column: usize) -> Option<&Card> {
+        if column >= self.columns.len() {
+            return None;
+        }
+        self.columns[column].last()
+    }
+    
+    /// Get the number of columns
     pub fn column_count(&self) -> usize {
         self.columns.len()
     }
-
-    pub fn column_length(&self, index: usize) -> usize {
-        self.columns[index].len()
-    }
-
-    pub fn is_column_empty(&self, index: usize) -> bool {
-        self.columns[index].is_empty()
-    }
-
-    pub fn get_card_at(&self, column_index: usize, card_index: usize) -> Option<&Card> {
-        self.columns.get(column_index)?.get(card_index)
-    }
-
-    pub fn add_card_to_column(&mut self, index: usize, card: Card) {
-        if let Some(top) = self.get_top_card(index) {
-            if !rules::can_stack_on_tableau(&card, top) {
-                panic!("Invalid tableau move: must alternate color and descend in rank");
-            }
+    
+    /// Get the number of cards in a column
+    pub fn column_length(&self, column: usize) -> usize {
+        if column >= self.columns.len() {
+            return 0;
         }
-        self.columns[index].push(card);
+        self.columns[column].len()
     }
-
-    pub fn initial_addition_of_card(&mut self, index: usize, card: Card) {
-        self.columns[index].push(card);
+    
+    /// Check if a column is empty
+    pub fn is_column_empty(&self, column: usize) -> bool {
+        column < self.columns.len() && self.columns[column].is_empty()
     }
-
-    pub fn get_top_card(&self, index: usize) -> Option<&Card> {
-        self.columns[index].last()
+    
+    /// Count the number of empty columns
+    pub fn empty_columns_count(&self) -> usize {
+        self.columns.iter().filter(|col| col.is_empty()).count()
     }
-
-    pub fn remove_card_from_column(&mut self, index: usize) -> Option<Card> {
-        self.columns[index].pop()
-    }
-
-    pub fn remove_top_card(&mut self, col: usize) -> Option<Card> {
-        if col < self.columns.len() {
-            self.columns[col].pop()
-        } else {
-            None
+    
+    /// Get a slice of cards from the top of a column
+    pub fn get_column_top_cards(&self, column: usize, count: usize) -> &[Card] {
+        if column >= self.columns.len() || count > self.columns[column].len() {
+            return &[];
         }
+        let start = self.columns[column].len() - count;
+        &self.columns[column][start..]
+    }
+    
+    /// Get an iterator over all columns
+    pub fn columns(&self) -> impl Iterator<Item = &Vec<Card>> {
+        self.columns.iter()
     }
 }
 

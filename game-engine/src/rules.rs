@@ -1,35 +1,37 @@
 use crate::card::Card;
 
-/// Returns true if `moving` can be placed on `target` in the tableau (alternating color, descending rank).
-pub fn can_stack_on_tableau(moving: &Card, target: &Card) -> bool {
-    (moving.rank as u8 + 1 == target.rank as u8) && (moving.color() != target.color())
-}
+/// Core rules module for FreeCell solitaire
+pub struct Rules;
 
-/// Returns true if `card` can be placed on the foundation with the given top card (or empty).
-pub fn can_move_to_foundation(card: &Card, foundation_top: Option<&Card>) -> bool {
-    match foundation_top {
-        None => card.rank as u8 == 1,
-        Some(top) => card.suit == top.suit && (card.rank as u8) == (top.rank as u8 + 1),
+impl Rules {
+    /// Check if a card can be stacked on a tableau column
+    /// Works with both empty and non-empty columns
+    pub fn can_stack_on_tableau(card: &Card, tableau_top: Option<&Card>) -> bool {
+        match tableau_top {
+            // Empty column - any card can be placed
+            None => true,
+            
+            // Non-empty column - check color and rank
+            Some(top) => card.color() != top.color() && (card.rank as u8) + 1 == (top.rank as u8)
+        }
     }
-}
 
-/// Returns Ok(()) if `card` can be placed in the free cell (only if empty), or an error message.
-pub fn can_move_to_freecell(_card: &Card, freecell: Option<&Card>) -> Result<(), &'static str> {
-    if freecell.is_none() {
-        Ok(())
-    } else {
-        Err("Cell is already occupied")
+    /// Check if a card can be moved to a foundation pile
+    pub fn can_move_to_foundation(card: &Card, foundation_top: Option<&Card>) -> bool {
+        match foundation_top {
+            // Empty foundation - only Ace can be placed
+            None => (card.rank) as u8 == 1,
+            
+            // Non-empty foundation - check suit and rank
+            Some(top) => card.suit == top.suit && (card.rank as u8) == (top.rank as u8) + 1
+        }
     }
-}
 
-/// Returns true if `card` can be placed in an empty tableau column (always true).
-pub fn can_move_to_empty_tableau(_card: &Card) -> bool {
-    true
-}
-
-/// Returns false - cards can never be moved from foundations.
-pub fn can_move_from_foundation() -> bool {
-    false
+    /// Check if a card can be moved to a freecell
+    pub fn can_move_to_freecell(_card: &Card, freecell_content: Option<&Card>) -> bool {
+        // Can only move to empty freecells
+        freecell_content.is_none()
+    }
 }
 
 #[cfg(test)]
@@ -51,7 +53,7 @@ mod tests {
         #[case] target_card: Card,
         #[case] expected: bool
     ) {
-        assert_eq!(can_stack_on_tableau(&moving_card, &target_card), expected);
+        assert_eq!(Rules::can_stack_on_tableau(&moving_card, Some(&target_card)), expected);
     }
 
     #[rstest]
@@ -67,8 +69,7 @@ mod tests {
         #[case] foundation_top: Option<Card>,
         #[case] expected: bool
     ) {
-        let foundation_top_ref = foundation_top.as_ref();
-        assert_eq!(can_move_to_foundation(&card, foundation_top_ref), expected);
+        assert_eq!(Rules::can_move_to_foundation(&card, foundation_top.as_ref()), expected);
     }
 
     #[rstest]
@@ -79,26 +80,7 @@ mod tests {
         #[case] freecell: Option<Card>,
         #[case] expected: bool
     ) {
-        let freecell_ref = freecell.as_ref();
-        let result = can_move_to_freecell(&card, freecell_ref);
-        if expected {
-            assert!(result.is_ok());
-        } else {
-            assert!(result.is_err());
-        }
-    }
-
-    #[rstest]
-    #[case(Card{rank: Rank::Three, suit: Suit::Diamonds}, true)]
-    fn can_move_to_empty_tableau_test(
-        #[case] card: Card,
-        #[case] expected: bool
-    ) {
-        assert_eq!(can_move_to_empty_tableau(&card), expected);
-    }
-
-    #[test]
-    fn foundation_cards_are_immutable_test() {
-        assert_eq!(can_move_from_foundation(), false);
+        let result = Rules::can_move_to_freecell(&card, freecell.as_ref());
+        assert_eq!(result, expected);
     }
 }

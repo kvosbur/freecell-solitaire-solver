@@ -61,11 +61,27 @@ pub enum Color {
 }
 
 impl Card {
+    /// Create a new card with the given rank and suit
+    pub fn new(rank: Rank, suit: Suit) -> Self {
+        Self { rank, suit }
+    }
+    
+    /// Get the color of the card (Red or Black)
     pub fn color(&self) -> Color {
         match self.suit {
             Suit::Hearts | Suit::Diamonds => Color::Red,
-            Suit::Spades | Suit::Clubs => Color::Black,
+            Suit::Clubs | Suit::Spades => Color::Black,
         }
+    }
+    
+    /// Get the card's rank
+    pub fn rank(&self) -> u8 {
+        self.rank as u8
+    }
+    
+    /// Get the card's suit
+    pub fn suit(&self) -> Suit {
+        self.suit
     }
 }
 
