@@ -11,8 +11,8 @@ pub struct Tableau {
 
 impl Tableau {
     /// Create a new tableau with the specified number of columns
-    pub fn new(columns: usize) -> Self {
-        Self { columns: vec![Vec::new(); columns] }
+    pub fn new() -> Self {
+        Self { columns: vec![Vec::new(); 8] }
     }
     
     /// Add a card to the specified column

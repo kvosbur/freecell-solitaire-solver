@@ -83,6 +83,35 @@ impl fmt::Debug for Foundations {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+/// Error type for foundation operations
+pub enum FoundationError {
+    /// Attempted to access an invalid pile index
+    InvalidPile,
+    
+    /// Attempted to add a non-Ace card to an empty foundation
+    NonAceOnEmptyPile,
+    
+    /// Card doesn't follow sequence rules (must be same suit, one rank higher)
+    InvalidSequence,
+    
+    /// Attempted to place card on a completed pile (King is already placed)
+    PileComplete,
+}
+
+impl std::fmt::Display for FoundationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FoundationError::InvalidPile => write!(f, "Invalid foundation pile index"),
+            FoundationError::NonAceOnEmptyPile => write!(f, "Can only add Ace to empty foundation pile"),
+            FoundationError::InvalidSequence => write!(f, "Card must be one rank higher and same suit"),
+            FoundationError::PileComplete => write!(f, "Foundation pile is already complete"),
+        }
+    }
+}
+
+impl std::error::Error for FoundationError {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
