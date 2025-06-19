@@ -1,4 +1,5 @@
-use freecell_game_engine::game_state::{GameState, Move, PackedState};
+use freecell_game_engine::{GameState, PackedGameState};
+use freecell_game_engine::action::Action;
 use lru::LruCache;
 use std::num::NonZeroUsize;
 use std::time::Instant;
@@ -12,9 +13,9 @@ struct Counter {
 /// Attempts to solve the given FreeCell game state using recursive DFS with LRU cache for visited states.
 fn dfs(
     game: &mut GameState,
-    path: &mut Vec<Move>,
+    path: &mut Vec<Action>,
     counter: &mut Counter,
-    visited: &mut LruCache<PackedState, ()>,
+    visited: &mut LruCache<PackedGameState, ()>,
 ) -> bool {
     if counter
         .cancel_flag
@@ -30,7 +31,7 @@ fn dfs(
         // Limit the depth to prevent excessive recursion
         return false;
     }
-    let packed = PackedState::from_game_state(game);
+    let packed = PackedGameState::from_game_state(game);
     if visited.put(packed, ()).is_some() {
         // Already visited this state (recently)
         return false;

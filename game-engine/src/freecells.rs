@@ -5,7 +5,7 @@
 use crate::card::Card;
 use crate::rules;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct FreeCells {
     cells: [Option<Card>; 4],
 }
@@ -42,6 +42,22 @@ impl FreeCells {
 
     pub fn remove_card(&mut self, index: usize) -> Option<Card> {
         self.cells[index].take()
+    }
+}
+
+use std::fmt;
+
+impl fmt::Debug for FreeCells {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_struct = f.debug_struct("FreeCells");
+        for cell in 0..self.cell_count() {
+            let cell_name = format!("cell_{}", cell);
+            match self.get_card(cell) {
+                Some(card) => debug_struct.field(&cell_name, &format!("{:?}", card)),
+                None => debug_struct.field(&cell_name, &"[empty]"),
+            };
+        }
+        debug_struct.finish()
     }
 }
 

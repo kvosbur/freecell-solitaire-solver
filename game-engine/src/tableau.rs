@@ -3,7 +3,7 @@
 use crate::card::Card;
 use crate::rules;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Tableau {
     columns: [Vec<Card>; 8],
 }
@@ -27,7 +27,6 @@ impl Tableau {
         self.columns[index].is_empty()
     }
 
-    // Add this new method to access cards at specific indices
     pub fn get_card_at(&self, column_index: usize, card_index: usize) -> Option<&Card> {
         self.columns.get(column_index)?.get(card_index)
     }
@@ -59,6 +58,29 @@ impl Tableau {
         } else {
             None
         }
+    }
+}
+
+use std::fmt;
+
+impl fmt::Debug for Tableau {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_struct = f.debug_struct("Tableau");
+        for col in 0..self.column_count() {
+            let column_name = format!("column_{}", col);
+            if self.column_length(col) == 0 {
+                debug_struct.field(&column_name, &"[empty]");
+            } else {
+                let mut cards = Vec::new();
+                for i in 0..self.column_length(col) {
+                    if let Some(card) = self.get_card_at(col, i) {
+                        cards.push(format!("{:?}", card));
+                    }
+                }
+                debug_struct.field(&column_name, &cards);
+            }
+        }
+        debug_struct.finish()
     }
 }
 

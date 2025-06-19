@@ -11,11 +11,16 @@ Tracks the current work focus, recent changes, next steps, active decisions and 
 - All core logic, move validation/execution, and state inspection APIs are implemented and tested.
 - The engine is designed for integration with UIs, solvers, and other applications, with no direct user interface or I/O.
 - Focus is on providing a clean, well-documented API and preparing for downstream integration.
+- **Recent focus:** Modularizing `game_state` into submodules, improving error handling, and enhancing documentation.
 
 ## Recent Changes
 
 - Completed modularization: `card`, `rules`, `tableau`, `freecells`, `foundations`, `game_state` modules.
-- Implemented `GameState` struct to model the board, freecells, tableau, and foundations.
+- `game_state` split into: `mod.rs`, `error.rs`, `validation.rs`, `moves.rs`, `execution.rs`.
+- `is_move_valid` now delegates to private helper methods for each move type.
+- Unified error handling with a single `GameError` type and `Display` implementation.
+- Implemented `Default` for `GameState`.
+- Added comprehensive documentation to all modules and methods.
 - Move validation and execution logic is complete.
 - Added game state inspection API (win detection, available moves).
 - 50+ tests now passing, covering all rule logic and state transitions.

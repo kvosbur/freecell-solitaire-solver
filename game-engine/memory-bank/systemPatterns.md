@@ -10,6 +10,22 @@ The game engine follows a strict library-only architecture:
 - **API-First**: All functionality exposed through well-defined public interfaces
 
 ### Modular Component Structure
+
+The `game_state` module is split into focused submodules for maintainability and clarity:
+
+```
+game_state/
+  ├── mod.rs         // Main struct, core methods, docs, Default
+  ├── error.rs       // GameError type, Display impl
+  ├── validation.rs  // is_move_valid and private helpers per move type
+  ├── moves.rs       // Move generation logic
+  └── execution.rs   // Move execution and undo logic
+```
+
+- `is_move_valid` delegates to private helper methods for each move type, improving readability and testability.
+- All error handling is unified under a single `GameError` type with a `Display` implementation.
+- Comprehensive documentation is provided at the module, struct, and method level.
+
 ```rust
 pub struct GameState {
     pub tableau: Tableau,      // 8 columns of cards

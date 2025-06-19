@@ -8,6 +8,7 @@ Tracks what works, what's left to build, current status, known issues, and the e
 ## What Works
 
 - **This project is a robust, reusable FreeCell game engine library crate (not a full game app).**
+- `game_state` is now modularized into submodules (`mod.rs`, `error.rs`, `validation.rs`, `moves.rs`, `execution.rs`), with private helpers for validation, unified error handling, and comprehensive documentation.
 - All core FreeCell movement and placement rules are implemented in Rust, fully tested with TDD:
   - Tableau stacking (alternating color, descending rank)
   - Foundation stacking (same suit, ascending rank)

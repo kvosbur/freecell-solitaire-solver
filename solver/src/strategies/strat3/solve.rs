@@ -1,4 +1,4 @@
-use freecell_game_engine::game_state::Move;
+use freecell_game_engine::action::Action;
 use freecell_game_engine::GameState;
 use std::collections::HashSet;
 use std::time::Instant;
@@ -12,7 +12,7 @@ struct Counter {
 /// Attempts to solve the given FreeCell game state using recursive DFS.
 fn dfs(
     game: &mut GameState,
-    path: &mut Vec<Move>,
+    path: &mut Vec<Action>,
     counter: &mut Counter,
     visited: &mut HashSet<GameState>,
 ) -> bool {

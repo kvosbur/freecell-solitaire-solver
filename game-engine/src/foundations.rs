@@ -5,7 +5,7 @@
 use crate::card::Card;
 use crate::rules;
 
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Foundations {
     piles: [Vec<Card>; 4],
 }
@@ -15,6 +15,25 @@ impl Foundations {
     pub fn get_top_card(&self, pile: usize) -> Option<&Card> {
         self.piles[pile].last()
     }
+}
+
+use std::fmt;
+
+impl fmt::Debug for Foundations {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_struct = f.debug_struct("Foundations");
+        for pile in 0..self.pile_count() {
+            let pile_name = format!("pile_{}", pile);
+            match self.get_top_card(pile) {
+                Some(card) => debug_struct.field(&pile_name, &format!("top: {:?}", card)),
+                None => debug_struct.field(&pile_name, &"[empty]"),
+            };
+        }
+        debug_struct.finish()
+    }
+}
+
+impl Foundations {
     pub fn new() -> Self {
         Self {
             piles: Default::default(),
