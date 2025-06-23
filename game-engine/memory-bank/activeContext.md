@@ -11,14 +11,18 @@ Tracks the current work focus, recent changes, next steps, active decisions and 
 - All core logic, move validation/execution, and state inspection APIs are implemented and tested.
 - The engine is designed for integration with UIs, solvers, and other applications, with no direct user interface or I/O.
 - Focus is on providing a clean, well-documented API and preparing for downstream integration.
-- **Recent focus:** Modularizing `game_state` into submodules, improving error handling, and enhancing documentation.
+- **Recent focus:** Interface consistency refactor for `FreeCells`, `Foundations`, and `Tableau` to standardize method signatures and error handling across all core components.
 
 ## Recent Changes
 
+- Refactored `FreeCells`, `Foundations`, and `Tableau` to use consistent method signatures for `place_card`, `remove_card`, and `get_card`, each with their own domain-specific error types.
+- Updated helper methods for counting and emptiness checks to be consistent across all three components.
+- Updated move execution and undo logic in `game_state/execution.rs` to use the new interfaces.
+- Updated tests to match the new signatures and error handling.
 - Completed modularization: `card`, `rules`, `tableau`, `freecells`, `foundations`, `game_state` modules.
 - `game_state` split into: `mod.rs`, `error.rs`, `validation.rs`, `moves.rs`, `execution.rs`.
 - `is_move_valid` now delegates to private helper methods for each move type.
-- Unified error handling with a single `GameError` type and `Display` implementation.
+- Unified error handling with a single `GameError` type and `Display` implementation for game state errors.
 - Implemented `Default` for `GameState`.
 - Added comprehensive documentation to all modules and methods.
 - Move validation and execution logic is complete.
@@ -28,6 +32,7 @@ Tracks the current work focus, recent changes, next steps, active decisions and 
 
 ## Next Steps
 
+- Propagate interface consistency to all consumers (e.g., solver, UI) and update documentation.
 - Add deck creation and shuffling logic.
 - Implement the standard FreeCell deal algorithm (Microsoft-compatible).
 - Add seed-based reproducible deals for testing/solvers.
@@ -41,6 +46,7 @@ Tracks the current work focus, recent changes, next steps, active decisions and 
 - Emphasis on modular, idiomatic Rust code and clear documentation.
 - TDD is the primary development workflow.
 - Minimize dependencies unless they provide clear learning or usability benefits.
+- **Interface Consistency**: All core components now follow a standardized interface pattern for core operations, with domain-specific error types for clarity and maintainability.
 
 ## Important Patterns & Preferences
 
@@ -55,3 +61,4 @@ Tracks the current work focus, recent changes, next steps, active decisions and 
 - Defining architecture and patterns early helps guide future development and learning.
 - TDD ensures correctness and confidence in rule logic.
 - Rust's ecosystem (Cargo, clippy, rustfmt) supports maintainable and high-quality code.
+- **Interface consistency across components greatly improves maintainability and integration.**

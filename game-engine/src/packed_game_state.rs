@@ -20,23 +20,23 @@ impl PackedGameState {
         let mut tableau_cards = [0u8; 52];
         let mut tableau_lens = [0u8; 8];
         let mut idx = 0;
-        for col in 0..gs.tableau.column_count() {
-            let len = gs.tableau.column_length(col);
+        for col in 0..gs.tableau().column_count() {
+            let len = gs.tableau().column_length(col);
             tableau_lens[col] = len as u8;
             for i in 0..len {
-                if let Some(card) = gs.tableau.get_card_at(col, i) {
+                if let Some(card) = gs.tableau().get_card_at(col, i) {
                     tableau_cards[idx] = pack_card(card);
                     idx += 1;
                 }
             }
         }
         let mut freecells = [0u8; 4];
-        for i in 0..gs.freecells.cell_count() {
-            freecells[i] = gs.freecells.get_card(i).map_or(0, |c| pack_card(c));
+        for i in 0..gs.freecells().cell_count() {
+            freecells[i] = gs.freecells().get_card(i).map_or(0, |c| pack_card(c));
         }
         let mut foundations = [0u8; 4];
-        for i in 0..gs.foundations.pile_count() {
-            foundations[i] = gs.foundations.get_top_card(i).map_or(0, |c| c.rank as u8);
+        for i in 0..gs.foundations().pile_count() {
+            foundations[i] = gs.foundations().get_card(i).map_or(0, |c| c.rank as u8);
         }
         PackedGameState {
             tableau_cards,

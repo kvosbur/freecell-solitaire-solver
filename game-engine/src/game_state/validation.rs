@@ -2,6 +2,7 @@
 
 use super::{GameState, GameError};
 use crate::action::Action;
+use crate::rules::Rules;
 
 impl GameState {
     /// Validates a move without executing it.
@@ -31,13 +32,13 @@ impl GameState {
     fn validate_tableau_to_foundation(&self, from_column: usize, to_pile: usize) -> Result<(), GameError> {
         let card = self
             .tableau
-            .get_top_card(from_column)
+            .get_card(from_column)
             .ok_or(GameError::NoCardInTableauColumn)?;
-        let foundation_top = self.foundations.get_top_card(to_pile);
-        if crate::rules::can_move_to_foundation(card, foundation_top) {
+        let foundation_top = self.foundations.get_card(to_pile);
+        if Rules::can_move_to_foundation(card, foundation_top) {
             Ok(())
         } else {
-            Err(GameError::CannotMoveToFoundation)
+            Err(GameError::InvalidMove("Cannot move card to foundation".to_string()))
         }
     }
 
@@ -46,11 +47,14 @@ impl GameState {
     fn validate_tableau_to_freecell(&self, from_column: usize, to_cell: usize) -> Result<(), GameError> {
         let card = self
             .tableau
-            .get_top_card(from_column)
+            .get_card(from_column)
             .ok_or(GameError::NoCardInTableauColumn)?;
         let cell = self.freecells.get_card(to_cell);
-        crate::rules::can_move_to_freecell(card, cell)
-            .map_err(|_| GameError::CannotMoveToFreecell)
+        // Assume place_card will be called elsewhere; here just check if cell is empty
+        if cell.is_some() {
+            return Err(GameError::InvalidMove("Freecell is already occupied".to_string()));
+        }
+        Ok(())
     }
 
     /// Validates a Freecell-to-Tableau move.
@@ -59,10 +63,10 @@ impl GameState {
         let card = self
             .freecells
             .get_card(from_cell)
-            .ok_or(GameError::NoCardInFreecell)?;
-        let tableau_top = self.tableau.get_top_card(to_column);
+            .ok_or(GameError::InvalidMove("No card in freecell".to_string()))?;
+        let tableau_top = self.tableau.get_card(to_column);
         if let Some(top) = tableau_top {
-            if crate::rules::can_stack_on_tableau(card, top) {
+            if Rules::can_stack_on_tableau(card, Some(top)) {
                 Ok(())
             } else {
                 Err(GameError::CannotStackOnTableau)
@@ -78,12 +82,12 @@ impl GameState {
         let card = self
             .freecells
             .get_card(from_cell)
-            .ok_or(GameError::NoCardInFreecell)?;
-        let foundation_top = self.foundations.get_top_card(to_pile);
-        if crate::rules::can_move_to_foundation(card, foundation_top) {
+            .ok_or(GameError::InvalidMove("No card in freecell".to_string()))?;
+        let foundation_top = self.foundations.get_card(to_pile);
+        if Rules::can_move_to_foundation(card, foundation_top) {
             Ok(())
         } else {
-            Err(GameError::CannotMoveToFoundation)
+            Err(GameError::InvalidMove("Cannot move card to foundation".to_string()))
         }
     }
 
@@ -96,11 +100,11 @@ impl GameState {
         }
         let card = self
             .tableau
-            .get_top_card(from_column)
+            .get_card(from_column)
             .ok_or(GameError::NoCardInTableauColumn)?;
-        let dest_top = self.tableau.get_top_card(to_column);
+        let dest_top = self.tableau.get_card(to_column);
         if let Some(top) = dest_top {
-            if crate::rules::can_stack_on_tableau(card, top) {
+            if Rules::can_stack_on_tableau(card, Some(top)) {
                 Ok(())
             } else {
                 Err(GameError::CannotStackOnTableau)

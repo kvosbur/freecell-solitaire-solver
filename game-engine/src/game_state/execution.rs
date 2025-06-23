@@ -34,12 +34,13 @@ impl GameState {
     ) -> Result<(), GameError> {
         let card = self
             .tableau
-            .get_top_card(from_column)
+            .get_card(from_column)
             .ok_or(GameError::EmptySource)?
             .clone();
         self.is_move_valid(m)?;
-        self.tableau.remove_card_from_column(from_column);
-        self.foundations.add_card(to_pile, card);
+        let removed = self.tableau.remove_card(from_column)?;
+        let removed_card = removed.ok_or(GameError::EmptySource)?;
+        self.foundations.place_card(to_pile, removed_card)?;
         Ok(())
     }
 
@@ -51,12 +52,13 @@ impl GameState {
     ) -> Result<(), GameError> {
         let card = self
             .tableau
-            .get_top_card(from_column)
+            .get_card(from_column)
             .ok_or(GameError::EmptySource)?
             .clone();
         self.is_move_valid(m)?;
-        self.tableau.remove_card_from_column(from_column);
-        self.freecells.add_card(to_cell, card);
+        let removed = self.tableau.remove_card(from_column)?;
+        let removed_card = removed.ok_or(GameError::EmptySource)?;
+        self.freecells.place_card(to_cell, removed_card)?;
         Ok(())
     }
 
@@ -72,8 +74,9 @@ impl GameState {
             .ok_or(GameError::EmptySource)?
             .clone();
         self.is_move_valid(m)?;
-        self.freecells.remove_card(from_cell);
-        self.tableau.add_card_to_column(to_column, card);
+        let removed = self.freecells.remove_card(from_cell)?;
+        let removed_card = removed.ok_or(GameError::EmptySource)?;
+        self.tableau.place_card(to_column, removed_card)?;
         Ok(())
     }
 
@@ -89,8 +92,9 @@ impl GameState {
             .ok_or(GameError::EmptySource)?
             .clone();
         self.is_move_valid(m)?;
-        self.freecells.remove_card(from_cell);
-        self.foundations.add_card(to_pile, card);
+        let removed = self.freecells.remove_card(from_cell)?;
+        let removed_card = removed.ok_or(GameError::EmptySource)?;
+        self.foundations.place_card(to_pile, removed_card)?;
         Ok(())
     }
 
@@ -108,12 +112,13 @@ impl GameState {
         }
         let card = self
             .tableau
-            .get_top_card(from_column)
+            .get_card(from_column)
             .ok_or(GameError::EmptySource)?
             .clone();
         self.is_move_valid(m)?;
-        self.tableau.remove_card_from_column(from_column);
-        self.tableau.add_card_to_column(to_column, card);
+        let removed = self.tableau.remove_card(from_column)?;
+        let removed_card = removed.ok_or(GameError::EmptySource)?;
+        self.tableau.place_card(to_column, removed_card)?;
         Ok(())
     }
 
@@ -125,38 +130,30 @@ impl GameState {
                 from_column,
                 to_pile,
             } => {
-                let card = self
-                    .foundations
-                    .remove_top_card(*to_pile)
-                    .expect("Undo: foundation not empty");
-                self.tableau.initial_addition_of_card(*from_column, card);
+                let removed = self.foundations.remove_card(*to_pile).expect("Undo: foundation error");
+                let card = removed.expect("Undo: foundation not empty");
+                self.tableau.place_card(*from_column, card).expect("Undo: tableau error");
             }
             TableauToFreecell {
                 from_column,
                 to_cell,
             } => {
-                let card = self
-                    .freecells
-                    .remove_card(*to_cell)
-                    .expect("Undo: freecell not empty");
-                self.tableau.initial_addition_of_card(*from_column, card);
+                let removed = self.freecells.remove_card(*to_cell).expect("Undo: freecell error");
+                let card = removed.expect("Undo: freecell not empty");
+                self.tableau.place_card(*from_column, card).expect("Undo: tableau error");
             }
             FreecellToTableau {
                 from_cell,
                 to_column,
             } => {
-                let card = self
-                    .tableau
-                    .remove_top_card(*to_column)
-                    .expect("Undo: tableau not empty");
-                self.freecells.add_card(*from_cell, card);
+                let removed = self.tableau.remove_card(*to_column).expect("Undo: tableau error");
+                let card = removed.expect("Undo: tableau not empty");
+                self.freecells.place_card(*from_cell, card).expect("Undo: freecell error");
             }
             FreecellToFoundation { from_cell, to_pile } => {
-                let card = self
-                    .foundations
-                    .remove_top_card(*to_pile)
-                    .expect("Undo: foundation not empty");
-                self.freecells.add_card(*from_cell, card);
+                let removed = self.foundations.remove_card(*to_pile).expect("Undo: foundation error");
+                let card = removed.expect("Undo: foundation not empty");
+                self.freecells.place_card(*from_cell, card).expect("Undo: freecell error");
             }
             TableauToTableau {
                 from_column,
@@ -164,11 +161,9 @@ impl GameState {
                 card_count,
             } => {
                 assert_eq!(*card_count, 1, "Undo only supports single card moves");
-                let card = self
-                    .tableau
-                    .remove_top_card(*to_column)
-                    .expect("Undo: tableau not empty");
-                self.tableau.initial_addition_of_card(*from_column, card);
+                let removed = self.tableau.remove_card(*to_column).expect("Undo: tableau error");
+                let card = removed.expect("Undo: tableau not empty");
+                self.tableau.place_card(*from_column, card).expect("Undo: tableau error");
             }
         }
     }

@@ -20,9 +20,9 @@ impl GameState {
         let mut moves = Vec::new();
 
         for from_col in 0..self.tableau.column_count() {
-            if let Some(card) = self.tableau.get_top_card(from_col) {
+            if let Some(card) = self.tableau.get_card(from_col) {
                 for to_pile in 0..self.foundations.pile_count() {
-                    let foundation_top = self.foundations.get_top_card(to_pile);
+                    let foundation_top = self.foundations.get_card(to_pile);
                     
                     // Pass card by reference
                     if Rules::can_move_to_foundation(&card, foundation_top) {
@@ -47,7 +47,7 @@ impl GameState {
             if let Some(card) = self.freecells.get_card(from_cell) {
                 // Check all foundation piles
                 for to_pile in 0..self.foundations.pile_count() {
-                    let foundation_top = self.foundations.get_top_card(to_pile);
+                    let foundation_top = self.foundations.get_card(to_pile);
                     
                     // Change this line to use the Rules struct
                     if Rules::can_move_to_foundation(card, foundation_top) {
@@ -69,7 +69,7 @@ impl GameState {
         for from_cell in 0..self.freecells.cell_count() {
             if let Some(card) = self.freecells.get_card(from_cell) {
                 for to_col in 0..self.tableau.column_count() {
-                    let tableau_top = self.tableau.get_top_card(to_col);
+                    let tableau_top = self.tableau.get_card(to_col);
                     
                     if Rules::can_stack_on_tableau(card, tableau_top) {
                         moves.push(Action::FreecellToTableau {
@@ -88,13 +88,13 @@ impl GameState {
         let mut moves = Vec::new();
         
         for from_col in 0..self.tableau.column_count() {
-            if let Some(card) = self.tableau.get_top_card(from_col) {
+            if let Some(card) = self.tableau.get_card(from_col) {
                 for to_col in 0..self.tableau.column_count() {
                     if from_col == to_col {
                         continue;
                     }
                     
-                    let tableau_top = self.tableau.get_top_card(to_col);
+                    let tableau_top = self.tableau.get_card(to_col);
                     
                     if Rules::can_stack_on_tableau(card, tableau_top) {
                         moves.push(Action::TableauToTableau {
@@ -114,7 +114,7 @@ impl GameState {
         let mut moves = Vec::new();
         
         for from_col in 0..self.tableau.column_count() {
-            if let Some(card) = self.tableau.get_top_card(from_col) {
+            if let Some(card) = self.tableau.get_card(from_col) {
                 for to_cell in 0..self.freecells.cell_count() {
                     let freecell_content = self.freecells.get_card(to_cell);
                     

@@ -9,8 +9,10 @@ name = "solver"
 path = "src/main.rs"
 
 [dependencies]
+clap = { version = "4.5.40", features = ["derive"] }
 freecell-game-engine = { path = "../game-engine" }
 lru = "0.12"
+thiserror = "2.0.12"
 
 [profile.release]
 debug = "line-tables-only"

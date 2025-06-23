@@ -26,6 +26,7 @@ use crate::freecells::FreeCells;
 use crate::foundations::Foundations;
 
 /// Represents the complete state of a FreeCell game
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct GameState {
     tableau: Tableau,
     freecells: FreeCells,
@@ -34,11 +35,11 @@ pub struct GameState {
 
 impl GameState {
     /// Create a new game state with default components
-    pub fn new(tableau_columns: usize, freecell_count: usize, foundation_piles: usize) -> Self {
+    pub fn new() -> Self {
         Self {
-            tableau: Tableau::new(tableau_columns),
-            freecells: FreeCells::new(freecell_count),
-            foundations: Foundations::new(foundation_piles),
+            tableau: Tableau::new(),
+            freecells: FreeCells::new(),
+            foundations: Foundations::new(),
         }
     }
     
@@ -52,17 +53,9 @@ impl GameState {
     pub fn freecells_mut(&mut self) -> &mut FreeCells { &mut self.freecells }
     pub fn foundations_mut(&mut self) -> &mut Foundations { &mut self.foundations }
     
-    // All the move generation methods will use the Rules struct
-    // (already defined in your optimized moves.rs)
-    
-    /// Apply a move to change the game state
-    pub fn apply_move(&mut self, action: Action) -> Result<(), GameError> {
-        // Implementation uses component methods to manipulate state
-    }
-    
     /// Check if the game is won
     pub fn is_won(&self) -> bool {
-        self.foundations.is_complete(13) // 13 cards per suit in a standard deck
+        self.foundations.is_complete()
     }
 }
 
