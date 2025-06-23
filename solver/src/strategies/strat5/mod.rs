@@ -27,7 +27,7 @@ impl SolverStrategy for Strat5 {
     }
     
     fn description(&self) -> &'static str {
-        "DFS with LRU cache for visited states (250M entries)"
+        "strat4 except set a cap on cache size so that ram isn't overrun. Allowed program to run for a long time, but still didn't get any further."
     }
     
     fn solve(&self, game_state: GameState, cancel_flag: Arc<AtomicBool>) -> SolverResult {

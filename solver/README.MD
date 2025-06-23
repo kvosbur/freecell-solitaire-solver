@@ -7,7 +7,7 @@ This application finds solutions to FreeCell solitaire games using the shared ga
 From the workspace root, build the solver:
 
 ```sh
-cargo build --package solver --release
+cargo build --package freecell-solver --release
 ```
 
 ## Running
@@ -17,14 +17,14 @@ You can run the solver with various strategies and modes using the CLI:
 ### List Available Strategies
 
 ```sh
-cargo run --package solver -- --list-strategies
+cargo run --package freecell-solver --bin solver -- --list-strategies
 ```
 
 ### Run with a Specific Strategy
 
 ```sh
-cargo run --package solver -- --strategy strat1
-cargo run --package solver -- --strategy strat5
+cargo run --package freecell-solver --bin solver -- --strategy strat1
+cargo run --package freecell-solver --bin solver -- --strategy strat5
 ```
 
 ### Run Benchmark Mode
@@ -32,7 +32,7 @@ cargo run --package solver -- --strategy strat5
 Benchmark mode tests how many moves can be undone and still be solved:
 
 ```sh
-cargo run --package solver -- --strategy strat5 --benchmark
+cargo run --package freecell-solver --bin solver -- --strategy strat5 --benchmark
 ```
 
 ### Run Adhoc Mode (default)
@@ -40,7 +40,7 @@ cargo run --package solver -- --strategy strat5 --benchmark
 Adhoc mode tests a single scenario (currently 40 moves undone):
 
 ```sh
-cargo run --package solver -- --strategy strat2
+cargo run --package freecell-solver --bin solver -- --strategy strat2
 ```
 
 ### Set a Timeout
@@ -48,7 +48,7 @@ cargo run --package solver -- --strategy strat2
 You can set a timeout (in seconds) for the solver:
 
 ```sh
-cargo run --package solver -- --strategy strat5 --timeout 600
+cargo run --package freecell-solver --bin solver -- --strategy strat5 --timeout 600
 ```
 
 ## Command Line Options
@@ -62,7 +62,7 @@ cargo run --package solver -- --strategy strat5 --timeout 600
 ## Example Output
 
 ```
-cargo run --package solver -- --strategy strat5 --benchmark
+cargo run --package freecell-solver --bin solver -- --strategy strat5 --benchmark
 Using strategy: strat5
 Trying to undue 32 moves from solution of length 52
 Succeeded with 32 moves undone

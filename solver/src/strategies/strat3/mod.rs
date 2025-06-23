@@ -23,7 +23,7 @@ impl SolverStrategy for Strat3 {
     }
     
     fn description(&self) -> &'static str {
-        "Strategy 3"
+        "strat2 + minimizes clones by using single game state and undoing after recursive call Limit hit not in execution time, but memory. It used up 40 gb which is the limit I have set for it and then it just went down to a standstill going no where."
     }
     
     fn solve(&self, game_state: GameState, cancel_flag: Arc<AtomicBool>) -> SolverResult {

@@ -23,7 +23,7 @@ impl SolverStrategy for Strat2 {
     }
     
     fn description(&self) -> &'static str {
-        "Strategy 2"
+        "Add naive previous state caching. Still need too long of path check otherwise call stack is exceeded."
     }
     
     fn solve(&self, game_state: GameState, cancel_flag: Arc<AtomicBool>) -> SolverResult {

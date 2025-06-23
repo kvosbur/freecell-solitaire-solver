@@ -23,7 +23,7 @@ impl SolverStrategy for Strat1 {
     }
     
     fn description(&self) -> &'static str {
-        "Basic DFS with depth limiting and cycle detection"
+        "Most basic dfs with nothing extra done besides killing trees that get too long based on exact length check."
     }
     
     fn solve(&self, game_state: GameState, cancel_flag: Arc<AtomicBool>) -> SolverResult {

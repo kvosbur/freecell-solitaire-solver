@@ -23,7 +23,7 @@ impl SolverStrategy for Strat4 {
     }
     
     fn description(&self) -> &'static str {
-        "Strategy 4"
+        "strat3 + reduce state in hash set by packing state before saving. Still hit limit of ram at a higher move count."
     }
     
     fn solve(&self, game_state: GameState, cancel_flag: Arc<AtomicBool>) -> SolverResult {
