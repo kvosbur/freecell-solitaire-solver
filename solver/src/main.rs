@@ -7,8 +7,9 @@ mod strategies;
 
 use freecell_game_engine::generation::GameGenerator;
 use strategies::StrategyRegistry;
-use std::sync::{Arc, atomic::AtomicBool};
+use std::sync::Arc;
 use clap::{Arg, Command};
+mod harness;
 
 fn do_benchmark(strategy_name: &str, timeout_secs: u64) {
     let seed = 1;
@@ -32,9 +33,7 @@ fn do_benchmark(strategy_name: &str, timeout_secs: u64) {
         for m in &subset_moves_to_apply {
             game_state.execute_move(m).unwrap();
         }
-        let cancel_flag = Arc::new(AtomicBool::new(false));
-        // Timeout not implemented here, but could be added
-        let result = strategy.solve(game_state.clone(), cancel_flag);
+        let result = harness::harness(strategy.clone(), game_state.clone(), timeout_secs);
         if result.solved {
             println!("Succeeded with {} moves undone", move_count_to_undue);
             move_count_to_undue += 1;
@@ -66,9 +65,7 @@ fn do_adhoc(strategy_name: &str, timeout_secs: u64) {
     let registry = StrategyRegistry::auto_discover();
     let strategy = registry.get_strategy(strategy_name)
         .unwrap_or_else(|_| panic!("Strategy '{}' not found", strategy_name));
-    let cancel_flag = Arc::new(AtomicBool::new(false));
-    // Timeout not implemented here, but could be added
-    let result = strategy.solve(game_state.clone(), cancel_flag);
+    let result = harness::harness(strategy, game_state.clone(), timeout_secs);
     if result.solved {
         println!(
             "Successfully solved the game with {} moves undone",
