@@ -3,45 +3,98 @@
 //! FreeCells are the 4 temporary storage slots where single cards can be placed.
 
 use crate::card::Card;
-use crate::rules;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
+/// Represents the free cells where individual cards can be stored
 pub struct FreeCells {
-    cells: [Option<Card>; 4],
+    cells: Vec<Option<Card>>,
 }
 
 impl FreeCells {
+    /// Create a new freecells with the specified number of cells
     pub fn new() -> Self {
-        Self {
-            cells: [None, None, None, None],
-        }
+        Self { cells: vec![None; 4] }
     }
-
+    
+    /// Place a card in a freecell
+    pub fn place_card(&mut self, cell_index: usize, card: Card) -> Result<(), FreeCellError> {
+        if cell_index >= self.cells.len() {
+            return Err(FreeCellError::InvalidCell);
+        }
+        
+        if self.cells[cell_index].is_some() {
+            return Err(FreeCellError::CellOccupied);
+        }
+        
+        self.cells[cell_index] = Some(card);
+        Ok(())
+    }
+    
+    /// Remove and return a card from a freecell
+    pub fn remove_card(&mut self, cell_index: usize) -> Result<Option<Card>, FreeCellError> {
+        if cell_index >= self.cells.len() {
+            return Err(FreeCellError::InvalidCell);
+        }
+        Ok(self.cells[cell_index].take())
+    }
+    
+    /// Get a reference to a card in a freecell without removing it
+    pub fn get_card(&self, cell_index: usize) -> Option<&Card> {
+        if cell_index >= self.cells.len() {
+            return None;
+        }
+        self.cells[cell_index].as_ref()
+    }
+    
+    /// Get the number of freecells
     pub fn cell_count(&self) -> usize {
         self.cells.len()
     }
-
-    pub fn is_cell_empty(&self, index: usize) -> bool {
-        self.cells[index].is_none()
+    
+    /// Count the number of empty cells
+    pub fn empty_cells_count(&self) -> usize {
+        self.cells.iter().filter(|c| c.is_none()).count()
     }
-
-    pub fn empty_cell_count(&self) -> usize {
-        self.cells.iter().filter(|cell| cell.is_none()).count()
+    
+    /// Check if a cell is empty
+    pub fn is_cell_empty(&self, cell_index: usize) -> bool {
+        cell_index < self.cells.len() && self.cells[cell_index].is_none()
     }
+}
 
-    pub fn add_card(&mut self, index: usize, card: Card) {
-        if let Err(msg) = rules::can_move_to_freecell(&card, self.cells[index].as_ref()) {
-            panic!("{}", msg);
+#[derive(Debug, Clone, PartialEq, Eq)]
+/// Error type for freecell operations
+pub enum FreeCellError {
+    /// Attempted to access an invalid cell index
+    InvalidCell,
+    /// Attempted to place a card in an occupied cell
+    CellOccupied,
+}
+
+impl std::fmt::Display for FreeCellError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FreeCellError::InvalidCell => write!(f, "Invalid freecell index"),
+            FreeCellError::CellOccupied => write!(f, "Freecell is already occupied"),
         }
-        self.cells[index] = Some(card);
     }
+}
 
-    pub fn get_card(&self, index: usize) -> Option<&Card> {
-        self.cells[index].as_ref()
-    }
+impl std::error::Error for FreeCellError {}
 
-    pub fn remove_card(&mut self, index: usize) -> Option<Card> {
-        self.cells[index].take()
+use std::fmt;
+
+impl fmt::Debug for FreeCells {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_struct = f.debug_struct("FreeCells");
+        for cell in 0..self.cell_count() {
+            let cell_name = format!("cell_{}", cell);
+            match self.get_card(cell) {
+                Some(card) => debug_struct.field(&cell_name, &format!("{:?}", card)),
+                None => debug_struct.field(&cell_name, &"[empty]"),
+            };
+        }
+        debug_struct.finish()
     }
 }
 
@@ -58,7 +111,7 @@ mod tests {
         let freecells = FreeCells::new();
         assert_eq!(freecells.cell_count(), 4, "FreeCells should have 4 cells");
         assert_eq!(
-            freecells.empty_cell_count(),
+            freecells.empty_cells_count(),
             4,
             "All cells should be empty initially"
         );
@@ -78,9 +131,9 @@ mod tests {
             rank: Rank::Seven,
             suit: Suit::Hearts,
         };
-        freecells.add_card(0, card.clone());
+        freecells.place_card(0, card.clone()).unwrap();
         assert!(!freecells.is_cell_empty(0));
-        assert_eq!(freecells.empty_cell_count(), 3);
+        assert_eq!(freecells.empty_cells_count(), 3);
         assert_eq!(freecells.get_card(0), Some(&card));
     }
 
@@ -91,24 +144,23 @@ mod tests {
             rank: Rank::Seven,
             suit: Suit::Hearts,
         };
-        freecells.add_card(0, card.clone());
-        let removed_card = freecells.remove_card(0);
+        freecells.place_card(0, card.clone()).unwrap();
+        let removed_card = freecells.remove_card(0).unwrap();
         assert_eq!(removed_card, Some(card));
         assert!(freecells.is_cell_empty(0));
-        assert_eq!(freecells.empty_cell_count(), 4);
+        assert_eq!(freecells.empty_cells_count(), 4);
     }
 
     #[test]
     fn removing_from_empty_freecell_returns_none() {
         let mut freecells = FreeCells::new();
-        let removed = freecells.remove_card(0);
+        let removed = freecells.remove_card(0).unwrap();
         assert_eq!(removed, None);
         assert!(freecells.is_cell_empty(0));
-        assert_eq!(freecells.empty_cell_count(), 4);
+        assert_eq!(freecells.empty_cells_count(), 4);
     }
 
     #[test]
-    #[should_panic(expected = "Cell is already occupied")]
     fn adding_card_to_occupied_freecell_panics() {
         let mut freecells = FreeCells::new();
         let card1 = Card {
@@ -119,35 +171,29 @@ mod tests {
             rank: Rank::Six,
             suit: Suit::Spades,
         };
-        freecells.add_card(0, card1);
-        freecells.add_card(0, card2); // Should panic
+        freecells.place_card(0, card1).unwrap();
+        let result = freecells.place_card(0, card2);
+        assert!(matches!(result, Err(FreeCellError::CellOccupied)));
     }
 
     #[test]
-    fn freecell_index_out_of_bounds_panics() {
-        // Each closure must own its own FreeCells to be UnwindSafe
-        let result = std::panic::catch_unwind(|| {
-            let mut freecells = FreeCells::new();
-            freecells.add_card(
-                4,
-                Card {
-                    rank: Rank::Two,
-                    suit: Suit::Clubs,
-                },
-            );
-        });
-        assert!(result.is_err());
+    fn freecell_index_out_of_bounds_errors() {
+        let mut freecells = FreeCells::new();
+        let result = freecells.place_card(
+            4,
+            Card {
+                rank: Rank::Two,
+                suit: Suit::Clubs,
+            },
+        );
+        assert!(matches!(result, Err(FreeCellError::InvalidCell)));
 
-        let result = std::panic::catch_unwind(|| {
-            let mut freecells = FreeCells::new();
-            freecells.remove_card(4);
-        });
-        assert!(result.is_err());
+        let mut freecells = FreeCells::new();
+        let result = freecells.remove_card(4);
+        assert!(matches!(result, Err(FreeCellError::InvalidCell)));
 
-        let result = std::panic::catch_unwind(|| {
-            let freecells = FreeCells::new();
-            freecells.get_card(4);
-        });
-        assert!(result.is_err());
+        let freecells = FreeCells::new();
+        let card = freecells.get_card(4);
+        assert_eq!(card, None);
     }
 }

@@ -240,7 +240,7 @@ impl GameGenerator {
             },
         ];
 
-        let mut current_column_for_insert: usize = 0;
+        let mut column: usize = 0;
         let max_columns: usize = 8;
 
         while cards.len() > 0 {
@@ -255,11 +255,9 @@ impl GameGenerator {
 
             let next_card = cards.pop().unwrap();
 
-            self.game_state
-                .tableau
-                .initial_addition_of_card(current_column_for_insert, next_card.clone());
+            self.game_state.tableau_mut().place_card(column, next_card.clone());
 
-            current_column_for_insert = (current_column_for_insert + 1) % max_columns
+            column = (column + 1) % max_columns
         }
     }
 }
@@ -516,7 +514,7 @@ mod tests {
         // Check that each column has the expected cards
         for (col_idx, expected_column) in expected_layout.iter().enumerate() {
             assert_eq!(
-                game.tableau.column_length(col_idx),
+                game.tableau().column_length(col_idx),
                 expected_column.len(),
                 "Column {} has wrong number of cards",
                 col_idx
@@ -524,7 +522,7 @@ mod tests {
 
             for (card_idx, expected_card) in expected_column.iter().enumerate() {
                 assert_eq!(
-                    game.tableau.get_card_at(col_idx, card_idx).unwrap(),
+                    game.tableau().get_card_at(col_idx, card_idx).unwrap(),
                     expected_card,
                     "Mismatch at column {}, card {}",
                     col_idx,
@@ -615,7 +613,7 @@ mod tests {
 
             // Test just the first column
             assert_eq!(
-                game.tableau.column_length(0),
+                game.tableau().column_length(0),
                 expected_column.len(),
                 "Game #{} column 0 has wrong number of cards",
                 seed
@@ -623,7 +621,7 @@ mod tests {
 
             for (card_idx, expected_card) in expected_column.iter().enumerate() {
                 assert_eq!(
-                    game.tableau.get_card_at(0, card_idx).unwrap(),
+                    game.tableau().get_card_at(0, card_idx).unwrap(),
                     expected_card,
                     "Game #{} mismatch at column 0, card {}",
                     seed,

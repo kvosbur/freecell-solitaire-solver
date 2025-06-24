@@ -54,6 +54,20 @@ pub enum Suit {
     Clubs,
 }
 
+impl TryFrom<u8> for Suit {
+    type Error = ();
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Suit::Spades),
+            1 => Ok(Suit::Hearts),
+            2 => Ok(Suit::Diamonds),
+            3 => Ok(Suit::Clubs),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Color {
     Red,
@@ -61,11 +75,27 @@ pub enum Color {
 }
 
 impl Card {
+    /// Create a new card with the given rank and suit
+    pub fn new(rank: Rank, suit: Suit) -> Self {
+        Self { rank, suit }
+    }
+    
+    /// Get the color of the card (Red or Black)
     pub fn color(&self) -> Color {
         match self.suit {
             Suit::Hearts | Suit::Diamonds => Color::Red,
-            Suit::Spades | Suit::Clubs => Color::Black,
+            Suit::Clubs | Suit::Spades => Color::Black,
         }
+    }
+    
+    /// Get the card's rank
+    pub fn rank(&self) -> u8 {
+        self.rank as u8
+    }
+    
+    /// Get the card's suit
+    pub fn suit(&self) -> Suit {
+        self.suit
     }
 }
 

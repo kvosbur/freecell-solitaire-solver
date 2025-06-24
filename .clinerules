@@ -13,7 +13,6 @@ This is a **monorepo** with multiple components. Memory banks are organized in a
 - `progress.md` - Workspace-wide status and milestones
 
 ### Tier 2: Component Memory Banks
-- `/game/memory-bank/` - Game application context
 - `/game-engine/memory-bank/` - Shared library context
 - `/solver/memory-bank/` - Solver application context (when created)
 

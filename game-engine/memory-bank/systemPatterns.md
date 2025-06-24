@@ -10,6 +10,22 @@ The game engine follows a strict library-only architecture:
 - **API-First**: All functionality exposed through well-defined public interfaces
 
 ### Modular Component Structure
+
+The `game_state` module is split into focused submodules for maintainability and clarity:
+
+```
+game_state/
+  ├── mod.rs         // Main struct, core methods, docs, Default
+  ├── error.rs       // GameError type, Display impl
+  ├── validation.rs  // is_move_valid and private helpers per move type
+  ├── moves.rs       // Move generation logic
+  └── execution.rs   // Move execution and undo logic
+```
+
+- `is_move_valid` delegates to private helper methods for each move type, improving readability and testability.
+- All error handling is unified under a single `GameError` type with a `Display` implementation.
+- Comprehensive documentation is provided at the module, struct, and method level.
+
 ```rust
 pub struct GameState {
     pub tableau: Tableau,      // 8 columns of cards
@@ -146,7 +162,49 @@ impl GameState {
 - **FreeCells**: Manages temporary storage with occupancy rules
 - **Foundations**: Manages completion piles with suit/rank rules
 
-## Testing Patterns
+---
+
+## Interface Consistency Pattern (2025-06)
+
+### Motivation
+To improve maintainability, predictability, and integration, the interfaces for `FreeCells`, `Foundations`, and `Tableau` were standardized. This ensures all core components expose a consistent set of methods for card placement, removal, and inspection.
+
+### Standardized Method Signatures
+
+All three components now provide:
+
+```rust
+fn place_card(&mut self, location: usize, card: Card) -> Result<(), ErrorType>;
+fn remove_card(&mut self, location: usize) -> Result<Option<Card>, ErrorType>;
+fn get_card(&self, location: usize) -> Option<&Card>;
+```
+- `location` is `cell_index`, `pile`, or `column` as appropriate.
+- Each component retains its own domain-specific error type (`FreeCellError`, `FoundationError`, `TableauError`).
+
+#### Helper Methods (Consistent Naming)
+- `*_count()` for number of locations (cells, piles, columns)
+- `empty_*_count()` for number of empty locations
+- `is_*_empty(location)` for emptiness check
+
+### Rationale for Domain-Specific Error Types
+
+- **Type Safety & Clarity**: Each component's error enum reflects its unique rules and constraints.
+- **Debuggability**: Errors are descriptive and context-specific.
+- **Extensibility**: New error variants can be added per component as rules evolve.
+
+### Impact
+
+- **Move execution and undo logic** now use the new interfaces, handling `Result<Option<Card>, ErrorType>` for all removals.
+- **Tests** updated to match new signatures and error handling.
+- **Documentation** and memory banks updated to reflect this architectural improvement.
+
+### Benefits
+
+- Predictable, uniform API for all card containers
+- Easier integration for downstream consumers (UI, solver, automation)
+- Clear separation of concerns and error domains
+
+---
 
 ### Test-Driven Development
 ```rust
