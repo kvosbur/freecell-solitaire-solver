@@ -161,7 +161,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "CellOccupied")]
     fn adding_card_to_occupied_freecell_panics() {
         let mut freecells = FreeCells::new();
         let card1 = Card {
@@ -173,7 +172,8 @@ mod tests {
             suit: Suit::Spades,
         };
         freecells.place_card(0, card1).unwrap();
-        freecells.place_card(0, card2); // Should panic
+        let result = freecells.place_card(0, card2);
+        assert!(matches!(result, Err(FreeCellError::CellOccupied)));
     }
 
     #[test]

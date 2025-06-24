@@ -54,6 +54,20 @@ pub enum Suit {
     Clubs,
 }
 
+impl TryFrom<u8> for Suit {
+    type Error = ();
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Suit::Spades),
+            1 => Ok(Suit::Hearts),
+            2 => Ok(Suit::Diamonds),
+            3 => Ok(Suit::Clubs),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Color {
     Red,

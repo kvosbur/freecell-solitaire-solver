@@ -28,6 +28,9 @@ impl Tableau {
         if column >= self.columns.len() {
             return Err(TableauError::InvalidColumn);
         }
+        if self.columns[column].is_empty() {
+            return Err(TableauError::EmptyColumn);
+        }
         Ok(self.columns[column].pop())
     }
 
@@ -249,7 +252,8 @@ mod tests {
         assert_eq!(tableau.remove_card(0).expect("Should remove card3"), Some(card3));
         assert_eq!(tableau.remove_card(0).expect("Should remove card2"), Some(card2));
         assert_eq!(tableau.remove_card(0).expect("Should remove card1"), Some(card1));
-        assert_eq!(tableau.remove_card(0).expect("Should be empty"), None);
+        let removed = tableau.remove_card(0);
+        assert!(matches!(removed, Err(TableauError::EmptyColumn)), "Should be empty: {:?}", removed);
     }
 
     #[test]

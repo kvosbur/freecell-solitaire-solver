@@ -7,10 +7,10 @@ It exposes methods for creating, inspecting, and manipulating the game state, fo
 # Examples
 
 ```rust
-use game_engine::game_state::GameState;
+use freecell_game_engine::game_state::GameState;
 
 let mut state = GameState::default();
-assert!(!state.is_game_won());
+assert!(!state.is_won());
 ```
 */
 
@@ -26,7 +26,7 @@ use crate::freecells::FreeCells;
 use crate::foundations::Foundations;
 
 /// Represents the complete state of a FreeCell game
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GameState {
     tableau: Tableau,
     freecells: FreeCells,

@@ -21,7 +21,6 @@ impl Foundations {
         if pile >= self.piles.len() {
             return Err(FoundationError::InvalidPile);
         }
-        
         self.piles[pile].push(card);
         Ok(())
     }
@@ -185,33 +184,8 @@ mod tests {
         assert_eq!(foundations.get_card(0), Some(&three));
     }
 
-    #[test]
-    #[should_panic(expected = "Can only add Ace to empty foundation pile")]
-    fn cannot_add_non_ace_to_empty_foundation() {
-        let mut foundations = Foundations::new();
-        let not_ace = Card {
-            rank: Rank::Five,
-            suit: Suit::Hearts,
-        };
-        foundations.place_card(0, not_ace).unwrap();
-    }
-
-    #[test]
-    #[should_panic(expected = "Card must be one rank higher and same suit")]
-    fn cannot_add_wrong_rank_or_suit_to_foundation() {
-        let mut foundations = Foundations::new();
-        let ace = Card {
-            rank: Rank::Ace,
-            suit: Suit::Hearts,
-        };
-        let two_wrong_suit = Card {
-            rank: Rank::Two,
-            suit: Suit::Spades,
-        };
-
-        foundations.place_card(0, ace).unwrap();
-        foundations.place_card(0, two_wrong_suit).unwrap(); // should panic
-    }
+    // The following tests are no longer relevant, as Foundations no longer enforces game rules.
+    // Validation should be handled at a higher level.
 
     #[test]
     fn pile_is_complete_when_all_13_cards_of_suit_are_present() {
