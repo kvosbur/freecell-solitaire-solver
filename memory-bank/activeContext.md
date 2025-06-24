@@ -16,7 +16,6 @@
 - ✅ Implemented `workspaceContext.md` with component relationships
 - ✅ Implemented `activeContext.md` with current priorities
 - ✅ Implemented `progress.md` with workspace-wide status
-- ✅ Removed duplicate `.clinerules` files from `/game/` and `/game-engine/`
 - ✅ Optimized component memory banks to focus on component-specific details
 - ✅ Moved workspace-wide concerns from components to root memory bank
 
@@ -112,7 +111,6 @@
 - ✅ `progress.md` - Workspace-wide status and roadmap
 
 ### Component Memory Banks - OPTIMIZED ✅
-- ✅ `/game/memory-bank/` - Focused on interactive game application details
 - ✅ `/game-engine/memory-bank/` - Focused on library architecture and patterns
 - ⏳ `/solver/memory-bank/` - To be created when needed
 
