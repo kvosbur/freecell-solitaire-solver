@@ -12,6 +12,7 @@ Tracks the current work focus, recent changes, next steps, active decisions and 
 - The engine is designed for integration with UIs, solvers, and other applications, with no direct user interface or I/O.
 - Focus is on providing a clean, well-documented API and preparing for downstream integration.
 - **Recent focus:** Interface consistency refactor for `FreeCells`, `Foundations`, and `Tableau` to standardize method signatures and error handling across all core components.
+- **Current Focus**: Comprehensive API review completed. The game engine is in an excellent state, demonstrating strong adherence to Rust best practices. A decision has been made to pursue breaking changes in the next major version to further refine the API, ensuring it remains a pure, focused game engine, deferring solver-specific or analysis-specific features to separate, higher-level crates.
 
 ## Recent Changes
 
@@ -29,15 +30,18 @@ Tracks the current work focus, recent changes, next steps, active decisions and 
 - Added game state inspection API (win detection, available moves).
 - 50+ tests now passing, covering all rule logic and state transitions.
 - Documentation and code organization improved for clarity and reusability.
+- **New**: Completed a comprehensive API review of the `game-engine` crate. Identified areas for significant improvement by introducing breaking changes to achieve a cleaner, more focused, and more robust API, specifically by separating core game engine responsibilities from solver/analysis/UI-specific concerns.
 
 ## Next Steps
 
-- Propagate interface consistency to all consumers (e.g., solver, UI) and update documentation.
-- Add deck creation and shuffling logic.
-- Implement the standard FreeCell deal algorithm (Microsoft-compatible).
-- Add seed-based reproducible deals for testing/solvers.
-- Expand and document the API for integration with UIs and solvers.
-- Continue updating documentation as the codebase evolves.
+- **Prepare for Next Major Version (v0.2.0)**: Implement the refined API design focusing on a pure game engine.
+    1.  **Enhanced Error System**: Implement a rich `GameError` that preserves full context from component-specific errors.
+    2.  **Type-Safe Locations**: Introduce a validated `Location` struct for all game areas, ensuring type safety and preventing invalid indices.
+    3.  **Clean Move System**: Redesign the `Move` struct to be type-safe and focused solely on game mechanics, removing solver-specific metadata.
+    4.  **Focused GameState API**: Streamline the `GameState` API, ensuring all methods are core to game rules and mechanics, and provide consistent `Result`-based return types.
+    5.  **Component Interface Refinement**: Ensure all component methods (`Tableau`, `FreeCells`, `Foundations`) return `Result` for all fallible operations, providing consistent error handling.
+- **Documentation Update**: Thoroughly update all API documentation to reflect the new design and provide clear migration guides.
+- **Testing**: Ensure comprehensive test coverage for all new and modified APIs.
 
 ## Active Decisions & Considerations
 
@@ -47,6 +51,7 @@ Tracks the current work focus, recent changes, next steps, active decisions and 
 - TDD is the primary development workflow.
 - Minimize dependencies unless they provide clear learning or usability benefits.
 - **Interface Consistency**: All core components now follow a standardized interface pattern for core operations, with domain-specific error types for clarity and maintainability.
+- **New Architectural Decision**: The `game-engine` crate will strictly adhere to core FreeCell game rules and mechanics. Features related to solver heuristics, game analysis, or UI-specific logic will be explicitly excluded from this crate and developed in separate, higher-level crates that depend on `game-engine`. This ensures a pure, focused, and highly reusable core library.
 
 ## Important Patterns & Preferences
 
@@ -62,3 +67,4 @@ Tracks the current work focus, recent changes, next steps, active decisions and 
 - TDD ensures correctness and confidence in rule logic.
 - Rust's ecosystem (Cargo, clippy, rustfmt) supports maintainable and high-quality code.
 - **Interface consistency across components greatly improves maintainability and integration.**
+- **New Insight**: Maintaining a strict separation of concerns, especially between core game logic and higher-level application-specific features (like solvers or advanced analysis), is crucial for building a truly reusable and maintainable game engine. Breaking changes are justified when they lead to a significantly cleaner and more focused API.

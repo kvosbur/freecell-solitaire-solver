@@ -30,7 +30,7 @@
 use crate::card::Card;
 use std::fmt;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 /// Represents the free cells where individual cards can be stored.
 ///
 /// FreeCells are the 4 temporary storage slots in a FreeCell game where any

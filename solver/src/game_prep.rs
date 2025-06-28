@@ -1,4 +1,4 @@
-use freecell_game_engine::game_state::Move;
+use freecell_game_engine::r#move::Move;
 
 pub fn get_game_solution(seed: u64) -> Vec<Move> {
     match seed {

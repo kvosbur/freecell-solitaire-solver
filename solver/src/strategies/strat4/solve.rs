@@ -1,4 +1,4 @@
-use freecell_game_engine::game_state::{GameState, Move, PackedState};
+use freecell_game_engine::{r#move::Move, GameState, packed_game_state::PackedGameState};
 use std::collections::HashSet;
 use std::time::Instant;
 
@@ -13,7 +13,7 @@ fn dfs(
     game: &mut GameState,
     path: &mut Vec<Move>,
     counter: &mut Counter,
-    visited: &mut HashSet<PackedState>,
+    visited: &mut HashSet<PackedGameState>,
 ) -> bool {
     if counter
         .cancel_flag
@@ -22,14 +22,14 @@ fn dfs(
     {
         return false;
     }
-    if game.is_game_won() {
+    if game.is_won() {
         return true;
     }
     if path.len() > 200 {
         // Limit the depth to prevent excessive recursion
         return false;
     }
-    let packed = PackedState::from_game_state(game);
+    let packed = PackedGameState::from_game_state(game);
     if !visited.insert(packed) {
         // Already visited this state
         return false;

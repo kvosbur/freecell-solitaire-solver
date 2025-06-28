@@ -36,7 +36,7 @@ fn unpack_card(id: u8) -> Result<Card, UnpackError> {
     let id = id - 1;
     let suit = Suit::try_from(id / 13).map_err(|_| UnpackError::InvalidSuit(id / 13))?;
     let rank = Rank::try_from((id % 13) + 1).map_err(|_| UnpackError::InvalidRank((id % 13) + 1))?;
-    Ok(Card { rank, suit })
+    Ok(Card::new(rank, suit))
 }
 
 impl PackedGameState {
@@ -50,7 +50,7 @@ impl PackedGameState {
             if idx + len > self.tableau_cards.len() {
                 return Err(UnpackError::NotEnoughTableauCards);
             }
-            for i in 0..len {
+            for _ in 0..len {
                 let card_id = self.tableau_cards[idx];
                 let card = unpack_card(card_id)?;
                 tableau.place_card(col, card).map_err(|_| UnpackError::InvalidTableauLength)?;
@@ -82,7 +82,7 @@ impl PackedGameState {
                 let suit = Suit::try_from(i as u8).map_err(|_| UnpackError::InvalidSuit(i as u8))?;
                 for r in 1..=top_rank {
                     let rank = Rank::try_from(r).map_err(|_| UnpackError::InvalidRank(r))?;
-                    let card = Card { rank, suit };
+                    let card = Card::new(rank, suit);
                     foundations.place_card(i, card).map_err(|_| UnpackError::InvalidFoundationRank(top_rank))?;
                 }
             }
@@ -103,11 +103,11 @@ impl PackedGameState {
         let mut tableau_cards = [0u8; 52];
         let mut tableau_lens = [0u8; 8];
         let mut idx = 0;
-        for col in 0..gs.tableau().column_count() {
+        for (col, len_ref) in tableau_lens.iter_mut().enumerate().take(gs.tableau().column_count()) {
             let len = gs.tableau().column_length(col);
-            tableau_lens[col] = len as u8;
-            for i in 0..len {
-                if let Ok(card) = gs.tableau().get_card_at(col, i) {
+            *len_ref = len as u8;
+            for _i in 0..len {
+                if let Ok(card) = gs.tableau().get_card_at(col, _i) {
                     tableau_cards[idx] = pack_card(card);
                     idx += 1;
                 }
@@ -115,11 +115,11 @@ impl PackedGameState {
         }
         let mut freecells = [0u8; 4];
         for i in 0..gs.freecells().cell_count() {
-            freecells[i] = gs.freecells().get_card(i).map_or(0, |c| pack_card(c));
+            freecells[i] = gs.freecells().get_card(i).unwrap_or(None).map_or(0, pack_card);
         }
         let mut foundations = [0u8; 4];
         for i in 0..gs.foundations().pile_count() {
-            foundations[i] = gs.foundations().get_card(i).map_or(0, |c| c.rank as u8);
+            foundations[i] = gs.foundations().get_card(i).unwrap_or(None).map_or(0, |c| c.rank() as u8);
         }
         PackedGameState {
             tableau_cards,
@@ -132,8 +132,8 @@ impl PackedGameState {
 
 /// Packs a card into a 1-based id: 1..52 (0 = empty)
 fn pack_card(card: &Card) -> u8 {
-    let suit = card.suit as u8; // 0..3
-    let rank = card.rank as u8; // 1..13
+    let suit = card.suit() as u8; // 0..3
+    let rank = card.rank() as u8; // 1..13
     suit * 13 + rank // 1..52
 }
 
@@ -155,17 +155,17 @@ mod tests {
     fn round_trip_complex_state() {
         let mut gs = GameState::default();
         // Place cards in tableau
-        let card1 = Card { rank: Rank::Ace, suit: Suit::Hearts };
-        let card2 = Card { rank: Rank::King, suit: Suit::Spades };
+        let card1 = Card::new(Rank::Ace, Suit::Hearts);
+        let card2 = Card::new(Rank::King, Suit::Spades);
         gs.tableau_mut().place_card(0, card1).unwrap();
         gs.tableau_mut().place_card(1, card2).unwrap();
         // Place card in freecell
-        let card3 = Card { rank: Rank::Queen, suit: Suit::Diamonds };
+        let card3 = Card::new(Rank::Queen, Suit::Diamonds);
         gs.freecells_mut().place_card(0, card3).unwrap();
         // Build up a foundation
         for r in 1..=3 {
             let rank = Rank::try_from(r).unwrap();
-            let card = Card { rank, suit: Suit::Diamonds };
+            let card = Card::new(rank, Suit::Diamonds);
             gs.foundations_mut().place_card(2, card).unwrap();
         }
         let packed = PackedGameState::from_game_state(&gs);

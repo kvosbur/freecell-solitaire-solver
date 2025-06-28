@@ -1,4 +1,4 @@
-use freecell_game_engine::game_state::Move;
+use freecell_game_engine::r#move::Move;
 use freecell_game_engine::GameState;
 use std::collections::HashSet;
 use std::time::Instant;
@@ -69,7 +69,7 @@ fn dfs(
     {
         return false;
     }
-    if game.is_game_won() {
+    if game.is_won() {
         return true;
     }
     if path.len() > 200 {

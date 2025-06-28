@@ -41,7 +41,7 @@ use core::fmt;
 /// let card = Card::new(Rank::Ace, Suit::Spades);
 /// println!("{}", card); // Outputs: "Ace of Spades"
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Card {
     rank: Rank,
     suit: Suit,
@@ -63,7 +63,7 @@ pub struct Card {
 /// let rank_from_number = Rank::try_from(5).unwrap();
 /// assert_eq!(rank_from_number, Rank::Five);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Rank {
     Ace = 1,
     Two,
@@ -93,7 +93,7 @@ pub enum Rank {
 /// // Hearts are red
 /// assert_eq!(suit.color(), Color::Red);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Suit {
     Spades,
     Hearts,

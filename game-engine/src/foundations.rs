@@ -72,7 +72,7 @@ pub enum FoundationError {
     PileComplete,
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 /// Represents the foundation piles where cards are collected by suit.
 ///
 /// Foundations are the 4 suit-based stacks in a FreeCell game where cards are built up 

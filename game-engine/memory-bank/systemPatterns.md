@@ -60,13 +60,15 @@ impl Card {
 ```
 
 ### Move System Architecture
+The `Move` enum will be redesigned to be type-safe and focused solely on game mechanics, removing solver-specific metadata. It will use the new `Location` struct for source and destination.
+
 ```rust
-pub enum Move {
-    TableauToFoundation { from_column: usize, to_pile: usize },
-    TableauToFreecell { from_column: usize, to_cell: usize },
-    TableauToTableau { from_column: usize, to_column: usize },
-    FreecellToFoundation { from_cell: usize, to_pile: usize },
-    FreecellToTableau { from_cell: usize, to_column: usize },
+// Proposed new Move struct (simplified from current)
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Move {
+    pub source: Location,
+    pub destination: Location,
+    pub card_count: u8, // 1 for single card moves, >1 for sequence moves
 }
 ```
 
@@ -102,14 +104,23 @@ impl GameState {
 
 ## API Design Patterns
 
-### Result-Based Error Handling
-```rust
-pub fn execute_move(&mut self, move_to_make: &Move) -> Result<(), String> {
-    // Returns Result for graceful error handling
-}
+### Consistent Result-Based API
+All fallible operations will consistently return `Result<T, GameError>`, ensuring no silent failures and providing rich error context. This replaces previous inconsistencies where some methods returned `Option` or `bool` for operations that could fail.
 
-pub fn get_available_moves(&self) -> Vec<Move> {
-    // Returns all valid moves for current state
+```rust
+// Example of consistent Result-based API
+impl GameState {
+    pub fn execute_move(&mut self, move_to_make: Move) -> Result<(), GameError> {
+        // Returns Ok(()) on success, or GameError with rich context on failure
+    }
+
+    pub fn get_card(&self, location: Location) -> Result<Option<&Card>, GameError> {
+        // Unified card access, handling invalid locations gracefully
+    }
+
+    pub fn is_empty(&self, location: Location) -> Result<bool, GameError> {
+        // Unified emptiness check, handling invalid locations gracefully
+    }
 }
 ```
 
@@ -204,39 +215,9 @@ fn get_card(&self, location: usize) -> Option<&Card>;
 - Easier integration for downstream consumers (UI, solver, automation)
 - Clear separation of concerns and error domains
 
+**Note**: While the current interface consistency pattern is strong, the upcoming major version will further refine error handling and return types to ensure all fallible operations consistently return `Result<T, GameError>`, providing even richer context and type safety.
+
 ---
-
-### Test-Driven Development
-```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    #[test]
-    fn test_valid_tableau_placement() {
-        let red_king = Card { rank: 13, suit: Suit::Hearts };
-        let black_queen = Card { rank: 12, suit: Suit::Spades };
-        assert!(can_place_on_tableau(&black_queen, &red_king));
-    }
-}
-```
-
-### Parameterized Testing
-```rust
-use rstest::rstest;
-
-#[rstest]
-#[case(Card { rank: 1, suit: Suit::Hearts }, None, true)]
-#[case(Card { rank: 2, suit: Suit::Hearts }, Some(&Card { rank: 1, suit: Suit::Hearts }), true)]
-#[case(Card { rank: 3, suit: Suit::Hearts }, Some(&Card { rank: 1, suit: Suit::Hearts }), false)]
-fn test_foundation_placement(
-    #[case] card: Card,
-    #[case] foundation_top: Option<&Card>,
-    #[case] expected: bool
-) {
-    assert_eq!(can_place_on_foundation(&card, foundation_top), expected);
-}
-```
 
 ## Performance Patterns
 
@@ -258,13 +239,33 @@ impl GameState {
 
 ## Error Handling Patterns
 
-### Comprehensive Validation
+### Enhanced Error System
+The `GameError` enum will be significantly enhanced to preserve full context from component-specific errors. This means `GameError` will wrap the original `FreeCellError`, `FoundationError`, or `TableauError`, along with additional context like the attempted `Move` and operation description. This provides rich, debuggable error information without losing the specificity of component-level errors.
+
 ```rust
-impl GameState {
-    fn validate_move_indices(&self, move_to_make: &Move) -> Result<(), String> {
-        // Validate all array indices before accessing
-        // Return descriptive error messages
-    }
+// Proposed new GameError structure
+#[derive(Debug, Clone, PartialEq)]
+pub enum GameError {
+    FreeCellError { 
+        error: FreeCellError, 
+        attempted_move: Option<Move>,
+        operation: String,
+    },
+    FoundationError { 
+        error: FoundationError, 
+        attempted_move: Option<Move>,
+        operation: String,
+    },
+    TableauError { 
+        error: TableauError, 
+        attempted_move: Option<Move>,
+        operation: String,
+    },
+    InvalidMove { 
+        move_cmd: Move, 
+        reason: InvalidMoveReason 
+    },
+    // ... other game-level errors
 }
 ```
 

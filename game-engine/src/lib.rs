@@ -8,9 +8,8 @@ pub mod foundations;
 pub mod freecells;
 pub mod game_state;
 pub mod generation;
-pub mod rules;
 pub mod tableau;
-pub mod action;
+pub mod r#move;
 pub mod packed_game_state;
 
 // Re-export commonly used types for convenience
@@ -20,3 +19,4 @@ pub use freecells::FreeCells;
 pub use game_state::GameState;
 pub use tableau::Tableau;
 pub use packed_game_state::PackedGameState;
+pub use r#move::Move;

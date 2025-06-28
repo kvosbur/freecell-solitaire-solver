@@ -75,7 +75,7 @@ pub enum TableauError {
     InvalidRank,
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 /// Represents the main play area with multiple columns of cards.
 ///
 /// Tableau is the main play area in a FreeCell game where cards are arranged in 8 columns.

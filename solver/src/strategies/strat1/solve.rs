@@ -1,4 +1,4 @@
-use freecell_game_engine::game_state::Move;
+use freecell_game_engine::r#move::Move;
 use freecell_game_engine::GameState;
 use std::time::Instant;
 
@@ -61,7 +61,7 @@ fn dfs(game: GameState, path: &mut Vec<Move>, counter: &mut Counter) -> bool {
     {
         return false;
     }
-    if game.is_game_won() {
+    if game.is_won() {
         return true;
     }
     if path.len() > 200 {
