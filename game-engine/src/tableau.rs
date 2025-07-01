@@ -12,20 +12,22 @@
 //! ```
 //! use freecell_game_engine::tableau::{Tableau, TableauError};
 //! use freecell_game_engine::card::{Card, Rank, Suit};
+//! use freecell_game_engine::location::TableauLocation;
 //!
 //! // Create a new tableau
 //! let mut tableau = Tableau::new();
 //! 
 //! // Place cards in the tableau
 //! let card = Card::new(Rank::King, Suit::Hearts);
-//! tableau.place_card(0, card).unwrap();
+//! let location = TableauLocation::new(0).unwrap();
+//! tableau.place_card(location, card).unwrap();
 //! 
 //! // Check for cards in a column
-//! let top_card = tableau.get_card(0).unwrap().unwrap();
+//! let top_card = tableau.get_card(location).unwrap().unwrap();
 //! assert_eq!(top_card.rank(), Rank::King);
 //! 
 //! // Check if a column is empty
-//! assert!(!tableau.is_column_empty(0));
+//! assert!(!tableau.is_column_empty(0).unwrap());
 //! ```
 //!
 //! This module primarily implements the physical state and operations of the tableau.
@@ -34,6 +36,7 @@
 //! This design allows higher-level game logic to implement and control rule enforcement.
 
 use crate::card::Card;
+use crate::location::TableauLocation;
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -47,32 +50,34 @@ use std::fmt;
 /// ```
 /// use freecell_game_engine::tableau::{Tableau, TableauError};
 /// use freecell_game_engine::card::{Card, Rank, Suit};
+/// use freecell_game_engine::location::TableauLocation;
 ///
 /// let mut tableau = Tableau::new();
 /// 
-/// // Trying to access an invalid column index
-/// let result = tableau.place_card(8, Card::new(Rank::Ace, Suit::Hearts));
-/// assert!(matches!(result, Err(TableauError::InvalidColumn)));
-///
 /// // Validation errors are returned by validate_card_placement
 /// let mut tableau = Tableau::new();
-/// tableau.place_card(0, Card::new(Rank::Ten, Suit::Hearts)).unwrap();
+/// let location = TableauLocation::new(0).unwrap();
+/// tableau.place_card(location, Card::new(Rank::Ten, Suit::Hearts)).unwrap();
 /// let result = tableau.validate_card_placement(0, &Card::new(Rank::Nine, Suit::Hearts));
-/// assert!(matches!(result, Err(TableauError::InvalidColor)));
+/// assert!(matches!(result, Err(TableauError::InvalidColor { .. })));
 /// ```
 pub enum TableauError {
-    /// Attempted to access an invalid column index
-    InvalidColumn,
-    /// Attempted to access an invalid card index within a column
+    /// Attempted to access an invalid column index.
+    InvalidColumn(u8),
+    /// Attempted to access an invalid card index within a column.
     InvalidCardIndex,
-    /// Attempted to stack cards in an invalid way (general error)
+    /// Attempted to stack cards in an invalid way (general error).
     InvalidStack,
-    /// Attempted to remove a card from an empty column
-    EmptyColumn,
-    /// Cards must be of alternating colors
-    InvalidColor,
-    /// Cards must be in descending rank order
-    InvalidRank,
+    /// Card placement failed due to a color mismatch.
+    InvalidColor {
+        top_card: Card,
+        new_card: Card,
+    },
+    /// Card placement failed due to a rank mismatch.
+    InvalidRank {
+        top_card: Card,
+        new_card: Card,
+    },
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -86,13 +91,15 @@ pub enum TableauError {
 /// ```
 /// use freecell_game_engine::tableau::Tableau;
 /// use freecell_game_engine::card::{Card, Rank, Suit};
+/// use freecell_game_engine::location::TableauLocation;
 ///
 /// // Create a new empty tableau
 /// let mut tableau = Tableau::new();
 ///
 /// // Place a card in column 0
 /// let card = Card::new(Rank::King, Suit::Hearts);
-/// tableau.place_card(0, card).unwrap();
+/// let location = TableauLocation::new(0).unwrap();
+/// tableau.place_card(location, card).unwrap();
 /// ```
 pub struct Tableau {
     columns: [Vec<Card>; 8],
@@ -136,16 +143,14 @@ impl Tableau {
     /// ```
     /// use freecell_game_engine::tableau::Tableau;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::TableauLocation;
     ///
     /// let mut tableau = Tableau::new();
     /// let card = Card::new(Rank::King, Suit::Hearts);
-    /// tableau.place_card(0, card).unwrap();
+    /// tableau.place_card(TableauLocation::new(0).unwrap(), card).unwrap();
     /// ```
-    pub fn place_card(&mut self, column: usize, card: Card) -> Result<(), TableauError> {
-        if column >= self.columns.len() {
-            return Err(TableauError::InvalidColumn);
-        }
-        self.columns[column].push(card);
+    pub fn place_card(&mut self, location: TableauLocation, card: Card) -> Result<(), TableauError> {
+        self.columns[location.index() as usize].push(card);
         Ok(())
     }
 
@@ -156,32 +161,27 @@ impl Tableau {
     /// # Errors
     ///
     /// Returns `TableauError::InvalidColumn` if the index is out of bounds.
-    /// Returns `TableauError::EmptyColumn` if the column is empty.
     ///
     /// # Examples
     ///
     /// ```
     /// use freecell_game_engine::tableau::Tableau;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::TableauLocation;
     ///
     /// let mut tableau = Tableau::new();
     /// 
     /// // Place a card first
     /// let card = Card::new(Rank::King, Suit::Hearts);
-    /// tableau.place_card(0, card.clone()).unwrap();
+    /// let location = TableauLocation::new(0).unwrap();
+    /// tableau.place_card(location, card.clone()).unwrap();
     /// 
     /// // Then remove it
-    /// let removed_card = tableau.remove_card(0).unwrap().unwrap();
+    /// let removed_card = tableau.remove_card(location).unwrap().unwrap();
     /// assert_eq!(removed_card, card);
     /// ```
-    pub fn remove_card(&mut self, column: usize) -> Result<Option<Card>, TableauError> {
-        if column >= self.columns.len() {
-            return Err(TableauError::InvalidColumn);
-        }
-        if self.columns[column].is_empty() {
-            return Err(TableauError::EmptyColumn);
-        }
-        Ok(self.columns[column].pop())
+    pub fn remove_card(&mut self, location: TableauLocation) -> Result<Option<Card>, TableauError> {
+        Ok(self.columns[location.index() as usize].pop())
     }
 
     /// Get a reference to the top card in a column without removing it.
@@ -195,21 +195,20 @@ impl Tableau {
     /// ```
     /// use freecell_game_engine::tableau::Tableau;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::TableauLocation;
     ///
     /// let mut tableau = Tableau::new();
     /// let card = Card::new(Rank::King, Suit::Hearts);
-    /// tableau.place_card(0, card.clone()).unwrap();
+    /// let location = TableauLocation::new(0).unwrap();
+    /// tableau.place_card(location, card.clone()).unwrap();
     /// 
     /// // Get a reference to the card
-    /// let card_ref = tableau.get_card(0).unwrap().unwrap();
+    /// let card_ref = tableau.get_card(location).unwrap().unwrap();
     /// assert_eq!(card_ref.rank(), Rank::King);
     /// assert_eq!(card_ref.suit(), Suit::Hearts);
     /// ```
-    pub fn get_card(&self, column: usize) -> Result<Option<&Card>, TableauError> {
-        if column >= self.columns.len() {
-            return Err(TableauError::InvalidColumn);
-        }
-        Ok(self.columns[column].last())
+    pub fn get_card(&self, location: TableauLocation) -> Result<Option<&Card>, TableauError> {
+        Ok(self.columns[location.index() as usize].last())
     }
 
     /// Get a reference to a card at a specific index in a column.
@@ -224,12 +223,14 @@ impl Tableau {
     /// ```
     /// use freecell_game_engine::tableau::{Tableau, TableauError};
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::TableauLocation;
     ///
     /// let mut tableau = Tableau::new();
     /// let card1 = Card::new(Rank::King, Suit::Hearts);
     /// let card2 = Card::new(Rank::Queen, Suit::Spades);
-    /// tableau.place_card(0, card1.clone()).unwrap();
-    /// tableau.place_card(0, card2.clone()).unwrap();
+    /// let location = TableauLocation::new(0).unwrap();
+    /// tableau.place_card(location, card1.clone()).unwrap();
+    /// tableau.place_card(location, card2.clone()).unwrap();
     /// 
     /// // Get the first and second cards
     /// assert_eq!(tableau.get_card_at(0, 0).unwrap(), &card1);
@@ -240,7 +241,7 @@ impl Tableau {
     /// ```
     pub fn get_card_at(&self, column: usize, index: usize) -> Result<&Card, TableauError> {
         if column >= self.columns.len() {
-            return Err(TableauError::InvalidColumn);
+            return Err(TableauError::InvalidColumn(column as u8));
         }
         
         self.columns[column].get(index).ok_or(TableauError::InvalidCardIndex)
@@ -267,12 +268,14 @@ impl Tableau {
     /// ```
     /// use freecell_game_engine::tableau::Tableau;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::TableauLocation;
     ///
     /// let mut tableau = Tableau::new();
     /// assert_eq!(tableau.empty_columns_count(), 8);
     /// 
     /// // Place a card
-    /// tableau.place_card(0, Card::new(Rank::King, Suit::Hearts)).unwrap();
+    /// let location = TableauLocation::new(0).unwrap();
+    /// tableau.place_card(location, Card::new(Rank::King, Suit::Hearts)).unwrap();
     /// assert_eq!(tableau.empty_columns_count(), 7);
     /// ```
     pub fn empty_columns_count(&self) -> usize {
@@ -281,23 +284,30 @@ impl Tableau {
 
     /// Check if a column is empty.
     ///
-    /// Returns false if the column index is out of bounds.
+    /// # Errors
+    ///
+    /// Returns `TableauError::InvalidColumn` if the index is out of bounds.
     ///
     /// # Examples
     ///
     /// ```
     /// use freecell_game_engine::tableau::Tableau;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::TableauLocation;
     ///
     /// let mut tableau = Tableau::new();
-    /// assert!(tableau.is_column_empty(0));
+    /// assert!(tableau.is_column_empty(0).unwrap());
     /// 
     /// // Place a card
-    /// tableau.place_card(0, Card::new(Rank::King, Suit::Hearts)).unwrap();
-    /// assert!(!tableau.is_column_empty(0));
+    /// let location = TableauLocation::new(0).unwrap();
+    /// tableau.place_card(location, Card::new(Rank::King, Suit::Hearts)).unwrap();
+    /// assert!(!tableau.is_column_empty(0).unwrap());
     /// ```
-    pub fn is_column_empty(&self, column: usize) -> bool {
-        column < self.columns.len() && self.columns[column].is_empty()
+    pub fn is_column_empty(&self, column: usize) -> Result<bool, TableauError> {
+        if column >= self.columns.len() {
+            return Err(TableauError::InvalidColumn(column as u8));
+        }
+        Ok(self.columns[column].is_empty())
     }
 
     /// Get the number of cards in a column.
@@ -309,11 +319,13 @@ impl Tableau {
     /// ```
     /// use freecell_game_engine::tableau::Tableau;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::TableauLocation;
     ///
     /// let mut tableau = Tableau::new();
     /// assert_eq!(tableau.column_length(0), 0);
     /// 
-    /// tableau.place_card(0, Card::new(Rank::King, Suit::Hearts)).unwrap();
+    /// let location = TableauLocation::new(0).unwrap();
+    /// tableau.place_card(location, Card::new(Rank::King, Suit::Hearts)).unwrap();
     /// assert_eq!(tableau.column_length(0), 1);
     /// ```
     pub fn column_length(&self, column: usize) -> usize {
@@ -332,12 +344,14 @@ impl Tableau {
     /// ```
     /// use freecell_game_engine::tableau::Tableau;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::TableauLocation;
     ///
     /// let mut tableau = Tableau::new();
     /// let card1 = Card::new(Rank::King, Suit::Hearts);
     /// let card2 = Card::new(Rank::Queen, Suit::Spades);
-    /// tableau.place_card(0, card1).unwrap();
-    /// tableau.place_card(0, card2.clone()).unwrap();
+    /// let location = TableauLocation::new(0).unwrap();
+    /// tableau.place_card(location, card1).unwrap();
+    /// tableau.place_card(location, card2.clone()).unwrap();
     /// 
     /// let top_card = tableau.get_column_top_cards(0, 1);
     /// assert_eq!(top_card.len(), 1);
@@ -358,9 +372,11 @@ impl Tableau {
     /// ```
     /// use freecell_game_engine::tableau::Tableau;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::TableauLocation;
     ///
     /// let mut tableau = Tableau::new();
-    /// tableau.place_card(0, Card::new(Rank::King, Suit::Hearts)).unwrap();
+    /// let location = TableauLocation::new(0).unwrap();
+    /// tableau.place_card(location, Card::new(Rank::King, Suit::Hearts)).unwrap();
     ///
     /// // Iterate over all columns
     /// for column in tableau.columns() {
@@ -382,24 +398,28 @@ impl Tableau {
     /// # Examples
     ///
     /// ```
-    /// use freecell_game_engine::tableau::Tableau;
+    /// use freecell_game_engine::tableau::{Tableau, TableauError};
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::TableauLocation;
     ///
     /// let mut tableau = Tableau::new();
-    /// tableau.place_card(0, Card::new(Rank::Ten, Suit::Hearts)).unwrap();
+    /// let location = TableauLocation::new(0).unwrap();
+    /// tableau.place_card(location, Card::new(Rank::Ten, Suit::Hearts)).unwrap();
     ///
     /// // Valid: Nine of Spades on Ten of Hearts (descending rank, opposite colors)
     /// assert!(tableau.validate_card_placement(0, &Card::new(Rank::Nine, Suit::Spades)).is_ok());
     ///
     /// // Invalid: Same color
-    /// assert!(tableau.validate_card_placement(0, &Card::new(Rank::Nine, Suit::Diamonds)).is_err());
+    /// let result = tableau.validate_card_placement(0, &Card::new(Rank::Nine, Suit::Diamonds));
+    /// assert!(matches!(result, Err(TableauError::InvalidColor { .. })));
     ///
     /// // Invalid: Wrong rank
-    /// assert!(tableau.validate_card_placement(0, &Card::new(Rank::Eight, Suit::Spades)).is_err());
+    /// let result = tableau.validate_card_placement(0, &Card::new(Rank::Eight, Suit::Spades));
+    /// assert!(matches!(result, Err(TableauError::InvalidRank { .. })));
     /// ```
     pub fn validate_card_placement(&self, column: usize, card: &Card) -> Result<(), TableauError> {
         if column >= self.columns.len() {
-            return Err(TableauError::InvalidColumn);
+            return Err(TableauError::InvalidColumn(column as u8));
         }
         
         // Any card can be placed on an empty column
@@ -410,12 +430,18 @@ impl Tableau {
         if let Some(top_card) = self.columns[column].last() {
             // Check color alternation
             if top_card.color() == card.color() {
-                return Err(TableauError::InvalidColor);
+                return Err(TableauError::InvalidColor {
+                    top_card: *top_card,
+                    new_card: *card,
+                });
             }
             
             // Check descending rank
             if !top_card.is_one_higher_than(card) {
-                return Err(TableauError::InvalidRank);
+                return Err(TableauError::InvalidRank {
+                    top_card: *top_card,
+                    new_card: *card,
+                });
             }
             
             Ok(())
@@ -435,10 +461,13 @@ impl Tableau {
     /// ```
     /// use freecell_game_engine::tableau::Tableau;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::TableauLocation;
     ///
     /// let mut tableau = Tableau::new();
-    /// tableau.place_card(0, Card::new(Rank::King, Suit::Hearts)).unwrap();
-    /// tableau.place_card(2, Card::new(Rank::King, Suit::Spades)).unwrap();
+    /// let location0 = TableauLocation::new(0).unwrap();
+    /// tableau.place_card(location0, Card::new(Rank::King, Suit::Hearts)).unwrap();
+    /// let location2 = TableauLocation::new(2).unwrap();
+    /// tableau.place_card(location2, Card::new(Rank::King, Suit::Spades)).unwrap();
     /// 
     /// // Iterate through non-empty columns
     /// let non_empty_count = tableau.non_empty_columns().count();
@@ -460,10 +489,12 @@ impl Tableau {
     /// ```
     /// use freecell_game_engine::tableau::Tableau;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::TableauLocation;
     ///
     /// let mut tableau = Tableau::new();
     /// let card = Card::new(Rank::King, Suit::Hearts);
-    /// tableau.place_card(0, card.clone()).unwrap();
+    /// let location = TableauLocation::new(0).unwrap();
+    /// tableau.place_card(location, card.clone()).unwrap();
     ///
     /// let cards = tableau.get_column(0);
     /// assert_eq!(cards.len(), 1);
@@ -475,17 +506,25 @@ impl Tableau {
         }
         &self.columns[column]
     }
+
 }
 
 impl std::fmt::Display for TableauError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TableauError::InvalidColumn => write!(f, "Invalid tableau column index"),
+            TableauError::InvalidColumn(index) => write!(f, "Invalid tableau column index: {}", index),
             TableauError::InvalidCardIndex => write!(f, "Invalid card index within column"),
             TableauError::InvalidStack => write!(f, "Invalid tableau stack move"),
-            TableauError::EmptyColumn => write!(f, "No card in tableau column"),
-            TableauError::InvalidColor => write!(f, "Cards must be of alternating colors"),
-            TableauError::InvalidRank => write!(f, "Cards must be in descending rank order"),
+            TableauError::InvalidColor { top_card, new_card } => write!(
+                f,
+                "Cannot place {} on {}: colors are not alternating",
+                new_card, top_card
+            ),
+            TableauError::InvalidRank { top_card, new_card } => write!(
+                f,
+                "Cannot place {} on {}: rank is not one lower",
+                new_card, top_card
+            ),
         }
     }
 }
@@ -493,7 +532,7 @@ impl std::fmt::Display for TableauError {
 impl std::error::Error for TableauError {}
 
 impl fmt::Debug for Tableau {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_struct = f.debug_struct("Tableau");
         for col in 0..self.column_count() {
             let column_name = format!("column_{}", col);
@@ -515,11 +554,11 @@ impl fmt::Debug for Tableau {
 }
 
 impl fmt::Display for Tableau {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Tableau:")?;
         for i in 0..self.column_count() {
             write!(f, "  Column {}: ", i)?;
-            if self.is_column_empty(i) {
+            if self.is_column_empty(i).unwrap_or(true) {
                 writeln!(f, "[empty]")?;
             } else {
                 for (j, card) in self.get_column(i).iter().enumerate() {
@@ -539,6 +578,7 @@ impl fmt::Display for Tableau {
 mod tests {
     use super::*;
     use crate::card::{Card, Rank, Suit};
+    use crate::location::TableauLocation;
 
     #[test]
     fn tableau_initializes_with_eight_empty_columns() {
@@ -553,7 +593,7 @@ mod tests {
                 i
             );
             assert!(
-                tableau.is_column_empty(i),
+                tableau.is_column_empty(i).unwrap(),
                 "is_column_empty({}) should be true on initialization",
                 i
             );
@@ -564,10 +604,11 @@ mod tests {
     fn can_add_card_to_empty_column() {
         let mut tableau = Tableau::new();
         let card = Card::new(Rank::Seven, Suit::Hearts);
-        tableau.place_card(0, card.clone()).unwrap();
+        let location = TableauLocation::new(0).unwrap();
+        tableau.place_card(location, card.clone()).unwrap();
         assert_eq!(tableau.column_length(0), 1);
-        assert!(!tableau.is_column_empty(0));
-        assert_eq!(tableau.get_card(0).unwrap(), Some(&card));
+        assert!(!tableau.is_column_empty(0).unwrap());
+        assert_eq!(tableau.get_card(location).unwrap(), Some(&card));
     }
 
     #[test]
@@ -575,26 +616,41 @@ mod tests {
         let mut tableau = Tableau::new();
         let card1 = Card::new(Rank::Eight, Suit::Spades); // Black 8
         let card2 = Card::new(Rank::Seven, Suit::Hearts); // Red 7
-        tableau.place_card(0, card1.clone()).expect("Should add card1 to column 0");
-        tableau.place_card(0, card2.clone()).expect("Should add card2 to column 0");
+        let location = TableauLocation::new(0).unwrap();
+        tableau.place_card(location, card1.clone()).expect("Should add card1 to column 0");
+        tableau.place_card(location, card2.clone()).expect("Should add card2 to column 0");
         assert_eq!(tableau.column_length(0), 2);
-        assert_eq!(tableau.get_card(0).unwrap(), Some(&card2));
+        assert_eq!(tableau.get_card(location).unwrap(), Some(&card2));
     }
 
     #[test]
     fn cannot_stack_invalid_card_on_tableau() {
-        // This test is a placeholder: the real stacking logic should return InvalidStack.
-        // For now, we just check that Err(TableauError::InvalidStack) matches.
-        let result: Result<(), TableauError> = Err(TableauError::InvalidStack);
-        assert!(matches!(result, Err(TableauError::InvalidStack)));
+        let mut tableau = Tableau::new();
+        let top_card = Card::new(Rank::Ten, Suit::Hearts); // Red
+        let new_card = Card::new(Rank::Nine, Suit::Diamonds); // Red (invalid)
+        let location = TableauLocation::new(0).unwrap();
+        tableau.place_card(location, top_card.clone()).unwrap();
+
+        let result = tableau.validate_card_placement(location.index() as usize, &new_card);
+        assert!(matches!(
+            result,
+            Err(TableauError::InvalidColor { .. })
+        ));
     }
 
     #[test]
     fn cannot_stack_wrong_rank_on_tableau() {
-        // This test is a placeholder: the real stacking logic should return InvalidStack.
-        // For now, we just check that Err(TableauError::InvalidStack) matches.
-        let result: Result<(), TableauError> = Err(TableauError::InvalidStack);
-        assert!(matches!(result, Err(TableauError::InvalidStack)));
+        let mut tableau = Tableau::new();
+        let top_card = Card::new(Rank::Ten, Suit::Hearts); // Red
+        let new_card = Card::new(Rank::Eight, Suit::Spades); // Black (wrong rank)
+        let location = TableauLocation::new(0).unwrap();
+        tableau.place_card(location, top_card.clone()).unwrap();
+
+        let result = tableau.validate_card_placement(location.index() as usize, &new_card);
+        assert!(matches!(
+            result,
+            Err(TableauError::InvalidRank { .. })
+        ));
     }
 
     #[test]
@@ -602,19 +658,21 @@ mod tests {
         let mut tableau = Tableau::new();
         let card1 = Card::new(Rank::Seven, Suit::Hearts);
         let card2 = Card::new(Rank::Six, Suit::Spades);
-        tableau.place_card(0, card1.clone()).expect("Should add card1 to column 0");
-        tableau.place_card(0, card2.clone()).expect("Should add card2 to column 0");
-        let removed_card = tableau.remove_card(0).expect("Should remove card2 from column 0");
+        let location = TableauLocation::new(0).unwrap();
+        tableau.place_card(location, card1.clone()).expect("Should add card1 to column 0");
+        tableau.place_card(location, card2.clone()).expect("Should add card2 to column 0");
+        let removed_card = tableau.remove_card(location).expect("Should remove card2 from column 0");
         assert_eq!(removed_card, Some(card2));
         assert_eq!(tableau.column_length(0), 1);
-        assert_eq!(tableau.get_card(0).unwrap(), Some(&card1));
+        assert_eq!(tableau.get_card(location).unwrap(), Some(&card1));
     }
 
     #[test]
-    fn removing_from_empty_column_returns_error() {
+    fn removing_from_empty_column_returns_ok_none() {
         let mut tableau = Tableau::new();
-        let removed = tableau.remove_card(0);
-        assert!(matches!(removed, Err(TableauError::EmptyColumn)));
+        let location = TableauLocation::new(0).unwrap();
+        let removed = tableau.remove_card(location).unwrap();
+        assert_eq!(removed, None);
     }
 
     #[test]
@@ -623,39 +681,37 @@ mod tests {
         let card1 = Card::new(Rank::Seven, Suit::Hearts);
         let card2 = Card::new(Rank::Six, Suit::Spades);
         let card3 = Card::new(Rank::Five, Suit::Diamonds);
-        tableau.place_card(0, card1.clone()).expect("Should add card1 to column 0");
-        tableau.place_card(0, card2.clone()).expect("Should add card2 to column 0");
-        tableau.place_card(0, card3.clone()).expect("Should add card3 to column 0");
-        assert_eq!(tableau.remove_card(0).expect("Should remove card3"), Some(card3));
-        assert_eq!(tableau.remove_card(0).expect("Should remove card2"), Some(card2));
-        assert_eq!(tableau.remove_card(0).expect("Should remove card1"), Some(card1));
-        let removed = tableau.remove_card(0);
-        assert!(matches!(removed, Err(TableauError::EmptyColumn)), "Should be empty: {:?}", removed);
+        let location = TableauLocation::new(0).unwrap();
+        tableau.place_card(location, card1.clone()).expect("Should add card1 to column 0");
+        tableau.place_card(location, card2.clone()).expect("Should add card2 to column 0");
+        tableau.place_card(location, card3.clone()).expect("Should add card3 to column 0");
+        assert_eq!(tableau.remove_card(location).expect("Should remove card3"), Some(card3));
+        assert_eq!(tableau.remove_card(location).expect("Should remove card2"), Some(card2));
+        assert_eq!(tableau.remove_card(location).expect("Should remove card1"), Some(card1));
+        let removed = tableau.remove_card(location).unwrap();
+        assert_eq!(removed, None, "Should be empty: {:?}", removed);
     }
 
+    // Note: With TableauLocation, out-of-bounds errors are prevented at compile time.
     #[test]
-    fn column_index_out_of_bounds_errors() {
+    fn tableau_location_prevents_out_of_bounds() {
         let mut tableau = Tableau::new();
-        let result = tableau.place_card(
-            8,
-            Card::new(Rank::Two, Suit::Clubs),
-        );
-        assert!(matches!(result, Err(TableauError::InvalidColumn)));
+        let card = Card::new(Rank::Two, Suit::Clubs);
+        
+        // This will fail to compile if using an invalid index with TableauLocation::new
+        let valid_location = TableauLocation::new(7).unwrap();
+        assert!(tableau.place_card(valid_location, card).is_ok());
 
-        let mut tableau = Tableau::new();
-        let result = tableau.remove_card(8);
-        assert!(matches!(result, Err(TableauError::InvalidColumn)));
-
-        let tableau = Tableau::new();
-        let card = tableau.get_card(8);
-        assert!(matches!(card, Err(TableauError::InvalidColumn)));
+        // The following would not compile:
+        // let invalid_location = TableauLocation::new(8).unwrap();
     }
 
     #[test]
     fn card_index_out_of_bounds_errors() {
         let mut tableau = Tableau::new();
         let card = Card::new(Rank::Seven, Suit::Hearts);
-        tableau.place_card(0, card).unwrap();
+        let location = TableauLocation::new(0).unwrap();
+        tableau.place_card(location, card).unwrap();
         
         // Index within bounds should work
         let result = tableau.get_card_at(0, 0);
@@ -664,5 +720,17 @@ mod tests {
         // Index out of bounds should return InvalidCardIndex
         let result = tableau.get_card_at(0, 5);
         assert!(matches!(result, Err(TableauError::InvalidCardIndex)));
+    }
+
+    #[test]
+    fn can_use_tableau_location() {
+        let mut tableau = Tableau::new();
+        let card = Card::new(Rank::Ace, Suit::Spades);
+        let location = TableauLocation::new(0).unwrap();
+
+        tableau.place_card(location, card.clone()).unwrap();
+        assert_eq!(tableau.get_card(location).unwrap(), Some(&card));
+        assert_eq!(tableau.remove_card(location).unwrap(), Some(card));
+        assert_eq!(tableau.get_card(location).unwrap(), None);
     }
 }

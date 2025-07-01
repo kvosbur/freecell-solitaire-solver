@@ -34,10 +34,11 @@ This project was created to provide a hands-on, engaging way to learn the Rust p
 
 ### User Experience Objectives
 
-- **For Developers using the Engine**:
-    - Provide a robust, well-documented API for all core FreeCell actions and state queries.
-    - Ensure the engine is easy to integrate with a variety of frontends and tools due to its focused scope and clear API.
-    - Guarantee that the engine correctly implements and enforces all FreeCell rules.
-    - Deliver a codebase that is easy to read, understand, and extend, supporting the learning goals of contributors and the needs of downstream consumers.
+- **For Developers Consuming the Engine**:
+    - **Ease of Use**: Provide a highly ergonomic, intuitive, and consistent API that is easy to integrate into any application (UI, solver, etc.).
+    - **Discoverability**: Ensure the API is self-documenting, with clear, predictable method names and comprehensive rustdoc examples.
+    - **Robustness**: Guarantee that all rules are correctly implemented and that error handling is clear, consistent, and easy to manage.
+    - **Purity**: Maintain a strict separation of concerns, so consumers only get pure game logic without any unnecessary dependencies or features.
+    - **Learning Tool**: Serve as an exemplary Rust project that developers can reference for best practices in library design, API development, and documentation.
 - **For End-Users (indirectly)**:
-    - Ensure a consistent and accurate FreeCell gameplay experience across all applications powered by this engine.
+    - Ensure a consistent, correct, and bug-free FreeCell experience across any application built on top of this engine.

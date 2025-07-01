@@ -206,19 +206,20 @@ pub fn generate_deal(seed: u64) -> Result<GameState, GenerationError> {
     let mut deck = create_standard_deck();
     microsoft_shuffle(&mut deck, &mut rng);
 
-    let mut game_state = GameState::new();
+    let mut tableau = crate::tableau::Tableau::new();
     let mut column_idx = 0;
     let max_columns = 8;
 
     // Distribute cards into tableau columns
     while let Some(card) = deck.pop() {
-        game_state.tableau_mut().place_card(column_idx, card)
+        let location = crate::location::TableauLocation::new(column_idx as u8).unwrap();
+        tableau.place_card(location, card)
             .map_err(|_| GenerationError::DealGenerationFailed)?; // Should not fail in normal operation
 
         column_idx = (column_idx + 1) % max_columns;
     }
 
-    Ok(game_state)
+    Ok(GameState::new_with_tableau(tableau))
 }
 
 #[cfg(test)]

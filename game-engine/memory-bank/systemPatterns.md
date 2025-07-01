@@ -60,43 +60,46 @@ impl Card {
 ```
 
 ### Move System Architecture
-The `Move` enum will be redesigned to be type-safe and focused solely on game mechanics, removing solver-specific metadata. It will use the new `Location` struct for source and destination.
+The `Move` struct uses the type-safe `Location` enum for its source and destination, ensuring that all moves are between valid game areas. It includes a `card_count` field, though currently only single-card moves are implemented.
 
 ```rust
-// Proposed new Move struct (simplified from current)
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+// Current Move struct
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Move {
     pub source: Location,
     pub destination: Location,
-    pub card_count: u8, // 1 for single card moves, >1 for sequence moves
+    pub card_count: u8, // Currently only 1 is supported
 }
 ```
 
 ## Rule Engine Patterns
 
 ### Pure Function Rule Validation
-Each FreeCell rule is implemented as an independent, testable function:
+Each component (`Tableau`, `Foundations`) provides a `validate_card_placement` method that encapsulates its specific placement rules. These functions are pure, testable, and return a `Result<(), Error>`.
+
 ```rust
-pub fn can_place_on_tableau(card: &Card, target_card: &Card) -> bool {
+// In Tableau
+pub fn validate_card_placement(&self, column: usize, card: &Card) -> Result<(), TableauError> {
     // Alternating colors and descending rank validation
 }
 
-pub fn can_place_on_foundation(card: &Card, foundation_top: Option<&Card>) -> bool {
+// In Foundations
+pub fn validate_card_placement(&self, pile: usize, card: &Card) -> Result<(), FoundationError> {
     // Same suit and ascending rank validation
 }
 ```
 
 ### Validation Before Mutation
+The `GameState` orchestrates validation and execution. `execute_move` first calls `is_move_valid` to ensure correctness before mutating the state.
+
 ```rust
 impl GameState {
-    pub fn execute_move(&mut self, move_to_make: &Move) -> Result<(), String> {
-        // 1. Validate move using rule functions
-        if !self.is_move_valid(move_to_make) {
-            return Err("Invalid move".to_string());
-        }
+    pub fn execute_move(&mut self, m: &Move) -> Result<(), GameError> {
+        // 1. is_move_valid is called internally to ensure correctness
+        self.is_move_valid(m)?;
         
-        // 2. Execute move only after validation passes
-        self.apply_move(move_to_make);
+        // 2. Private execute_* methods apply the move
+        // ...
         Ok(())
     }
 }
@@ -104,22 +107,28 @@ impl GameState {
 
 ## API Design Patterns
 
-### Consistent Result-Based API
-All fallible operations will consistently return `Result<T, GameError>`, ensuring no silent failures and providing rich error context. This replaces previous inconsistencies where some methods returned `Option` or `bool` for operations that could fail.
+### Result-Based API (Mostly Consistent)
+Most fallible operations return `Result<T, Error>`, providing rich error context. However, some component methods still return `Option` where `Result` would be more consistent. This is a key area for refinement in v0.2.0.
 
 ```rust
-// Example of consistent Result-based API
+// Example of current API
 impl GameState {
-    pub fn execute_move(&mut self, move_to_make: Move) -> Result<(), GameError> {
-        // Returns Ok(()) on success, or GameError with rich context on failure
+    // Good: Consistent Result return
+    pub fn execute_move(&mut self, m: &Move) -> Result<(), GameError> {
+        // ...
     }
 
+    // Good: Consistent Result return
     pub fn get_card(&self, location: Location) -> Result<Option<&Card>, GameError> {
-        // Unified card access, handling invalid locations gracefully
+        // ...
     }
+}
 
-    pub fn is_empty(&self, location: Location) -> Result<bool, GameError> {
-        // Unified emptiness check, handling invalid locations gracefully
+// Inconsistency example in a component
+impl Tableau {
+    // Should be Result<Option<&Card>, TableauError> for consistency
+    pub fn get_card(&self, column: usize) -> Result<Option<&Card>, TableauError> {
+        // ...
     }
 }
 ```

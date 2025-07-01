@@ -12,46 +12,41 @@ Tracks the current work focus, recent changes, next steps, active decisions and 
 - The engine is designed for integration with UIs, solvers, and other applications, with no direct user interface or I/O.
 - Focus is on providing a clean, well-documented API and preparing for downstream integration.
 - **Recent focus:** Interface consistency refactor for `FreeCells`, `Foundations`, and `Tableau` to standardize method signatures and error handling across all core components.
-- **Current Focus**: Comprehensive API review completed. The game engine is in an excellent state, demonstrating strong adherence to Rust best practices. A decision has been made to pursue breaking changes in the next major version to further refine the API, ensuring it remains a pure, focused game engine, deferring solver-specific or analysis-specific features to separate, higher-level crates.
+- **Current Focus**: Consumer readiness and API refinement. A comprehensive review has confirmed the engine is in an excellent state, with a pure design and strong adherence to Rust best practices. The immediate priority is to refine the API for easier consumption by others, addressing minor inconsistencies and improving ergonomics.
 
 ## Recent Changes
 
-- Refactored `FreeCells`, `Foundations`, and `Tableau` to use consistent method signatures for `place_card`, `remove_card`, and `get_card`, each with their own domain-specific error types.
-- Updated helper methods for counting and emptiness checks to be consistent across all three components.
-- Updated move execution and undo logic in `game_state/execution.rs` to use the new interfaces.
-- Updated tests to match the new signatures and error handling.
-- Completed modularization: `card`, `rules`, `tableau`, `freecells`, `foundations`, `game_state` modules.
-- `game_state` split into: `mod.rs`, `error.rs`, `validation.rs`, `moves.rs`, `execution.rs`.
-- `is_move_valid` now delegates to private helper methods for each move type.
-- Unified error handling with a single `GameError` type and `Display` implementation for game state errors.
-- Implemented `Default` for `GameState`.
-- Added comprehensive documentation to all modules and methods.
-- Move validation and execution logic is complete.
-- Added game state inspection API (win detection, available moves).
-- 50+ tests now passing, covering all rule logic and state transitions.
-- Documentation and code organization improved for clarity and reusability.
-- **New**: Completed a comprehensive API review of the `game-engine` crate. Identified areas for significant improvement by introducing breaking changes to achieve a cleaner, more focused, and more robust API, specifically by separating core game engine responsibilities from solver/analysis/UI-specific concerns.
+- ✅ **Completed Comprehensive Review**: Thoroughly analyzed the entire `game-engine` crate against purity, Rust conventions, API usability, and documentation quality.
+- ✅ **Confirmed Pure Engine Design**: Verified that the engine contains no UI or solver-specific logic and has a clean separation of concerns.
+- ✅ **Validated Rust Best Practices**: Confirmed strong adherence to idiomatic Rust, including robust error handling, type safety, and memory safety.
+- ✅ **Implemented Type-Safe Locations**: The `Location` system with validated `TableauLocation`, `FreecellLocation`, and `FoundationLocation` is fully implemented and in use.
+- ✅ **Standardized Component Interfaces**: `Tableau`, `FreeCells`, and `Foundations` all implement consistent `place_card`, `remove_card`, and `get_card` methods.
+- ✅ **Established Rich Error System**: A solid foundation for error handling is in place with `GameError` wrapping component-specific errors.
 
 ## Next Steps
 
-- **Prepare for Next Major Version (v0.2.0)**: Implement the refined API design focusing on a pure game engine.
-    1.  **Enhanced Error System**: Implement a rich `GameError` that preserves full context from component-specific errors.
-    2.  **Type-Safe Locations**: Introduce a validated `Location` struct for all game areas, ensuring type safety and preventing invalid indices.
-    3.  **Clean Move System**: Redesign the `Move` struct to be type-safe and focused solely on game mechanics, removing solver-specific metadata.
-    4.  **Focused GameState API**: Streamline the `GameState` API, ensuring all methods are core to game rules and mechanics, and provide consistent `Result`-based return types.
-    5.  **Component Interface Refinement**: Ensure all component methods (`Tableau`, `FreeCells`, `Foundations`) return `Result` for all fallible operations, providing consistent error handling.
-- **Documentation Update**: Thoroughly update all API documentation to reflect the new design and provide clear migration guides.
-- **Testing**: Ensure comprehensive test coverage for all new and modified APIs.
+- **Consumer Readiness Refinements (v0.2.0)**: Implement targeted improvements to make the API exceptionally easy to consume.
+    1.  **Standardize API Return Types**: Ensure all fallible operations consistently return `Result<T, Error>`.
+        - **Action**: Refactor component methods that currently return `Option` (e.g., `get_card`) to return `Result` for uniformity.
+    2.  **Simplify Error Handling**: Refine the `GameError` enum to be more ergonomic.
+        - **Action**: Reduce redundancy and simplify the error hierarchy to make it easier for consumers to match and handle errors.
+    3.  **Streamline Move Construction**: Make creating `Move` instances more intuitive.
+        - **Action**: Introduce a builder pattern or convenience methods for `Move` to reduce verbosity.
+    4.  **Clean Up API Surface**: Remove any remaining internal complexity from the public API.
+        - **Action**: Consolidate dual APIs (e.g., index-based and location-based methods) and remove unused features like the `card_count` field in `Move`.
+- **Enhance Documentation for Consumers**:
+    - **Action**: Add a "Getting Started" guide for consumers of the library.
+    - **Action**: Provide clear migration notes for the upcoming v0.2.0 breaking changes.
+    - **Action**: Include end-to-end integration examples.
+- **Comprehensive Testing**: Ensure all API refinements are covered by tests.
 
 ## Active Decisions & Considerations
 
-- Rust is the language of choice for both learning and implementation.
-- The project is a library crate only, with no built-in user interface or direct user interaction.
-- Emphasis on modular, idiomatic Rust code and clear documentation.
-- TDD is the primary development workflow.
-- Minimize dependencies unless they provide clear learning or usability benefits.
-- **Interface Consistency**: All core components now follow a standardized interface pattern for core operations, with domain-specific error types for clarity and maintainability.
-- **New Architectural Decision**: The `game-engine` crate will strictly adhere to core FreeCell game rules and mechanics. Features related to solver heuristics, game analysis, or UI-specific logic will be explicitly excluded from this crate and developed in separate, higher-level crates that depend on `game-engine`. This ensures a pure, focused, and highly reusable core library.
+- **Priority**: Make the `game-engine` a stellar example of a consumable Rust library.
+- **API Stability**: Breaking changes for v0.2.0 are approved to achieve a cleaner, more ergonomic API. All changes must be clearly documented.
+- **Developer Experience**: The primary goal is to make the engine easy and intuitive for other developers to use.
+- **Purity**: Continue to strictly enforce the separation of concerns, keeping the engine focused on core game logic.
+- **Architectural Decision**: The `game-engine` crate will remain the authoritative source for FreeCell rules. All higher-level features (solvers, UIs) will be built in separate crates.
 
 ## Important Patterns & Preferences
 

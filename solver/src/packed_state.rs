@@ -2,11 +2,7 @@
 //!
 //! Used primarily by solver components for efficient state comparison.
 
-use crate::game_state::GameState;
-use crate::card::{Card, Rank, Suit};
-use crate::tableau::Tableau;
-use crate::freecells::FreeCells;
-use crate::foundations::Foundations;
+use freecell_game_engine::{GameState, Card, Rank, Suit, Tableau, FreeCells, Foundations};
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct PackedGameState {
@@ -53,7 +49,8 @@ impl PackedGameState {
             for _ in 0..len {
                 let card_id = self.tableau_cards[idx];
                 let card = unpack_card(card_id)?;
-                tableau.place_card(col, card).map_err(|_| UnpackError::InvalidTableauLength)?;
+                let location = freecell_game_engine::location::TableauLocation::new(col as u8).unwrap();
+                tableau.place_card(location, card).map_err(|_| UnpackError::InvalidTableauLength)?;
                 idx += 1;
             }
         }
@@ -67,7 +64,8 @@ impl PackedGameState {
             let card_id = self.freecells[i];
             if card_id != 0 {
                 let card = unpack_card(card_id)?;
-                freecells.place_card(i, card).map_err(|_| UnpackError::InvalidCardId(card_id))?;
+                let location = freecell_game_engine::location::FreecellLocation::new(i as u8).unwrap();
+                freecells.place_card(location, card).map_err(|_| UnpackError::InvalidCardId(card_id))?;
             }
         }
 
@@ -83,17 +81,13 @@ impl PackedGameState {
                 for r in 1..=top_rank {
                     let rank = Rank::try_from(r).map_err(|_| UnpackError::InvalidRank(r))?;
                     let card = Card::new(rank, suit);
-                    foundations.place_card(i, card).map_err(|_| UnpackError::InvalidFoundationRank(top_rank))?;
+                    let location = freecell_game_engine::location::FoundationLocation::new(i as u8).unwrap();
+                    foundations.place_card(location, card).map_err(|_| UnpackError::InvalidFoundationRank(top_rank))?;
                 }
             }
         }
 
-        let mut gs = GameState::new();
-        // Overwrite tableau
-        *gs.tableau_mut() = tableau;
-        *gs.freecells_mut() = freecells;
-        *gs.foundations_mut() = foundations;
-        Ok(gs)
+        Ok(GameState::from_components(tableau, freecells, foundations))
     }
 }
 
@@ -115,11 +109,13 @@ impl PackedGameState {
         }
         let mut freecells = [0u8; 4];
         for i in 0..gs.freecells().cell_count() {
-            freecells[i] = gs.freecells().get_card(i).unwrap_or(None).map_or(0, pack_card);
+            let location = freecell_game_engine::location::FreecellLocation::new(i as u8).unwrap();
+            freecells[i] = gs.freecells().get_card(location).unwrap_or(None).map_or(0, pack_card);
         }
         let mut foundations = [0u8; 4];
         for i in 0..gs.foundations().pile_count() {
-            foundations[i] = gs.foundations().get_card(i).unwrap_or(None).map_or(0, |c| c.rank() as u8);
+            let location = freecell_game_engine::location::FoundationLocation::new(i as u8).unwrap();
+            foundations[i] = gs.foundations().get_card(location).unwrap_or(None).map_or(0, |c| c.rank() as u8);
         }
         PackedGameState {
             tableau_cards,
@@ -140,8 +136,7 @@ fn pack_card(card: &Card) -> u8 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::game_state::GameState;
-    use crate::card::{Card, Rank, Suit};
+    use freecell_game_engine::{GameState, Card, Rank, Suit};
 
     #[test]
     fn round_trip_default_state() {
@@ -153,21 +148,28 @@ mod tests {
 
     #[test]
     fn round_trip_complex_state() {
-        let mut gs = GameState::default();
-        // Place cards in tableau
+        let mut tableau = Tableau::new();
         let card1 = Card::new(Rank::Ace, Suit::Hearts);
         let card2 = Card::new(Rank::King, Suit::Spades);
-        gs.tableau_mut().place_card(0, card1).unwrap();
-        gs.tableau_mut().place_card(1, card2).unwrap();
-        // Place card in freecell
+        let location0 = freecell_game_engine::location::TableauLocation::new(0).unwrap();
+        let location1 = freecell_game_engine::location::TableauLocation::new(1).unwrap();
+        tableau.place_card(location0, card1).unwrap();
+        tableau.place_card(location1, card2).unwrap();
+
+        let mut freecells = FreeCells::new();
         let card3 = Card::new(Rank::Queen, Suit::Diamonds);
-        gs.freecells_mut().place_card(0, card3).unwrap();
-        // Build up a foundation
+        let location = freecell_game_engine::location::FreecellLocation::new(0).unwrap();
+        freecells.place_card(location, card3).unwrap();
+
+        let mut foundations = Foundations::new();
         for r in 1..=3 {
             let rank = Rank::try_from(r).unwrap();
             let card = Card::new(rank, Suit::Diamonds);
-            gs.foundations_mut().place_card(2, card).unwrap();
+            let location = freecell_game_engine::location::FoundationLocation::new(2).unwrap();
+            foundations.place_card(location, card).unwrap();
         }
+
+        let gs = GameState::from_components(tableau, freecells, foundations);
         let packed = PackedGameState::from_game_state(&gs);
         let unpacked = packed.to_game_state().unwrap();
         assert_eq!(gs, unpacked, "Complex state should round-trip");

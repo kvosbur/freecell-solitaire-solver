@@ -5,6 +5,7 @@
 mod game_prep;
 mod harness;
 mod strategies;
+pub mod packed_state;
 
 use freecell_game_engine::generation::generate_deal;
 use strategies::strat5::solve;

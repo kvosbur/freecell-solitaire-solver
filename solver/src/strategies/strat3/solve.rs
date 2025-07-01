@@ -23,7 +23,7 @@ fn dfs(
     {
         return false;
     }
-    if game.is_won() {
+    if game.is_won().unwrap_or(false) {
         return true;
     }
     if path.len() > 200 {

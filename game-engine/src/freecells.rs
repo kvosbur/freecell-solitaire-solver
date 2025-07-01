@@ -11,23 +11,26 @@
 //! ```
 //! use freecell_game_engine::freecells::{FreeCells, FreeCellError};
 //! use freecell_game_engine::card::{Card, Rank, Suit};
+//! use freecell_game_engine::location::FreecellLocation;
 //!
 //! // Create a new set of freecells
 //! let mut freecells = FreeCells::new();
 //! 
 //! // Place a card in a freecell
 //! let card = Card::new(Rank::Ace, Suit::Spades);
-//! freecells.place_card(0, card).unwrap();
+//! let location = FreecellLocation::new(0).unwrap();
+//! freecells.place_card(location, card).unwrap();
 //! 
 //! // Check if a cell is empty
-//! assert!(!freecells.is_cell_empty(0).unwrap());
+//! assert!(!freecells.is_cell_empty(location).unwrap());
 //! 
 //! // Remove a card from a freecell
-//! let removed_card = freecells.remove_card(0).unwrap().unwrap();
+//! let removed_card = freecells.remove_card(location).unwrap().unwrap();
 //! assert_eq!(removed_card, card);
 //! ```
 
 use crate::card::Card;
+use crate::location::FreecellLocation;
 use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -42,13 +45,15 @@ use std::fmt;
 /// ```
 /// use freecell_game_engine::freecells::FreeCells;
 /// use freecell_game_engine::card::{Card, Rank, Suit};
+/// use freecell_game_engine::location::FreecellLocation;
 ///
 /// // Create a new empty set of freecells
 /// let mut freecells = FreeCells::new();
 ///
 /// // Place a card in cell 0
 /// let card = Card::new(Rank::Ace, Suit::Spades);
-/// freecells.place_card(0, card).unwrap();
+/// let location = FreecellLocation::new(0).unwrap();
+/// freecells.place_card(location, card).unwrap();
 /// ```
 pub struct FreeCells {
     cells: [Option<Card>; 4],
@@ -89,20 +94,21 @@ impl FreeCells {
     /// ```
     /// use freecell_game_engine::freecells::FreeCells;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FreecellLocation;
     ///
     /// let mut freecells = FreeCells::new();
     /// let card = Card::new(Rank::Ace, Suit::Spades);
-    /// freecells.place_card(0, card).unwrap();
+    /// freecells.place_card(FreecellLocation::new(0).unwrap(), card).unwrap();
     /// ```
-    pub fn place_card(&mut self, cell_index: usize, card: Card) -> Result<(), FreeCellError> {
-        if cell_index >= self.cells.len() {
-            return Err(FreeCellError::InvalidCell);
+    pub fn place_card(&mut self, location: FreecellLocation, card: Card) -> Result<(), FreeCellError> {
+        let cell_index = location.index() as usize;
+        if let Some(existing_card) = self.cells[cell_index] {
+            return Err(FreeCellError::CellOccupied {
+                cell_index: location.index(),
+                existing_card,
+                new_card: card,
+            });
         }
-        
-        if self.cells[cell_index].is_some() {
-            return Err(FreeCellError::CellOccupied);
-        }
-        
         self.cells[cell_index] = Some(card);
         Ok(())
     }
@@ -120,22 +126,21 @@ impl FreeCells {
     /// ```
     /// use freecell_game_engine::freecells::FreeCells;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FreecellLocation;
     ///
     /// let mut freecells = FreeCells::new();
     /// 
     /// // Place a card first
     /// let card = Card::new(Rank::Ace, Suit::Spades);
-    /// freecells.place_card(0, card).unwrap();
+    /// let location = FreecellLocation::new(0).unwrap();
+    /// freecells.place_card(location, card).unwrap();
     /// 
     /// // Then remove it
-    /// let removed_card = freecells.remove_card(0).unwrap();
+    /// let removed_card = freecells.remove_card(location).unwrap();
     /// assert_eq!(removed_card, Some(card));
     /// ```
-    pub fn remove_card(&mut self, cell_index: usize) -> Result<Option<Card>, FreeCellError> {
-        if cell_index >= self.cells.len() {
-            return Err(FreeCellError::InvalidCell);
-        }
-        Ok(self.cells[cell_index].take())
+    pub fn remove_card(&mut self, location: FreecellLocation) -> Result<Option<Card>, FreeCellError> {
+        Ok(self.cells[location.index() as usize].take())
     }
     
     /// Get a reference to a card in a freecell without removing it.
@@ -149,20 +154,19 @@ impl FreeCells {
     /// ```
     /// use freecell_game_engine::freecells::FreeCells;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FreecellLocation;
     ///
     /// let mut freecells = FreeCells::new();
     /// let card = Card::new(Rank::Ace, Suit::Spades);
-    /// freecells.place_card(0, card).unwrap();
+    /// let location = FreecellLocation::new(0).unwrap();
+    /// freecells.place_card(location, card).unwrap();
     /// 
     /// // Get a reference to the card
-    /// let card_ref = freecells.get_card(0).unwrap().unwrap();
+    /// let card_ref = freecells.get_card(location).unwrap().unwrap();
     /// assert_eq!(card_ref, &card);
     /// ```
-    pub fn get_card(&self, cell_index: usize) -> Result<Option<&Card>, FreeCellError> {
-        if cell_index >= self.cells.len() {
-            return Err(FreeCellError::InvalidCell);
-        }
-        Ok(self.cells[cell_index].as_ref())
+    pub fn get_card(&self, location: FreecellLocation) -> Result<Option<&Card>, FreeCellError> {
+        Ok(self.cells[location.index() as usize].as_ref())
     }
     
     /// Get the number of freecells.
@@ -186,12 +190,14 @@ impl FreeCells {
     /// ```
     /// use freecell_game_engine::freecells::FreeCells;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FreecellLocation;
     ///
     /// let mut freecells = FreeCells::new();
     /// assert_eq!(freecells.empty_cells_count(), 4);
     /// 
     /// // Place a card
-    /// freecells.place_card(0, Card::new(Rank::Ace, Suit::Spades)).unwrap();
+    /// let location = FreecellLocation::new(0).unwrap();
+    /// freecells.place_card(location, Card::new(Rank::Ace, Suit::Spades)).unwrap();
     /// assert_eq!(freecells.empty_cells_count(), 3);
     /// ```
     pub fn empty_cells_count(&self) -> usize {
@@ -209,19 +215,18 @@ impl FreeCells {
     /// ```
     /// use freecell_game_engine::freecells::FreeCells;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FreecellLocation;
     ///
     /// let mut freecells = FreeCells::new();
-    /// assert!(freecells.is_cell_empty(0).unwrap());
+    /// let location = FreecellLocation::new(0).unwrap();
+    /// assert!(freecells.is_cell_empty(location).unwrap());
     /// 
     /// // Place a card
-    /// freecells.place_card(0, Card::new(Rank::Ace, Suit::Spades)).unwrap();
-    /// assert!(!freecells.is_cell_empty(0).unwrap());
+    /// freecells.place_card(location, Card::new(Rank::Ace, Suit::Spades)).unwrap();
+    /// assert!(!freecells.is_cell_empty(location).unwrap());
     /// ```
-    pub fn is_cell_empty(&self, cell_index: usize) -> Result<bool, FreeCellError> {
-        if cell_index >= self.cells.len() {
-            return Err(FreeCellError::InvalidCell);
-        }
-        Ok(self.cells[cell_index].is_none())
+    pub fn is_cell_empty(&self, location: FreecellLocation) -> Result<bool, FreeCellError> {
+        Ok(self.cells[location.index() as usize].is_none())
     }
     
     /// Returns an iterator over the non-empty cells, yielding (index, card reference) pairs.
@@ -234,10 +239,13 @@ impl FreeCells {
     /// ```
     /// use freecell_game_engine::freecells::FreeCells;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FreecellLocation;
     ///
     /// let mut freecells = FreeCells::new();
-    /// freecells.place_card(0, Card::new(Rank::Ace, Suit::Spades)).unwrap();
-    /// freecells.place_card(2, Card::new(Rank::King, Suit::Hearts)).unwrap();
+    /// let location0 = FreecellLocation::new(0).unwrap();
+    /// freecells.place_card(location0, Card::new(Rank::Ace, Suit::Spades)).unwrap();
+    /// let location2 = FreecellLocation::new(2).unwrap();
+    /// freecells.place_card(location2, Card::new(Rank::King, Suit::Hearts)).unwrap();
     /// 
     /// // Iterate through occupied cells
     /// let occupied: Vec<_> = freecells.occupied_cells().collect();
@@ -262,6 +270,7 @@ impl FreeCells {
     /// ```
     /// use freecell_game_engine::freecells::FreeCells;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FreecellLocation;
     ///
     /// let mut freecells = FreeCells::new();
     /// 
@@ -270,7 +279,8 @@ impl FreeCells {
     /// let index = freecells.place_in_any_empty_cell(card).unwrap();
     /// 
     /// // Verify the card was placed at the returned index
-    /// assert_eq!(freecells.get_card(index).unwrap(), Some(&card));
+    /// let location = FreecellLocation::new(index as u8).unwrap();
+    /// assert_eq!(freecells.get_card(location).unwrap(), Some(&card));
     /// ```
     pub fn place_in_any_empty_cell(&mut self, card: Card) -> Result<usize, FreeCellError> {
         for (idx, cell) in self.cells.iter_mut().enumerate() {
@@ -281,6 +291,7 @@ impl FreeCells {
         }
         Err(FreeCellError::NoEmptyCells)
     }
+
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -294,42 +305,49 @@ impl FreeCells {
 /// ```
 /// use freecell_game_engine::freecells::{FreeCells, FreeCellError};
 /// use freecell_game_engine::card::{Card, Rank, Suit};
+/// use freecell_game_engine::location::FreecellLocation;
 ///
 /// let mut freecells = FreeCells::new();
 /// 
-/// // Trying to access an invalid cell index
-/// let result = freecells.place_card(5, Card::new(Rank::Ace, Suit::Spades));
-/// assert!(matches!(result, Err(FreeCellError::InvalidCell)));
-///
 /// // Trying to place a card in an occupied cell
-/// freecells.place_card(0, Card::new(Rank::Ace, Suit::Spades)).unwrap();
-/// let result = freecells.place_card(0, Card::new(Rank::Two, Suit::Hearts));
-/// assert!(matches!(result, Err(FreeCellError::CellOccupied)));
+/// let location = FreecellLocation::new(0).unwrap();
+/// freecells.place_card(location, Card::new(Rank::Ace, Suit::Spades)).unwrap();
+/// let result = freecells.place_card(location, Card::new(Rank::Two, Suit::Hearts));
+/// assert!(matches!(result, Err(FreeCellError::CellOccupied { .. })));
 /// ```
 pub enum FreeCellError {
-    /// Attempted to access an invalid cell index
-    InvalidCell,
-    /// Attempted to place a card in an occupied cell
-    CellOccupied,
-    /// Attempted to place a card but all cells are full
+    /// Attempted to access an invalid cell index.
+    InvalidCell(u8),
+    /// Attempted to place a card in an occupied cell.
+    CellOccupied {
+        cell_index: u8,
+        existing_card: Card,
+        new_card: Card,
+    },
+    /// Attempted to place a card but all cells are full.
     NoEmptyCells,
 }
 
 impl std::fmt::Display for FreeCellError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            FreeCellError::InvalidCell => write!(f, "Invalid freecell index"),
-            FreeCellError::CellOccupied => write!(f, "Freecell is already occupied"),
+            FreeCellError::InvalidCell(index) => write!(f, "Invalid freecell index: {}", index),
+            FreeCellError::CellOccupied { cell_index, existing_card, new_card } => write!(
+                f,
+                "Cannot place {} in freecell {}: already occupied by {}",
+                new_card, cell_index, existing_card
+            ),
             FreeCellError::NoEmptyCells => write!(f, "No empty freecells available"),
         }
     }
 }
 
 impl fmt::Display for FreeCells {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "FreeCells:")?;
         for i in 0..self.cell_count() {
-            match self.get_card(i) {
+            let location = FreecellLocation::new(i as u8).unwrap();
+            match self.get_card(location) {
                 Ok(Some(card)) => writeln!(f, "  Cell {}: {}", i, card)?,
                 Ok(None) => writeln!(f, "  Cell {}: Empty", i)?,
                 Err(_) => writeln!(f, "  Cell {}: Invalid", i)?,
@@ -359,8 +377,9 @@ mod tests {
             "All cells should be empty initially"
         );
         for i in 0..freecells.cell_count() {
+            let location = FreecellLocation::new(i as u8).unwrap();
             assert!(
-                freecells.is_cell_empty(i).unwrap(),
+                freecells.is_cell_empty(location).unwrap(),
                 "Cell {} should be empty on initialization",
                 i
             );
@@ -371,58 +390,59 @@ mod tests {
     fn can_add_card_to_empty_freecell() {
         let mut freecells = FreeCells::new();
         let card = Card::new(Rank::Seven, Suit::Hearts);
-        freecells.place_card(0, card).unwrap();
-        assert!(!freecells.is_cell_empty(0).unwrap());
+        let location = FreecellLocation::new(0).unwrap();
+        freecells.place_card(location, card).unwrap();
+        assert!(!freecells.is_cell_empty(location).unwrap());
         assert_eq!(freecells.empty_cells_count(), 3);
-        assert_eq!(freecells.get_card(0).unwrap(), Some(&card));
+        assert_eq!(freecells.get_card(location).unwrap(), Some(&card));
     }
 
     #[test]
     fn can_remove_card_from_freecell() {
         let mut freecells = FreeCells::new();
         let card = Card::new(Rank::Seven, Suit::Hearts);
-        freecells.place_card(0, card).unwrap();
-        let removed_card = freecells.remove_card(0).unwrap();
+        let location = FreecellLocation::new(0).unwrap();
+        freecells.place_card(location, card).unwrap();
+        let removed_card = freecells.remove_card(location).unwrap();
         assert_eq!(removed_card, Some(card));
-        assert!(freecells.is_cell_empty(0).unwrap());
+        assert!(freecells.is_cell_empty(location).unwrap());
         assert_eq!(freecells.empty_cells_count(), 4);
     }
 
     #[test]
     fn removing_from_empty_freecell_returns_none() {
         let mut freecells = FreeCells::new();
-        let removed = freecells.remove_card(0).unwrap();
+        let location = FreecellLocation::new(0).unwrap();
+        let removed = freecells.remove_card(location).unwrap();
         assert_eq!(removed, None);
-        assert!(freecells.is_cell_empty(0).unwrap());
+        assert!(freecells.is_cell_empty(location).unwrap());
         assert_eq!(freecells.empty_cells_count(), 4);
     }
 
     #[test]
-    fn adding_card_to_occupied_freecell_panics() {
+    fn adding_card_to_occupied_freecell_errors() {
         let mut freecells = FreeCells::new();
         let card1 = Card::new(Rank::Seven, Suit::Hearts);
         let card2 = Card::new(Rank::Six, Suit::Spades);
-        freecells.place_card(0, card1).unwrap();
-        let result = freecells.place_card(0, card2);
-        assert!(matches!(result, Err(FreeCellError::CellOccupied)));
+        let location = FreecellLocation::new(0).unwrap();
+        freecells.place_card(location, card1).unwrap();
+        let result = freecells.place_card(location, card2);
+        assert!(matches!(result, Err(FreeCellError::CellOccupied { .. })));
     }
 
+    // Note: With FreecellLocation, out-of-bounds errors are prevented at compile time.
+    // We keep this test to ensure the underlying logic (if ever changed) is sound.
     #[test]
-    fn freecell_index_out_of_bounds_errors() {
+    fn freecell_location_prevents_out_of_bounds() {
         let mut freecells = FreeCells::new();
-        let result = freecells.place_card(
-            4,
-            Card::new(Rank::Two, Suit::Clubs),
-        );
-        assert!(matches!(result, Err(FreeCellError::InvalidCell)));
+        let card = Card::new(Rank::Two, Suit::Clubs);
+        
+        // This will fail to compile if using an invalid index with FreecellLocation::new
+        let valid_location = FreecellLocation::new(3).unwrap();
+        assert!(freecells.place_card(valid_location, card).is_ok());
 
-        let mut freecells = FreeCells::new();
-        let result = freecells.remove_card(4);
-        assert!(matches!(result, Err(FreeCellError::InvalidCell)));
-
-        let freecells = FreeCells::new();
-        let result = freecells.get_card(4);
-        assert!(matches!(result, Err(FreeCellError::InvalidCell)));
+        // The following would not compile:
+        // let invalid_location = FreecellLocation::new(4).unwrap();
     }
 
     #[test]
@@ -430,8 +450,10 @@ mod tests {
         let mut freecells = FreeCells::new();
         let card1 = Card::new(Rank::Seven, Suit::Hearts);
         let card2 = Card::new(Rank::Six, Suit::Spades);
-        freecells.place_card(0, card1.clone()).unwrap();
-        freecells.place_card(2, card2.clone()).unwrap();
+        let location1 = FreecellLocation::new(0).unwrap();
+        let location2 = FreecellLocation::new(2).unwrap();
+        freecells.place_card(location1, card1.clone()).unwrap();
+        freecells.place_card(location2, card2.clone()).unwrap();
 
         let occupied: Vec<_> = freecells.occupied_cells().collect();
         assert_eq!(occupied.len(), 2);
@@ -444,9 +466,11 @@ mod tests {
         let mut freecells = FreeCells::new();
         let card1 = Card::new(Rank::Seven, Suit::Hearts);
         let card2 = Card::new(Rank::Ace, Suit::Diamonds);
+        let location1 = FreecellLocation::new(0).unwrap();
+        let location2 = FreecellLocation::new(2).unwrap();
         
-        freecells.place_card(0, card1).unwrap();
-        freecells.place_card(2, card2).unwrap();
+        freecells.place_card(location1, card1).unwrap();
+        freecells.place_card(location2, card2).unwrap();
         
         let occupied: Vec<(usize, &Card)> = freecells.occupied_cells().collect();
         
@@ -460,14 +484,16 @@ mod tests {
         let mut freecells = FreeCells::new();
         let card1 = Card::new(Rank::Seven, Suit::Hearts);
         let card2 = Card::new(Rank::Six, Suit::Spades);
+        let location1 = FreecellLocation::new(0).unwrap();
         
         // Place card in specific cell
-        freecells.place_card(0, card1.clone()).unwrap();
+        freecells.place_card(location1, card1.clone()).unwrap();
         // Place card in any empty cell
         let placed_index = freecells.place_in_any_empty_cell(card2.clone()).unwrap();
         
         assert_eq!(placed_index, 1);
-        assert_eq!(freecells.get_card(1).unwrap(), Some(&card2));
+        let location2 = FreecellLocation::new(1).unwrap();
+        assert_eq!(freecells.get_card(location2).unwrap(), Some(&card2));
     }
 
     #[test]
@@ -475,29 +501,27 @@ mod tests {
         let mut freecells = FreeCells::new();
         
         // Fill all cells
-        freecells.place_card(0, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
-        freecells.place_card(1, Card::new(Rank::Two, Suit::Hearts)).unwrap();
-        freecells.place_card(2, Card::new(Rank::Three, Suit::Hearts)).unwrap();
-        freecells.place_card(3, Card::new(Rank::Four, Suit::Hearts)).unwrap();
+        for i in 0..4 {
+            let location = FreecellLocation::new(i).unwrap();
+            freecells.place_card(location, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
+        }
         
         // Try to place another
         let result = freecells.place_in_any_empty_cell(Card::new(Rank::Five, Suit::Hearts));
         assert!(matches!(result, Err(FreeCellError::NoEmptyCells)));
     }
 
-    #[test]
-    fn is_cell_empty_handles_invalid_index() {
-        let freecells = FreeCells::new();
-        let result = freecells.is_cell_empty(4);
-        assert!(matches!(result, Err(FreeCellError::InvalidCell)));
-    }
+    // Note: is_cell_empty now uses FreecellLocation, which prevents invalid indices at compile time.
+    // This test is removed as it's no longer applicable.
 
     #[test]
     fn error_implements_error_trait() {
         // Check that we can use FreeCellError with Box<dyn Error>
         fn returns_box_dyn_error() -> Result<(), Box<dyn std::error::Error>> {
             let mut freecells = FreeCells::new();
-            freecells.place_card(5, Card::new(Rank::Ace, Suit::Hearts))?;
+            let location = FreecellLocation::new(0).unwrap();
+            freecells.place_card(location, Card::new(Rank::Ace, Suit::Hearts))?;
+            freecells.place_card(location, Card::new(Rank::Two, Suit::Spades))?;
             Ok(())
         }
 
@@ -506,18 +530,31 @@ mod tests {
         
         // Convert to string to check Display implementation works
         let error_string = result.unwrap_err().to_string();
-        assert_eq!(error_string, "Invalid freecell index");
+        assert!(error_string.contains("already occupied by"));
     }
 
     #[test]
     fn display_formatting_works() {
         let mut freecells = FreeCells::new();
-        freecells.place_card(1, Card::new(Rank::King, Suit::Hearts)).unwrap();
+        let location = FreecellLocation::new(1).unwrap();
+        freecells.place_card(location, Card::new(Rank::King, Suit::Hearts)).unwrap();
         
         let display_output = format!("{}", freecells);
         assert!(display_output.contains("Cell 0: Empty"));
         assert!(display_output.contains("Cell 1:"));  // Assuming Card's Display includes the value
         assert!(display_output.contains("Cell 2: Empty"));
         assert!(display_output.contains("Cell 3: Empty"));
+    }
+
+    #[test]
+    fn can_use_freecell_location() {
+        let mut freecells = FreeCells::new();
+        let card = Card::new(Rank::Ace, Suit::Spades);
+        let location = FreecellLocation::new(0).unwrap();
+
+        freecells.place_card(location, card.clone()).unwrap();
+        assert_eq!(freecells.get_card(location).unwrap(), Some(&card));
+        assert_eq!(freecells.remove_card(location).unwrap(), Some(card));
+        assert_eq!(freecells.get_card(location).unwrap(), None);
     }
 }

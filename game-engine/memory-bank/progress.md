@@ -7,44 +7,35 @@ Tracks what works, what's left to build, current status, known issues, and the e
 
 ## What Works
 
-- **This project is a robust, reusable FreeCell game engine library crate (not a full game app).**
-- `game_state` is now modularized into submodules (`mod.rs`, `error.rs`, `validation.rs`, `moves.rs`, `execution.rs`), with private helpers for validation, unified error handling, and comprehensive documentation.
-- All core FreeCell movement and placement rules are implemented in Rust, fully tested with TDD:
-  - Tableau stacking (alternating color, descending rank)
-  - Foundation stacking (same suit, ascending rank)
-  - Free cell placement (only empty cells)
-  - Empty tableau column placement (any card)
-  - Foundation immutability (cards cannot be moved from foundation)
-- Modular, idiomatic Rust code with clear separation of concerns.
-- `GameState` struct models the board, freecells, tableau, and foundations.
-- Move validation and execution logic is complete.
-- Game state inspection API: win detection, available moves, etc.
-- 50+ parameterized and unit tests pass, covering all rule logic and state transitions.
-- Library is ready for integration with UIs, AI solvers, or other applications via its public API.
-- **New**: A comprehensive API review has confirmed the game engine's excellent adherence to Rust best practices. The current API is robust and functional.
+- ✅ **Pure Game Engine**: The library is a pure, robust, and reusable FreeCell game engine with no UI or solver-specific logic.
+- ✅ **Core Game Logic**: All FreeCell rules, move validation, and execution are fully implemented and tested.
+- ✅ **State Management**: `GameState` and all components (`Tableau`, `FreeCells`, `Foundations`) are fully functional and modularized.
+- ✅ **Type-Safe Locations**: The `Location` system with validated `TableauLocation`, `FreecellLocation`, and `FoundationLocation` is implemented, preventing invalid index errors.
+- ✅ **Standardized Component Interfaces**: All components (`Tableau`, `FreeCells`, `Foundations`) share a consistent API for `place_card`, `remove_card`, and `get_card`.
+- ✅ **Rich Error System**: A solid error handling foundation is in place, with `GameError` wrapping component-specific errors to provide context.
+- ✅ **Comprehensive Testing**: 50+ parameterized and unit tests ensure correctness and rule adherence.
+- ✅ **Excellent Documentation**: The entire public API is documented with examples.
 
 ## What's Left to Build
 
-- **Next Major Version (v0.2.0) API Refinement**:
-    - **Enhanced Error System**: Implement a rich `GameError` that preserves full context from component-specific errors (e.g., `FreeCellError`, `FoundationError`, `TableauError`).
-    - **Type-Safe Locations**: Introduce a validated `Location` struct for all game areas, ensuring type safety and preventing invalid indices at construction.
-    - **Clean Move System**: Redesign the `Move` struct to be type-safe and focused solely on game mechanics (source, destination, card count), removing any solver-specific metadata.
-    - **Focused GameState API**: Streamline the `GameState` API, ensuring all methods are core to game rules and mechanics, and provide consistent `Result`-based return types for all fallible operations. This includes methods for `execute_move`, `validate_move`, `get_available_moves`, and basic state queries.
-    - **Component Interface Refinement**: Ensure all component methods (`Tableau`, `FreeCells`, `Foundations`) consistently return `Result` for all fallible operations, providing consistent error handling.
-- Deck creation and shuffling logic.
-- Standard FreeCell deal algorithm (Microsoft-compatible).
-- Seed-based reproducible deals for testing/solvers.
-- Save/load functionality (serialization/deserialization).
-- Features such as undo/redo, auto-move to foundations, and state history (these will be implemented on top of the refined core engine, potentially in separate crates if they involve strategy/UI).
-- Continue writing tests and examples to support learning and code quality.
+- **Consumer Readiness Refinements (v0.2.0)**:
+    - **Standardize API Return Types**: Refactor all fallible operations to consistently return `Result<T, Error>` instead of a mix of `Result` and `Option`.
+    - **Simplify Error Handling**: Make the `GameError` enum more ergonomic and easier for consumers to handle.
+    - **Streamline Move Construction**: Introduce a builder pattern or convenience methods for `Move` to improve usability.
+    - **Clean Up API Surface**: Consolidate dual APIs (index-based vs. location-based) and remove unused features like `card_count` from `Move`.
+- **Consumer-Focused Documentation**:
+    - Add a "Getting Started" guide for library consumers.
+    - Provide clear migration notes for v0.2.0 breaking changes.
+    - Include end-to-end integration examples.
+- **Core Engine Features**:
+    - Deck creation and Microsoft-compatible shuffling algorithm.
+    - Seed-based reproducible deals.
 
 ## Current Status
 
-- The FreeCell game engine library crate is complete and fully tested for core logic.
-- All core logic, move system, and state inspection APIs are implemented.
-- The API has been thoroughly reviewed and is deemed excellent, but a decision has been made to introduce breaking changes in the next major version (v0.2.0) to further refine its purity and focus.
-- Ready for integration into a UI, solver, or other application, with the understanding that the API will undergo a significant, but beneficial, overhaul.
-- Next: Implementation of the v0.2.0 API changes, followed by deck/deal logic.
+- **v0.1.0 - Core Engine**: ✅ **COMPLETE**. The engine is fully functional, tested, and documented. It is ready for integration by consumers who are aware of the upcoming API refinements.
+- **v0.2.0 - Consumer Readiness**: ⏳ **IN PROGRESS**. The focus is now on refining the API to make it a stellar example of a consumable Rust library.
+- **Next**: Implement the targeted API refinements for v0.2.0.
 
 ## Known Issues
 

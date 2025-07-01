@@ -3,451 +3,111 @@ use freecell_game_engine::r#move::Move;
 pub fn get_game_solution(seed: u64) -> Vec<Move> {
     match seed {
         1 => vec![
-            Move::TableauToFreecell {
-                from_column: 5,
-                to_cell: 0,
-            }, // 1
-            Move::TableauToFreecell {
-                from_column: 5,
-                to_cell: 1,
-            }, // 2
-            Move::TableauToFoundation {
-                from_column: 5,
-                to_pile: 0, // club
-            }, // 3
-            Move::FreecellToFoundation {
-                from_cell: 1,
-                to_pile: 0,
-            }, // 4
-            Move::TableauToFoundation {
-                from_column: 5,
-                to_pile: 1, // Spades
-            }, // 5
-            Move::TableauToFreecell {
-                from_column: 6,
-                to_cell: 1,
-            }, // 6
-            Move::TableauToTableau {
-                from_column: 6,
-                to_column: 5,
-                card_count: 1,
-            }, // 7
-            Move::TableauToFreecell {
-                from_column: 6,
-                to_cell: 2,
-            }, // 8
-            Move::TableauToFoundation {
-                from_column: 6,
-                to_pile: 2, // hearts
-            }, // 9
-            Move::TableauToFoundation {
-                from_column: 2,
-                to_pile: 2,
-            }, // 10
-            Move::TableauToFreecell {
-                from_column: 5,
-                to_cell: 3,
-            }, // 11
-            Move::TableauToTableau {
-                from_column: 5,
-                to_column: 6,
-                card_count: 1,
-            }, // 11
-            Move::FreecellToTableau {
-                from_cell: 3,
-                to_column: 6,
-            }, // 11
-            Move::TableauToTableau {
-                from_column: 2,
-                to_column: 1,
-                card_count: 1,
-            }, // 12
-            Move::TableauToFreecell {
-                from_column: 2,
-                to_cell: 3,
-            }, // 13
-            Move::TableauToTableau {
-                from_column: 2,
-                to_column: 6,
-                card_count: 1,
-            }, // 14
-            Move::TableauToTableau {
-                from_column: 2,
-                to_column: 6,
-                card_count: 1,
-            }, // 15
-            Move::FreecellToTableau {
-                from_cell: 1,
-                to_column: 6,
-            }, // 16
-            Move::TableauToFreecell {
-                from_column: 7,
-                to_cell: 1,
-            }, // 17
-            Move::TableauToTableau {
-                from_column: 7,
-                to_column: 6,
-                card_count: 1,
-            }, // 18
-            Move::TableauToTableau {
-                from_column: 4,
-                to_column: 6,
-                card_count: 1,
-            }, // 19
-            Move::TableauToTableau {
-                from_column: 4,
-                to_column: 2,
-                card_count: 1,
-            }, // 20
-            Move::TableauToTableau {
-                from_column: 7,
-                to_column: 2,
-                card_count: 1,
-            }, // 21
-            Move::TableauToFoundation {
-                from_column: 7,
-                to_pile: 0,
-            }, // 22
-            Move::TableauToTableau {
-                from_column: 0,
-                to_column: 5,
-                card_count: 1,
-            }, // 23
-            Move::TableauToTableau {
-                from_column: 0,
-                to_column: 2,
-                card_count: 1,
-            }, // 24
-            Move::TableauToTableau {
-                from_column: 0,
-                to_column: 4,
-                card_count: 1,
-            }, // 25
-            Move::TableauToFoundation {
-                from_column: 0,
-                to_pile: 0,
-            }, // 26
-            Move::TableauToFoundation {
-                from_column: 0,
-                to_pile: 1,
-            }, // 27
-            Move::TableauToFoundation {
-                from_column: 7,
-                to_pile: 2,
-            }, // 28
-            Move::TableauToFoundation {
-                from_column: 4,
-                to_pile: 1,
-            }, // 29
-            Move::TableauToFoundation {
-                from_column: 4,
-                to_pile: 2,
-            }, // 30
-            Move::FreecellToFoundation {
-                from_cell: 3,
-                to_pile: 1,
-            }, // 31
-            Move::TableauToFoundation {
-                from_column: 7,
-                to_pile: 2,
-            }, // 32
-            Move::TableauToFoundation {
-                from_column: 3,
-                to_pile: 2,
-            }, // 33
-            Move::TableauToTableau {
-                from_column: 3,
-                to_column: 0,
-                card_count: 1,
-            }, // 34
-            Move::TableauToTableau {
-                from_column: 3,
-                to_column: 7,
-                card_count: 1,
-            }, // 35
-            Move::TableauToFreecell {
-                from_column: 1,
-                to_cell: 3,
-            }, // 36
-            Move::TableauToTableau {
-                from_column: 1,
-                to_column: 7,
-                card_count: 1,
-            }, // 36
-            Move::FreecellToTableau {
-                from_cell: 3,
-                to_column: 7,
-            }, // 36
-            Move::TableauToTableau {
-                from_column: 4,
-                to_column: 3,
-                card_count: 1,
-            }, // 37
-            Move::TableauToFoundation {
-                from_column: 4,
-                to_pile: 3, //  diamonds
-            }, // 38
-            Move::TableauToTableau {
-                from_column: 4,
-                to_column: 6,
-                card_count: 1,
-            }, // 39
-            Move::TableauToTableau {
-                from_column: 1,
-                to_column: 4,
-                card_count: 1,
-            }, // 40
-            Move::TableauToTableau {
-                from_column: 1,
-                to_column: 3,
-                card_count: 1,
-            }, // 41
-            Move::TableauToFoundation {
-                from_column: 1,
-                to_pile: 0,
-            }, // 42
-            Move::TableauToFreecell {
-                from_column: 5,
-                to_cell: 3,
-            }, // 43
-            Move::TableauToTableau {
-                from_column: 5,
-                to_column: 4,
-                card_count: 1,
-            }, // 43
-            Move::FreecellToTableau {
-                from_cell: 3,
-                to_column: 4,
-            }, // 43
-            Move::TableauToTableau {
-                from_column: 1,
-                to_column: 5,
-                card_count: 1,
-            }, // 44
-            Move::TableauToFreecell {
-                from_column: 1,
-                to_cell: 3,
-            }, // 45
-            Move::TableauToFoundation {
-                from_column: 1,
-                to_pile: 3,
-            }, // 46
-            Move::FreecellToFoundation {
-                from_cell: 0,
-                to_pile: 3,
-            }, // 47
-            Move::FreecellToFoundation {
-                from_cell: 2,
-                to_pile: 3,
-            }, // 48
-            Move::TableauToFoundation {
-                from_column: 6,
-                to_pile: 3,
-            }, // 49
-            Move::TableauToFoundation {
-                from_column: 6,
-                to_pile: 0,
-            }, // 50
-            Move::TableauToFreecell {
-                from_column: 3,
-                to_cell: 0,
-            }, // 51
-            Move::TableauToFreecell {
-                from_column: 3,
-                to_cell: 2,
-            }, // 51
-            Move::TableauToTableau {
-                from_column: 3,
-                to_column: 5,
-                card_count: 1,
-            }, // 51
-            Move::FreecellToTableau {
-                from_cell: 2,
-                to_column: 5,
-            }, // 51
-            Move::FreecellToTableau {
-                from_cell: 0,
-                to_column: 5,
-            }, // 51
-            Move::TableauToFreecell {
-                from_column: 3,
-                to_cell: 0,
-            }, // 52
-            Move::TableauToFoundation {
-                from_column: 3,
-                to_pile: 1,
-            }, // 53
-            Move::TableauToFoundation {
-                from_column: 2,
-                to_pile: 3,
-            }, // 54
-            Move::TableauToFoundation {
-                from_column: 4,
-                to_pile: 1,
-            }, // 55
-            Move::TableauToFoundation {
-                from_column: 2,
-                to_pile: 1,
-            }, // 56
-            Move::TableauToFoundation {
-                from_column: 4,
-                to_pile: 2,
-            }, // 57
-            Move::TableauToFoundation {
-                from_column: 6,
-                to_pile: 3,
-            }, // 58
-            Move::TableauToFoundation {
-                from_column: 4,
-                to_pile: 1,
-            }, // 59
-            Move::TableauToFreecell {
-                from_column: 0,
-                to_cell: 2,
-            }, // 60
-            Move::TableauToTableau {
-                from_column: 0,
-                to_column: 4,
-                card_count: 1,
-            }, // 60
-            Move::FreecellToTableau {
-                from_cell: 2,
-                to_column: 4,
-            }, // 60
-            Move::TableauToFreecell {
-                from_column: 6,
-                to_cell: 2,
-            }, // 61  // moved 8
-            Move::FreecellToTableau {
-                from_cell: 1,
-                to_column: 0,
-            }, // 61
-            Move::TableauToTableau {
-                from_column: 6,
-                to_column: 0,
-                card_count: 1,
-            }, // 61  // moved 9
-            Move::FreecellToTableau {
-                from_cell: 3,
-                to_column: 1,
-            }, // 61
-            Move::FreecellToTableau {
-                from_cell: 0,
-                to_column: 1,
-            }, // 61
-            Move::TableauToFreecell {
-                from_column: 6,
-                to_cell: 0,
-            }, // 61  // moved 10
-            Move::TableauToTableau {
-                from_column: 6,
-                to_column: 4,
-                card_count: 1,
-            }, // 61// moved jack
-            Move::TableauToFreecell {
-                from_column: 6,
-                to_cell: 3,
-            }, // 61 // moved queen
-            Move::TableauToFreecell {
-                from_column: 6,
-                to_cell: 1,
-            }, // 61 // moved king
-            Move::TableauToFoundation {
-                from_column: 6,
-                to_pile: 0,
-            }, // 62
-            Move::FreecellToFoundation {
-                from_cell: 2,
-                to_pile: 0,
-            }, // 63
-            Move::TableauToFoundation {
-                from_column: 7,
-                to_pile: 3,
-            }, // 64
-            Move::TableauToFoundation {
-                from_column: 2,
-                to_pile: 2,
-            }, // 65
-            Move::TableauToFoundation {
-                from_column: 7,
-                to_pile: 0,
-            }, // 66
-            Move::TableauToFoundation {
-                from_column: 2,
-                to_pile: 1,
-            }, // 67
-            Move::TableauToFoundation {
-                from_column: 0,
-                to_pile: 3,
-            }, // 68
-            Move::TableauToFoundation {
-                from_column: 2,
-                to_pile: 2,
-            }, // 69
-            Move::FreecellToFoundation {
-                from_cell: 0,
-                to_pile: 1,
-            }, // 70
-            Move::TableauToFoundation {
-                from_column: 5,
-                to_pile: 3,
-            }, // 71
-            Move::TableauToFoundation {
-                from_column: 0,
-                to_pile: 0,
-            }, // 72
-            Move::TableauToFoundation {
-                from_column: 7,
-                to_pile: 2,
-            }, // 73
-            Move::TableauToFoundation {
-                from_column: 5,
-                to_pile: 1,
-            }, // 74
-            Move::TableauToFoundation {
-                from_column: 4,
-                to_pile: 2,
-            }, // 75
-            Move::TableauToFoundation {
-                from_column: 3,
-                to_pile: 0,
-            }, // 76
-            Move::TableauToFoundation {
-                from_column: 0,
-                to_pile: 3,
-            }, // 77
-            Move::FreecellToFoundation {
-                from_cell: 3,
-                to_pile: 0,
-            }, // 78
-            Move::TableauToFoundation {
-                from_column: 5,
-                to_pile: 2,
-            }, // 79
-            Move::TableauToFoundation {
-                from_column: 4,
-                to_pile: 1,
-            }, // 80
-            Move::TableauToFoundation {
-                from_column: 1,
-                to_pile: 3,
-            }, // 81
-            Move::FreecellToFoundation {
-                from_cell: 1,
-                to_pile: 2,
-            }, // 82
-            Move::TableauToFoundation {
-                from_column: 5,
-                to_pile: 1,
-            }, // 83
-            Move::TableauToFoundation {
-                from_column: 4,
-                to_pile: 3,
-            }, // 84
-            Move::TableauToFoundation {
-                from_column: 1,
-                to_pile: 0,
-            }, // 85
+            Move::tableau_to_freecell(5, 0).unwrap(), // 1
+            Move::tableau_to_freecell(5, 1).unwrap(), // 2
+            Move::tableau_to_foundation(5, 0).unwrap(), // 3
+            Move::freecell_to_foundation(1, 0).unwrap(), // 4
+            Move::tableau_to_foundation(5, 1).unwrap(), // 5
+            Move::tableau_to_freecell(6, 1).unwrap(), // 6
+            Move::tableau_to_tableau(6, 5, 1).unwrap(), // 7
+            Move::tableau_to_freecell(6, 2).unwrap(), // 8
+            Move::tableau_to_foundation(6, 2).unwrap(), // 9
+            Move::tableau_to_foundation(2, 2).unwrap(), // 10
+            Move::tableau_to_freecell(5, 3).unwrap(), // 11
+            Move::tableau_to_tableau(5, 6, 1).unwrap(), // 11
+            Move::freecell_to_tableau(3, 6).unwrap(), // 11
+            Move::tableau_to_tableau(2, 1, 1).unwrap(), // 12
+            Move::tableau_to_freecell(2, 3).unwrap(), // 13
+            Move::tableau_to_tableau(2, 6, 1).unwrap(), // 14
+            Move::tableau_to_tableau(2, 6, 1).unwrap(), // 15
+            Move::freecell_to_tableau(1, 6).unwrap(), // 16
+            Move::tableau_to_freecell(7, 1).unwrap(), // 17
+            Move::tableau_to_tableau(7, 6, 1).unwrap(), // 18
+            Move::tableau_to_tableau(4, 6, 1).unwrap(), // 19
+            Move::tableau_to_tableau(4, 2, 1).unwrap(), // 20
+            Move::tableau_to_tableau(7, 2, 1).unwrap(), // 21
+            Move::tableau_to_foundation(7, 0).unwrap(), // 22
+            Move::tableau_to_tableau(0, 5, 1).unwrap(), // 23
+            Move::tableau_to_tableau(0, 2, 1).unwrap(), // 24
+            Move::tableau_to_tableau(0, 4, 1).unwrap(), // 25
+            Move::tableau_to_foundation(0, 0).unwrap(), // 26
+            Move::tableau_to_foundation(0, 1).unwrap(), // 27
+            Move::tableau_to_foundation(7, 2).unwrap(), // 28
+            Move::tableau_to_foundation(4, 1).unwrap(), // 29
+            Move::tableau_to_foundation(4, 2).unwrap(), // 30
+            Move::freecell_to_foundation(3, 1).unwrap(), // 31
+            Move::tableau_to_foundation(7, 2).unwrap(), // 32
+            Move::tableau_to_foundation(3, 2).unwrap(), // 33
+            Move::tableau_to_tableau(3, 0, 1).unwrap(), // 34
+            Move::tableau_to_tableau(3, 7, 1).unwrap(), // 35
+            Move::tableau_to_freecell(1, 3).unwrap(), // 36
+            Move::tableau_to_tableau(1, 7, 1).unwrap(), // 36
+            Move::freecell_to_tableau(3, 7).unwrap(), // 36
+            Move::tableau_to_tableau(4, 3, 1).unwrap(), // 37
+            Move::tableau_to_foundation(4, 3).unwrap(), // 38
+            Move::tableau_to_tableau(4, 6, 1).unwrap(), // 39
+            Move::tableau_to_tableau(1, 4, 1).unwrap(), // 40
+            Move::tableau_to_tableau(1, 3, 1).unwrap(), // 41
+            Move::tableau_to_foundation(1, 0).unwrap(), // 42
+            Move::tableau_to_freecell(5, 3).unwrap(), // 43
+            Move::tableau_to_tableau(5, 4, 1).unwrap(), // 43
+            Move::freecell_to_tableau(3, 4).unwrap(), // 43
+            Move::tableau_to_tableau(1, 5, 1).unwrap(), // 44
+            Move::tableau_to_freecell(1, 3).unwrap(), // 45
+            Move::tableau_to_foundation(1, 3).unwrap(), // 46
+            Move::freecell_to_foundation(0, 3).unwrap(), // 47
+            Move::freecell_to_foundation(2, 3).unwrap(), // 48
+            Move::tableau_to_foundation(6, 3).unwrap(), // 49
+            Move::tableau_to_foundation(6, 0).unwrap(), // 50
+            Move::tableau_to_freecell(3, 0).unwrap(), // 51
+            Move::tableau_to_freecell(3, 2).unwrap(), // 51
+            Move::tableau_to_tableau(3, 5, 1).unwrap(), // 51
+            Move::freecell_to_tableau(2, 5).unwrap(), // 51
+            Move::freecell_to_tableau(0, 5).unwrap(), // 51
+            Move::tableau_to_freecell(3, 0).unwrap(), // 52
+            Move::tableau_to_foundation(3, 1).unwrap(), // 53
+            Move::tableau_to_foundation(2, 3).unwrap(), // 54
+            Move::tableau_to_foundation(4, 1).unwrap(), // 55
+            Move::tableau_to_foundation(2, 1).unwrap(), // 56
+            Move::tableau_to_foundation(4, 2).unwrap(), // 57
+            Move::tableau_to_foundation(6, 3).unwrap(), // 58
+            Move::tableau_to_foundation(4, 1).unwrap(), // 59
+            Move::tableau_to_freecell(0, 2).unwrap(), // 60
+            Move::tableau_to_tableau(0, 4, 1).unwrap(), // 60
+            Move::freecell_to_tableau(2, 4).unwrap(), // 60
+            Move::tableau_to_freecell(6, 2).unwrap(), // 61
+            Move::freecell_to_tableau(1, 0).unwrap(), // 61
+            Move::tableau_to_tableau(6, 0, 1).unwrap(), // 61
+            Move::freecell_to_tableau(3, 1).unwrap(), // 61
+            Move::freecell_to_tableau(0, 1).unwrap(), // 61
+            Move::tableau_to_freecell(6, 0).unwrap(), // 61
+            Move::tableau_to_tableau(6, 4, 1).unwrap(), // 61
+            Move::tableau_to_freecell(6, 3).unwrap(), // 61
+            Move::tableau_to_freecell(6, 1).unwrap(), // 61
+            Move::tableau_to_foundation(6, 0).unwrap(), // 62
+            Move::freecell_to_foundation(2, 0).unwrap(), // 63
+            Move::tableau_to_foundation(7, 3).unwrap(), // 64
+            Move::tableau_to_foundation(2, 2).unwrap(), // 65
+            Move::tableau_to_foundation(7, 0).unwrap(), // 66
+            Move::tableau_to_foundation(2, 1).unwrap(), // 67
+            Move::tableau_to_foundation(0, 3).unwrap(), // 68
+            Move::tableau_to_foundation(2, 2).unwrap(), // 69
+            Move::freecell_to_foundation(0, 1).unwrap(), // 70
+            Move::tableau_to_foundation(5, 3).unwrap(), // 71
+            Move::tableau_to_foundation(0, 0).unwrap(), // 72
+            Move::tableau_to_foundation(7, 2).unwrap(), // 73
+            Move::tableau_to_foundation(5, 1).unwrap(), // 74
+            Move::tableau_to_foundation(4, 2).unwrap(), // 75
+            Move::tableau_to_foundation(3, 0).unwrap(), // 76
+            Move::tableau_to_foundation(0, 3).unwrap(), // 77
+            Move::freecell_to_foundation(3, 0).unwrap(), // 78
+            Move::tableau_to_foundation(5, 2).unwrap(), // 79
+            Move::tableau_to_foundation(4, 1).unwrap(), // 80
+            Move::tableau_to_foundation(1, 3).unwrap(), // 81
+            Move::freecell_to_foundation(1, 2).unwrap(), // 82
+            Move::tableau_to_foundation(5, 1).unwrap(), // 83
+            Move::tableau_to_foundation(4, 3).unwrap(), // 84
+            Move::tableau_to_foundation(1, 0).unwrap(), // 85
         ],
         _ => panic!("No solution for this seed"),
     }

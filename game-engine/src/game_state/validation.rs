@@ -5,6 +5,7 @@
 
 use super::{GameState, GameError};
 use crate::r#move::Move;
+
 impl GameState {
     /// Validates a move without executing it.
     ///
@@ -25,43 +26,42 @@ impl GameState {
     /// # Examples
     ///
     /// ```
-    /// use freecell_game_engine::{GameState, r#move::Move};
+    /// use freecell_game_engine::{GameState, Move};
     /// use freecell_game_engine::game_state::GameError;
+    /// use freecell_game_engine::location::{TableauLocation, FreecellLocation, FoundationLocation};
     ///
     /// let game = GameState::new(); // Represents a new, shuffled game
     ///
     /// // Example of a potentially valid move (depending on game state)
-    /// let valid_move = Move::TableauToFreecell { from_column: 0, to_cell: 0 };
-    /// if game.is_move_valid(&valid_move).is_ok() {
-    ///     println!("Move is valid!");
-    /// }
-    ///
-    /// // Example of an invalid move (e.g., moving from an empty source)
-    /// let invalid_move = Move::TableauToFoundation { from_column: 7, to_pile: 0 };
-    /// let result = game.is_move_valid(&invalid_move);
-    /// assert!(result.is_err());
-    /// if let Err(GameError::EmptySource) = result {
-    ///     println!("Caught expected error: Cannot move from empty source.");
+    /// let valid_move = Move::tableau_to_freecell(0, 0).unwrap();
+    /// if let Err(err) = game.is_move_valid(&valid_move) {
+    ///    println!("Invalid move: {}", err);
+    /// } else {
+    ///   println!("Move is valid!");
     /// }
     /// ```
     pub fn is_move_valid(&self, m: &Move) -> Result<(), GameError> {
-        use Move::*;
-        match m {
-            TableauToFoundation { from_column, to_pile } => {
-                self.validate_tableau_to_foundation(*from_column, *to_pile)
+        use crate::location::Location::*;
+        match (m.source, m.destination) {
+            (Tableau(from), Foundation(to)) => {
+                self.validate_tableau_to_foundation(from.index(), to.index(), m)
             }
-            TableauToFreecell { from_column, to_cell } => {
-                self.validate_tableau_to_freecell(*from_column, *to_cell)
+            (Tableau(from), Freecell(to)) => {
+                self.validate_tableau_to_freecell(from.index(), to.index(), m)
             }
-            FreecellToTableau { from_cell, to_column } => {
-                self.validate_freecell_to_tableau(*from_cell, *to_column)
+            (Freecell(from), Tableau(to)) => {
+                self.validate_freecell_to_tableau(from.index(), to.index(), m)
             }
-            FreecellToFoundation { from_cell, to_pile } => {
-                self.validate_freecell_to_foundation(*from_cell, *to_pile)
+            (Freecell(from), Foundation(to)) => {
+                self.validate_freecell_to_foundation(from.index(), to.index(), m)
             }
-            TableauToTableau { from_column, to_column, card_count } => {
-                self.validate_tableau_to_tableau(*from_column, *to_column, *card_count)
+            (Tableau(from), Tableau(to)) => {
+                self.validate_tableau_to_tableau(from.index(), to.index(), m.card_count, m)
             }
+            _ => Err(GameError::InvalidMove {
+                reason: "Moves between these locations are not supported".to_string(),
+                attempted_move: *m,
+            }),
         }
     }
 
@@ -84,28 +84,38 @@ impl GameState {
     /// # Examples
     ///
     /// ```
-    /// use freecell_game_engine::{GameState, Card, Rank, Suit};
+    /// use freecell_game_engine::{GameState, Card, Rank, Suit, Move};
     /// use freecell_game_engine::game_state::GameError;
+    /// use freecell_game_engine::location::TableauLocation;
     ///
     /// let mut game = GameState::new();
-    /// // Assume game state is set up for a valid move
-    /// // game.tableau_mut().place_card(0, Card::new(Rank::Ace, Suit::Clubs)).unwrap();
+    /// // Assume game state is set up for a valid move.
+    /// // let location = TableauLocation::new(0).unwrap();
+    /// // game.tableau_mut().place_card(location, Card::new(Rank::Ace, Suit::Clubs)).unwrap();
     ///
-    /// let result = game.validate_tableau_to_foundation(0, 0);
-    /// // assert!(result.is_ok() || matches!(result, Err(GameError::InvalidMove(_))));
+    /// // Validate the move. The result depends on the initial deal.
+    /// let move_cmd = Move::tableau_to_foundation(0, 0).unwrap();
+    /// let result = game.is_move_valid(&move_cmd);
     /// ```
-    pub fn validate_tableau_to_foundation(&self, from_column: u8, to_pile: u8) -> Result<(), GameError> {
-        // Get the top card from the tableau column
-        let card_result = self.tableau().get_card(from_column as usize);
-        let card = match card_result {
-            Ok(Some(card)) => card,
-            Ok(None) => return Err(GameError::EmptySource),
-            Err(err) => return Err(err.into()),
-        };
-
-        // Check if the card can be placed on the foundation pile
-        self.foundations().validate_card_placement(to_pile as usize, card)
-            .map_err(|e| GameError::InvalidMove(format!("Cannot move card to foundation: {}", e)))
+    fn validate_tableau_to_foundation(&self, from_column: u8, to_pile: u8, m: &Move) -> Result<(), GameError> {
+        let location = crate::location::TableauLocation::new(from_column).map_err(GameError::Location)?;
+        let card = self.tableau.get_card(location)
+            .map_err(|e| GameError::Tableau {
+                error: e,
+                attempted_move: Some(*m),
+                operation: "validate_tableau_to_foundation".to_string(),
+            })?
+            .ok_or_else(|| GameError::InvalidMove {
+                reason: "Source tableau column is empty".to_string(),
+                attempted_move: *m,
+            })?;
+        self.foundations.validate_card_placement(to_pile as usize, card)
+            .map_err(|e| GameError::Foundation {
+                error: e,
+                attempted_move: Some(*m),
+                operation: "validate_tableau_to_foundation".to_string(),
+            })?;
+        Ok(())
     }
 
     /// Validates a move from a tableau column to a freecell.
@@ -127,32 +137,49 @@ impl GameState {
     /// # Examples
     ///
     /// ```
-    /// use freecell_game_engine::{GameState, Card, Rank, Suit};
+    /// use freecell_game_engine::{GameState, Card, Rank, Suit, Move};
     /// use freecell_game_engine::game_state::GameError;
+    /// use freecell_game_engine::location::TableauLocation;
     ///
     /// let mut game = GameState::new();
-    /// // Assume game state is set up for a valid move
-    /// // game.tableau_mut().place_card(0, Card::new(Rank::King, Suit::Spades)).unwrap();
+    /// // Assume game state is set up for a valid move.
+    /// // let location = TableauLocation::new(0).unwrap();
+    /// // game.tableau_mut().place_card(location, Card::new(Rank::King, Suit::Spades)).unwrap();
     ///
-    /// let result = game.validate_tableau_to_freecell(0, 0);
-    /// // assert!(result.is_ok() || matches!(result, Err(GameError::InvalidMove(_))));
+    /// // Validate the move. The result depends on the initial deal.
+    /// let move_cmd = Move::tableau_to_freecell(0, 0).unwrap();
+    /// let result = game.is_move_valid(&move_cmd);
     /// ```
-    pub fn validate_tableau_to_freecell(&self, from_column: u8, to_cell: u8) -> Result<(), GameError> {
-        // Verify that the source tableau column has a card to move
-        let card_result = self.tableau().get_card(from_column as usize);
-        match card_result {
-            Ok(Some(_)) => {}, // Card exists
-            Ok(None) => return Err(GameError::EmptySource),
-            Err(err) => return Err(err.into()),
-        };
-
-        // Check if the target freecell is empty
-        let freecell_result = self.freecells().get_card(to_cell as usize);
-        match freecell_result {
-            Ok(Some(_)) => Err(GameError::InvalidMove("Freecell is already occupied".to_string())),
-            Ok(None) => Ok(()), // Freecell is empty
-            Err(err) => Err(err.into()),
+    fn validate_tableau_to_freecell(&self, from_column: u8, to_cell: u8, m: &Move) -> Result<(), GameError> {
+        let location = crate::location::TableauLocation::new(from_column).map_err(GameError::Location)?;
+        if self.tableau.get_card(location)
+            .map_err(|e| GameError::Tableau {
+                error: e,
+                attempted_move: Some(*m),
+                operation: "validate_tableau_to_freecell".to_string(),
+            })?
+            .is_none()
+        {
+            return Err(GameError::InvalidMove {
+                reason: "Source tableau column is empty".to_string(),
+                attempted_move: *m,
+            });
         }
+        let location = crate::location::FreecellLocation::new(to_cell).map_err(GameError::Location)?;
+        if self.freecells.get_card(location)
+            .map_err(|e| GameError::FreeCell {
+                error: e,
+                attempted_move: Some(*m),
+                operation: "validate_tableau_to_freecell".to_string(),
+            })?
+            .is_some()
+        {
+            return Err(GameError::InvalidMove {
+                reason: "Destination freecell is occupied".to_string(),
+                attempted_move: *m,
+            });
+        }
+        Ok(())
     }
 
     /// Validates a move from a freecell to a tableau column.
@@ -174,29 +201,40 @@ impl GameState {
     /// # Examples
     ///
     /// ```
-    /// use freecell_game_engine::{GameState, Card, Rank, Suit};
+    /// use freecell_game_engine::{GameState, Card, Rank, Suit, Move};
     /// use freecell_game_engine::game_state::GameError;
+    /// use freecell_game_engine::location::{FreecellLocation, TableauLocation};
     ///
     /// let mut game = GameState::new();
-    /// // Assume game state is set up for a valid move
-    /// // game.freecells_mut().place_card(0, Card::new(Rank::King, Suit::Spades)).unwrap();
-    /// // game.tableau_mut().place_card(0, Card::new(Rank::Queen, Suit::Hearts)).unwrap();
+    /// // Assume game state is set up for a valid move.
+    /// // let freecell_location = FreecellLocation::new(0).unwrap();
+    /// // game.freecells_mut().place_card(freecell_location, Card::new(Rank::King, Suit::Spades)).unwrap();
+    /// // let tableau_location = TableauLocation::new(0).unwrap();
+    /// // game.tableau_mut().place_card(tableau_location, Card::new(Rank::Queen, Suit::Hearts)).unwrap();
     ///
-    /// let result = game.validate_freecell_to_tableau(0, 0);
-    /// // assert!(result.is_ok() || matches!(result, Err(GameError::InvalidMove(_))));
+    /// // Validate the move. The result depends on the initial deal.
+    /// let move_cmd = Move::freecell_to_tableau(0, 0).unwrap();
+    /// let result = game.is_move_valid(&move_cmd);
     /// ```
-    pub fn validate_freecell_to_tableau(&self, from_cell: u8, to_column: u8) -> Result<(), GameError> {
-        // Get the card from the freecell
-        let freecell_result = self.freecells().get_card(from_cell as usize);
-        let card = match freecell_result {
-            Ok(Some(card)) => card,
-            Ok(None) => return Err(GameError::InvalidMove("No card in freecell".to_string())),
-            Err(err) => return Err(err.into()),
-        };
-
-        // Check stacking rules
-        self.tableau().validate_card_placement(to_column as usize, card)
-            .map_err(|e| GameError::InvalidMove(format!("Cannot stack on tableau: {}", e)))
+    fn validate_freecell_to_tableau(&self, from_cell: u8, to_column: u8, m: &Move) -> Result<(), GameError> {
+        let location = crate::location::FreecellLocation::new(from_cell).map_err(GameError::Location)?;
+        let card = self.freecells.get_card(location)
+            .map_err(|e| GameError::FreeCell {
+                error: e,
+                attempted_move: Some(*m),
+                operation: "validate_freecell_to_tableau".to_string(),
+            })?
+            .ok_or_else(|| GameError::InvalidMove {
+                reason: "Source freecell is empty".to_string(),
+                attempted_move: *m,
+            })?;
+        self.tableau.validate_card_placement(to_column as usize, card)
+            .map_err(|e| GameError::Tableau {
+                error: e,
+                attempted_move: Some(*m),
+                operation: "validate_freecell_to_tableau".to_string(),
+            })?;
+        Ok(())
     }
 
     /// Validates a move from a freecell to a foundation pile.
@@ -218,28 +256,38 @@ impl GameState {
     /// # Examples
     ///
     /// ```
-    /// use freecell_game_engine::{GameState, Card, Rank, Suit};
+    /// use freecell_game_engine::{GameState, Card, Rank, Suit, Move};
     /// use freecell_game_engine::game_state::GameError;
+    /// use freecell_game_engine::location::FreecellLocation;
     ///
     /// let mut game = GameState::new();
-    /// // Assume game state is set up for a valid move
-    /// // game.freecells_mut().place_card(0, Card::new(Rank::Ace, Suit::Diamonds)).unwrap();
+    /// // Assume game state is set up for a valid move.
+    /// // let location = FreecellLocation::new(0).unwrap();
+    /// // game.freecells_mut().place_card(location, Card::new(Rank::Ace, Suit::Diamonds)).unwrap();
     ///
-    /// let result = game.validate_freecell_to_foundation(0, 0);
-    /// // assert!(result.is_ok() || matches!(result, Err(GameError::InvalidMove(_))));
+    /// // Validate the move. The result depends on the initial deal.
+    /// let move_cmd = Move::freecell_to_foundation(0, 0).unwrap();
+    /// let result = game.is_move_valid(&move_cmd);
     /// ```
-    pub fn validate_freecell_to_foundation(&self, from_cell: u8, to_pile: u8) -> Result<(), GameError> {
-        // Get the card from the freecell
-        let freecell_result = self.freecells().get_card(from_cell as usize);
-        let card = match freecell_result {
-            Ok(Some(card)) => card,
-            Ok(None) => return Err(GameError::InvalidMove("No card in freecell".to_string())),
-            Err(err) => return Err(err.into()),
-        };
-
-        // Check foundation rules
-        self.foundations().validate_card_placement(to_pile as usize, card)
-            .map_err(|e| GameError::InvalidMove(format!("Cannot move card to foundation: {}", e)))
+    fn validate_freecell_to_foundation(&self, from_cell: u8, to_pile: u8, m: &Move) -> Result<(), GameError> {
+        let location = crate::location::FreecellLocation::new(from_cell).map_err(GameError::Location)?;
+        let card = self.freecells.get_card(location)
+            .map_err(|e| GameError::FreeCell {
+                error: e,
+                attempted_move: Some(*m),
+                operation: "validate_freecell_to_foundation".to_string(),
+            })?
+            .ok_or_else(|| GameError::InvalidMove {
+                reason: "Source freecell is empty".to_string(),
+                attempted_move: *m,
+            })?;
+        self.foundations.validate_card_placement(to_pile as usize, card)
+            .map_err(|e| GameError::Foundation {
+                error: e,
+                attempted_move: Some(*m),
+                operation: "validate_freecell_to_foundation".to_string(),
+            })?;
+        Ok(())
     }
 
     /// Validates a Tableau-to-Tableau move.
@@ -254,22 +302,29 @@ impl GameState {
     ///
     /// * `Ok(())` if the move is legal
     /// * `Err(GameError)` with a specific error if the move is invalid
-    pub fn validate_tableau_to_tableau(&self, from_column: u8, to_column: u8, card_count: u8) -> Result<(), GameError> {
+    fn validate_tableau_to_tableau(&self, from_column: u8, to_column: u8, card_count: u8, m: &Move) -> Result<(), GameError> {
         // Only allow single card moves for now
         if card_count != 1 {
             return Err(GameError::OnlySingleCardMovesSupported);
         }
 
-        // Verify source column has a card
-        let source_result = self.tableau().get_card(from_column as usize);
-        let card = match source_result {
-            Ok(Some(card)) => card,
-            Ok(None) => return Err(GameError::NoCardInTableauColumn),
-            Err(err) => return Err(err.into()),
-        };
-
-        // Check tableau stacking rules
-        self.tableau().validate_card_placement(to_column as usize, card)
-            .map_err(|e| GameError::InvalidMove(format!("Cannot stack on tableau: {}", e)))
+        let from_location = crate::location::TableauLocation::new(from_column).map_err(GameError::Location)?;
+        let card = self.tableau.get_card(from_location)
+            .map_err(|e| GameError::Tableau {
+                error: e,
+                attempted_move: Some(*m),
+                operation: "validate_tableau_to_tableau".to_string(),
+            })?
+            .ok_or_else(|| GameError::InvalidMove {
+                reason: "Source tableau column is empty".to_string(),
+                attempted_move: *m,
+            })?;
+        self.tableau.validate_card_placement(to_column as usize, card)
+            .map_err(|e| GameError::Tableau {
+                error: e,
+                attempted_move: Some(*m),
+                operation: "validate_tableau_to_tableau".to_string(),
+            })?;
+        Ok(())
     }
 }

@@ -11,20 +11,22 @@
 //! ```
 //! use freecell_game_engine::foundations::{Foundations, FoundationError};
 //! use freecell_game_engine::card::{Card, Rank, Suit};
+//! use freecell_game_engine::location::FoundationLocation;
 //!
 //! // Create new foundation piles
 //! let mut foundations = Foundations::new();
 //! 
 //! // Place an Ace on an empty foundation pile
 //! let card = Card::new(Rank::Ace, Suit::Hearts);
-//! foundations.place_card(0, card).unwrap();
+//! let location = FoundationLocation::new(0).unwrap();
+//! foundations.place_card(location, card).unwrap();
 //! 
 //! // Check for cards in a foundation pile
-//! let top_card = foundations.get_card(0).unwrap().unwrap();
+//! let top_card = foundations.get_card(location).unwrap().unwrap();
 //! assert_eq!(top_card.rank(), Rank::Ace);
 //! 
 //! // Check if a pile is empty
-//! assert!(!foundations.is_pile_empty(0).unwrap());
+//! assert!(!foundations.is_pile_empty(location).unwrap());
 //! ```
 //!
 //! This module primarily implements the physical state and operations of foundation piles.
@@ -33,6 +35,7 @@
 //! This design allows higher-level game logic to implement and control rule enforcement.
 
 use crate::card::{Card, Rank, Suit};
+use crate::location::FoundationLocation;
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -47,29 +50,30 @@ use std::fmt;
 /// use freecell_game_engine::foundations::{Foundations, FoundationError};
 /// use freecell_game_engine::card::{Card, Rank, Suit};
 ///
-/// let mut foundations = Foundations::new();
-/// 
-/// // Trying to access an invalid pile index
-/// let result = foundations.place_card(5, Card::new(Rank::Ace, Suit::Hearts));
-/// assert!(matches!(result, Err(FoundationError::InvalidPile)));
-///
-/// // Validation errors are returned by validate_card_placement
 /// let foundations = Foundations::new();
+/// 
+/// // Validation errors are returned by validate_card_placement
 /// let result = foundations.validate_card_placement(0, &Card::new(Rank::Two, Suit::Hearts));
-/// assert!(matches!(result, Err(FoundationError::NonAceOnEmptyPile)));
+/// assert!(matches!(result, Err(FoundationError::NonAceOnEmptyPile { .. })));
 /// ```
 pub enum FoundationError {
-    /// Attempted to access an invalid pile index
-    InvalidPile,
+    /// Attempted to access an invalid pile index.
+    InvalidPile(u8),
     
-    /// Attempted to add a non-Ace card to an empty foundation
-    NonAceOnEmptyPile,
+    /// Attempted to add a non-Ace card to an empty foundation.
+    NonAceOnEmptyPile { new_card: Card },
     
-    /// Card doesn't follow sequence rules (must be same suit, one rank higher)
-    InvalidSequence,
+    /// Card doesn't follow sequence rules (must be same suit, one rank higher).
+    InvalidSequence {
+        top_card: Card,
+        new_card: Card,
+    },
     
-    /// Attempted to place card on a completed pile (King is already placed)
-    PileComplete,
+    /// Attempted to place card on a completed pile (King is already placed).
+    PileComplete {
+        pile_index: u8,
+        new_card: Card,
+    },
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -84,13 +88,15 @@ pub enum FoundationError {
 /// ```
 /// use freecell_game_engine::foundations::Foundations;
 /// use freecell_game_engine::card::{Card, Rank, Suit};
+/// use freecell_game_engine::location::FoundationLocation;
 ///
 /// // Create a new empty set of foundations
 /// let mut foundations = Foundations::new();
 ///
 /// // Place a card in pile 0
 /// let card = Card::new(Rank::Ace, Suit::Hearts);
-/// foundations.place_card(0, card).unwrap();
+/// let location = FoundationLocation::new(0).unwrap();
+/// foundations.place_card(location, card).unwrap();
 /// ```
 pub struct Foundations {
     piles: [Vec<Card>; 4],
@@ -99,10 +105,22 @@ pub struct Foundations {
 impl fmt::Display for FoundationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            FoundationError::InvalidPile => write!(f, "Invalid foundation pile index"),
-            FoundationError::NonAceOnEmptyPile => write!(f, "Can only add Ace to empty foundation pile"),
-            FoundationError::InvalidSequence => write!(f, "Card must be one rank higher and same suit"),
-            FoundationError::PileComplete => write!(f, "Foundation pile is already complete"),
+            FoundationError::InvalidPile(index) => write!(f, "Invalid foundation pile index: {}", index),
+            FoundationError::NonAceOnEmptyPile { new_card } => write!(
+                f,
+                "Cannot place {} on empty foundation: only Aces are allowed",
+                new_card
+            ),
+            FoundationError::InvalidSequence { top_card, new_card } => write!(
+                f,
+                "Cannot place {} on {}: invalid sequence",
+                new_card, top_card
+            ),
+            FoundationError::PileComplete { pile_index, new_card } => write!(
+                f,
+                "Cannot place {} on pile {}: pile is already complete",
+                new_card, pile_index
+            ),
         }
     }
 }
@@ -120,7 +138,8 @@ impl fmt::Debug for Foundations {
         let mut debug_struct = f.debug_struct("Foundations");
         for pile in 0..self.pile_count() {
             let pile_name = format!("pile_{}", pile);
-            match self.get_card(pile) {
+            let location = FoundationLocation::new(pile as u8).unwrap();
+            match self.get_card(location) {
                 Ok(Some(card)) => debug_struct.field(&pile_name, &format!("top: {:?}", card)),
                 Ok(None) => debug_struct.field(&pile_name, &"[empty]"),
                 Err(_) => debug_struct.field(&pile_name, &"[error]"),
@@ -134,7 +153,8 @@ impl fmt::Display for Foundations {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Foundations:")?;
         for i in 0..self.pile_count() {
-            match self.get_card(i) {
+            let location = FoundationLocation::new(i as u8).unwrap();
+            match self.get_card(location) {
                 Ok(Some(card)) => writeln!(f, "  Pile {}: {} (height: {})", 
                                     i, card, self.pile_height(i))?,
                 Ok(None) => writeln!(f, "  Pile {}: Empty", i)?,
@@ -176,16 +196,14 @@ impl Foundations {
     /// ```
     /// use freecell_game_engine::foundations::Foundations;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FoundationLocation;
     ///
     /// let mut foundations = Foundations::new();
     /// let card = Card::new(Rank::Ace, Suit::Hearts);
-    /// foundations.place_card(0, card).unwrap();
+    /// foundations.place_card(FoundationLocation::new(0).unwrap(), card).unwrap();
     /// ```
-    pub fn place_card(&mut self, pile: usize, card: Card) -> Result<(), FoundationError> {
-        if pile >= self.piles.len() {
-            return Err(FoundationError::InvalidPile);
-        }
-        self.piles[pile].push(card);
+    pub fn place_card(&mut self, location: FoundationLocation, card: Card) -> Result<(), FoundationError> {
+        self.piles[location.index() as usize].push(card);
         Ok(())
     }
     
@@ -202,22 +220,21 @@ impl Foundations {
     /// ```
     /// use freecell_game_engine::foundations::Foundations;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FoundationLocation;
     ///
     /// let mut foundations = Foundations::new();
     /// 
     /// // Place a card first
     /// let card = Card::new(Rank::Ace, Suit::Hearts);
-    /// foundations.place_card(0, card.clone()).unwrap();
+    /// let location = FoundationLocation::new(0).unwrap();
+    /// foundations.place_card(location, card.clone()).unwrap();
     /// 
     /// // Then remove it
-    /// let removed_card = foundations.remove_card(0).unwrap();
+    /// let removed_card = foundations.remove_card(location).unwrap();
     /// assert_eq!(removed_card, Some(card));
     /// ```
-    pub fn remove_card(&mut self, pile: usize) -> Result<Option<Card>, FoundationError> {
-        if pile >= self.piles.len() {
-            return Err(FoundationError::InvalidPile);
-        }
-        Ok(self.piles[pile].pop())
+    pub fn remove_card(&mut self, location: FoundationLocation) -> Result<Option<Card>, FoundationError> {
+        Ok(self.piles[location.index() as usize].pop())
     }
     
     /// Get a reference to the top card in a foundation pile without removing it.
@@ -231,21 +248,20 @@ impl Foundations {
     /// ```
     /// use freecell_game_engine::foundations::Foundations;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FoundationLocation;
     ///
     /// let mut foundations = Foundations::new();
     /// let card = Card::new(Rank::Ace, Suit::Hearts);
-    /// foundations.place_card(0, card.clone()).unwrap();
+    /// let location = FoundationLocation::new(0).unwrap();
+    /// foundations.place_card(location, card.clone()).unwrap();
     /// 
     /// // Get a reference to the card
-    /// let card_ref = foundations.get_card(0).unwrap().unwrap();
+    /// let card_ref = foundations.get_card(location).unwrap().unwrap();
     /// assert_eq!(card_ref.rank(), Rank::Ace);
     /// assert_eq!(card_ref.suit(), Suit::Hearts);
     /// ```
-    pub fn get_card(&self, pile: usize) -> Result<Option<&Card>, FoundationError> {
-        if pile >= self.piles.len() {
-            return Err(FoundationError::InvalidPile);
-        }
-        Ok(self.piles[pile].last())
+    pub fn get_card(&self, location: FoundationLocation) -> Result<Option<&Card>, FoundationError> {
+        Ok(self.piles[location.index() as usize].last())
     }
     
     /// Get the number of foundation piles.
@@ -269,12 +285,14 @@ impl Foundations {
     /// ```
     /// use freecell_game_engine::foundations::Foundations;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FoundationLocation;
     ///
     /// let mut foundations = Foundations::new();
     /// assert_eq!(foundations.empty_piles_count(), 4);
     /// 
     /// // Place a card
-    /// foundations.place_card(0, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
+    /// let location = FoundationLocation::new(0).unwrap();
+    /// foundations.place_card(location, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
     /// assert_eq!(foundations.empty_piles_count(), 3);
     /// ```
     pub fn empty_piles_count(&self) -> usize {
@@ -292,19 +310,18 @@ impl Foundations {
     /// ```
     /// use freecell_game_engine::foundations::Foundations;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FoundationLocation;
     ///
     /// let mut foundations = Foundations::new();
-    /// assert!(foundations.is_pile_empty(0).unwrap());
+    /// let location = FoundationLocation::new(0).unwrap();
+    /// assert!(foundations.is_pile_empty(location).unwrap());
     /// 
     /// // Place a card
-    /// foundations.place_card(0, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
-    /// assert!(!foundations.is_pile_empty(0).unwrap());
+    /// foundations.place_card(location, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
+    /// assert!(!foundations.is_pile_empty(location).unwrap());
     /// ```
-    pub fn is_pile_empty(&self, pile: usize) -> Result<bool, FoundationError> {
-        if pile >= self.piles.len() {
-            return Err(FoundationError::InvalidPile);
-        }
-        Ok(self.piles[pile].is_empty())
+    pub fn is_pile_empty(&self, location: FoundationLocation) -> Result<bool, FoundationError> {
+        Ok(self.piles[location.index() as usize].is_empty())
     }
 
     /// Get the height (number of cards) of a foundation pile.
@@ -316,11 +333,13 @@ impl Foundations {
     /// ```
     /// use freecell_game_engine::foundations::Foundations;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FoundationLocation;
     ///
     /// let mut foundations = Foundations::new();
     /// assert_eq!(foundations.pile_height(0), 0);
     /// 
-    /// foundations.place_card(0, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
+    /// let location = FoundationLocation::new(0).unwrap();
+    /// foundations.place_card(location, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
     /// assert_eq!(foundations.pile_height(0), 1);
     /// ```
     pub fn pile_height(&self, pile: usize) -> usize {
@@ -339,12 +358,15 @@ impl Foundations {
     /// ```
     /// use freecell_game_engine::foundations::Foundations;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FoundationLocation;
     ///
     /// let mut foundations = Foundations::new();
     /// assert_eq!(foundations.total_cards(), 0);
     /// 
-    /// foundations.place_card(0, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
-    /// foundations.place_card(1, Card::new(Rank::Ace, Suit::Diamonds)).unwrap();
+    /// let location0 = FoundationLocation::new(0).unwrap();
+    /// foundations.place_card(location0, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
+    /// let location1 = FoundationLocation::new(1).unwrap();
+    /// foundations.place_card(location1, Card::new(Rank::Ace, Suit::Diamonds)).unwrap();
     /// assert_eq!(foundations.total_cards(), 2);
     /// ```
     pub fn total_cards(&self) -> usize {
@@ -379,7 +401,7 @@ impl Foundations {
     /// - Cannot add to a pile that already has a King (complete pile)
     pub fn validate_card_placement(&self, pile: usize, card: &Card) -> Result<(), FoundationError> {
         if pile >= self.piles.len() {
-            return Err(FoundationError::InvalidPile);
+            return Err(FoundationError::InvalidPile(pile as u8));
         }
         
         let pile_ref = &self.piles[pile];
@@ -387,7 +409,7 @@ impl Foundations {
         // For empty piles, only Aces are allowed
         if pile_ref.is_empty() {
             if card.rank() != Rank::Ace {
-                return Err(FoundationError::NonAceOnEmptyPile);
+                return Err(FoundationError::NonAceOnEmptyPile { new_card: *card });
             }
             return Ok(());
         }
@@ -396,15 +418,18 @@ impl Foundations {
         if let Some(top_card) = pile_ref.last() {
             // Check if pile is already complete
             if top_card.rank() == Rank::King {
-                return Err(FoundationError::PileComplete);
+                return Err(FoundationError::PileComplete {
+                    pile_index: pile as u8,
+                    new_card: *card,
+                });
             }
             
             // Check if card follows sequence rules
             let expected_rank = Rank::try_from((top_card.rank() as u8) + 1)
-                .map_err(|_| FoundationError::InvalidSequence)?;
+                .map_err(|_| FoundationError::InvalidSequence { top_card: *top_card, new_card: *card })?;
                 
             if card.suit() != top_card.suit() || card.rank() != expected_rank {
-                return Err(FoundationError::InvalidSequence);
+                return Err(FoundationError::InvalidSequence { top_card: *top_card, new_card: *card });
             }
         }
         
@@ -421,10 +446,13 @@ impl Foundations {
     /// ```
     /// use freecell_game_engine::foundations::Foundations;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FoundationLocation;
     ///
     /// let mut foundations = Foundations::new();
-    /// foundations.place_card(0, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
-    /// foundations.place_card(2, Card::new(Rank::Ace, Suit::Clubs)).unwrap();
+    /// let location0 = FoundationLocation::new(0).unwrap();
+    /// foundations.place_card(location0, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
+    /// let location2 = FoundationLocation::new(2).unwrap();
+    /// foundations.place_card(location2, Card::new(Rank::Ace, Suit::Clubs)).unwrap();
     /// 
     /// // Iterate through non-empty piles
     /// let non_empty: Vec<_> = foundations.non_empty_piles().collect();
@@ -448,11 +476,13 @@ impl Foundations {
     /// ```
     /// use freecell_game_engine::foundations::Foundations;
     /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FoundationLocation;
     ///
     /// let mut foundations = Foundations::new();
     /// 
     /// // Place Ace of Hearts in the first pile
-    /// foundations.place_card(0, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
+    /// let location0 = FoundationLocation::new(0).unwrap();
+    /// foundations.place_card(location0, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
     /// 
     /// // Find pile for another Hearts card
     /// let hearts_pile = foundations.find_pile_for_suit(Suit::Hearts);
@@ -482,6 +512,7 @@ impl Foundations {
         // No suitable pile found
         None
     }
+
 }
 
 #[cfg(test)]
@@ -514,11 +545,12 @@ mod tests {
     fn can_add_card_to_empty_foundation() {
         let mut foundations = Foundations::new();
         let card = Card::new(Rank::Ace, Suit::Hearts);
-        foundations.place_card(0, card.clone()).unwrap();
+        let location = FoundationLocation::new(0).unwrap();
+        foundations.place_card(location, card.clone()).unwrap();
         assert_eq!(foundations.pile_height(0), 1);
         
         // Compare top card's rank and suit instead of the card itself
-        let top_card = foundations.get_card(0).unwrap().unwrap();
+        let top_card = foundations.get_card(location).unwrap().unwrap();
         assert_eq!(top_card.rank(), card.rank());
         assert_eq!(top_card.suit(), card.suit());
     }
@@ -529,50 +561,44 @@ mod tests {
         let ace = Card::new(Rank::Ace, Suit::Hearts);
         let two = Card::new(Rank::Two, Suit::Hearts);
         let three = Card::new(Rank::Three, Suit::Hearts);
+        let location = FoundationLocation::new(0).unwrap();
 
-        foundations.place_card(0, ace.clone()).unwrap();
-        let top_card = foundations.get_card(0).unwrap().unwrap();
+        foundations.place_card(location, ace.clone()).unwrap();
+        let top_card = foundations.get_card(location).unwrap().unwrap();
         assert_eq!(top_card.rank(), Rank::Ace);
         assert_eq!(top_card.suit(), Suit::Hearts);
 
-        foundations.place_card(0, two.clone()).unwrap();
-        let top_card = foundations.get_card(0).unwrap().unwrap();
+        foundations.place_card(location, two.clone()).unwrap();
+        let top_card = foundations.get_card(location).unwrap().unwrap();
         assert_eq!(top_card.rank(), Rank::Two);
         assert_eq!(top_card.suit(), Suit::Hearts);
 
-        foundations.place_card(0, three.clone()).unwrap();
-        let top_card = foundations.get_card(0).unwrap().unwrap();
+        foundations.place_card(location, three.clone()).unwrap();
+        let top_card = foundations.get_card(location).unwrap().unwrap();
         assert_eq!(top_card.rank(), Rank::Three);
         assert_eq!(top_card.suit(), Suit::Hearts);
     }
 
+    // Note: With FoundationLocation, out-of-bounds errors are prevented at compile time.
     #[test]
-    fn foundation_operations_handle_invalid_indices() {
+    fn foundation_location_prevents_out_of_bounds() {
         let mut foundations = Foundations::new();
+        let card = Card::new(Rank::Ace, Suit::Hearts);
         
-        // Invalid pile index for place_card
-        let result = foundations.place_card(5, Card::new(Rank::Ace, Suit::Hearts));
-        assert!(matches!(result, Err(FoundationError::InvalidPile)));
+        // This will fail to compile if using an invalid index with FoundationLocation::new
+        let valid_location = FoundationLocation::new(3).unwrap();
+        assert!(foundations.place_card(valid_location, card).is_ok());
 
-        // Invalid pile index for get_card
-        let result = foundations.get_card(5);
-        assert!(matches!(result, Err(FoundationError::InvalidPile)));
-
-        // Invalid pile index for remove_card
-        let result = foundations.remove_card(5);
-        assert!(matches!(result, Err(FoundationError::InvalidPile)));
-
-        // Invalid pile index for is_pile_empty
-        let result = foundations.is_pile_empty(5);
-        assert!(matches!(result, Err(FoundationError::InvalidPile)));
+        // The following would not compile:
+        // let invalid_location = FoundationLocation::new(4).unwrap();
     }
 
     #[test]
     fn error_implements_error_trait() {
         // Check that we can use FoundationError with Box<dyn Error>
         fn returns_box_dyn_error() -> Result<(), Box<dyn std::error::Error>> {
-            let mut foundations = Foundations::new();
-            foundations.place_card(5, Card::new(Rank::Ace, Suit::Hearts))?;
+            let foundations = Foundations::new();
+            foundations.validate_card_placement(0, &Card::new(Rank::Two, Suit::Hearts))?;
             Ok(())
         }
 
@@ -581,7 +607,7 @@ mod tests {
         
         // Convert to string to check Display implementation works
         let error_string = result.unwrap_err().to_string();
-        assert_eq!(error_string, "Invalid foundation pile index");
+        assert!(error_string.contains("only Aces are allowed"));
     }
 
     #[test]
@@ -592,10 +618,12 @@ mod tests {
         assert_eq!(foundations.find_pile_for_suit(Suit::Hearts), Some(0));
         
         // Place Ace of Hearts in first pile
-        foundations.place_card(0, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
+        let location0 = FoundationLocation::new(0).unwrap();
+        foundations.place_card(location0, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
         
         // Place Ace of Diamonds in second pile
-        foundations.place_card(1, Card::new(Rank::Ace, Suit::Diamonds)).unwrap();
+        let location1 = FoundationLocation::new(1).unwrap();
+        foundations.place_card(location1, Card::new(Rank::Ace, Suit::Diamonds)).unwrap();
         
         // For hearts, should return the first pile
         assert_eq!(foundations.find_pile_for_suit(Suit::Hearts), Some(0));
@@ -607,8 +635,10 @@ mod tests {
         assert_eq!(foundations.find_pile_for_suit(Suit::Spades), Some(2));
         
         // If we fill all piles with different suits
-        foundations.place_card(2, Card::new(Rank::Ace, Suit::Clubs)).unwrap();
-        foundations.place_card(3, Card::new(Rank::Ace, Suit::Spades)).unwrap();
+        let location2 = FoundationLocation::new(2).unwrap();
+        foundations.place_card(location2, Card::new(Rank::Ace, Suit::Clubs)).unwrap();
+        let location3 = FoundationLocation::new(3).unwrap();
+        foundations.place_card(location3, Card::new(Rank::Ace, Suit::Spades)).unwrap();
         
         // Each suit should map to its pile
         assert_eq!(foundations.find_pile_for_suit(Suit::Hearts), Some(0));
@@ -626,8 +656,10 @@ mod tests {
         assert_eq!(non_empty.len(), 0);
         
         // Add cards to piles 0 and 2
-        foundations.place_card(0, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
-        foundations.place_card(2, Card::new(Rank::Ace, Suit::Clubs)).unwrap();
+        let location0 = FoundationLocation::new(0).unwrap();
+        foundations.place_card(location0, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
+        let location2 = FoundationLocation::new(2).unwrap();
+        foundations.place_card(location2, Card::new(Rank::Ace, Suit::Clubs)).unwrap();
         
         // Should now have 2 non-empty piles
         let non_empty: Vec<_> = foundations.non_empty_piles().collect();
@@ -638,5 +670,17 @@ mod tests {
         // Check the contents of the piles
         assert_eq!(non_empty[0].1.len(), 1);
         assert_eq!(non_empty[1].1.len(), 1);
+    }
+
+    #[test]
+    fn can_use_foundation_location() {
+        let mut foundations = Foundations::new();
+        let card = Card::new(Rank::Ace, Suit::Spades);
+        let location = FoundationLocation::new(0).unwrap();
+
+        foundations.place_card(location, card.clone()).unwrap();
+        assert_eq!(foundations.get_card(location).unwrap(), Some(&card));
+        assert_eq!(foundations.remove_card(location).unwrap(), Some(card));
+        assert_eq!(foundations.get_card(location).unwrap(), None);
     }
 }

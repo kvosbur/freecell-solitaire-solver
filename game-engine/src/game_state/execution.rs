@@ -21,41 +21,43 @@ impl GameState {
     /// # Examples
     ///
     /// ```
-    /// use freecell_game_engine::{GameState, r#move::Move, Card, Rank, Suit};
+    /// use freecell_game_engine::{GameState, Move, Card, Rank, Suit};
+    /// use freecell_game_engine::location::{TableauLocation, FreecellLocation};
     ///
     /// let mut game = GameState::new();
-    /// // Assume game state is set up such that this move is valid
-    /// // For example, deal a specific game or manually set up cards
+    /// // Assume game state is set up such that this move is valid.
+    /// // For example, by dealing a specific game or manually placing cards.
     ///
-    /// // Example: Move a card from Tableau column 0 to Freecell 0
-    /// // (Requires a card in Tableau 0 and Freecell 0 to be empty)
-    /// // game.tableau_mut().place_card(0, Card::new(Rank::Ace, Suit::Spades)).unwrap();
-    /// let move_cmd = Move::TableauToFreecell { from_column: 0, to_cell: 0 };
+    /// // Example: Define a move from Tableau column 0 to Freecell 0.
+    /// let move_cmd = Move::tableau_to_freecell(0, 0).unwrap();
     ///
-    /// // If the move is valid, execute it
-    /// if game.is_move_valid(&move_cmd).is_ok() {
-    ///     let result = game.execute_move(&move_cmd);
-    ///     assert!(result.is_ok());
+    /// // If the move is valid, execute it.
+    /// if let Err(err) = game.execute_move(&move_cmd) {
+    ///   println!("Error executing move: {}", err);
     /// }
     /// ```
     pub fn execute_move(&mut self, m: &Move) -> Result<(), GameError> {
-        use Move::*;
-        match m {
-            TableauToFoundation { from_column, to_pile } => {
-                self.execute_tableau_to_foundation(*from_column, *to_pile, m)
+        use crate::location::Location::*;
+        match (m.source, m.destination) {
+            (Tableau(from), Foundation(to)) => {
+                self.execute_tableau_to_foundation(from.index(), to.index(), m)
             }
-            TableauToFreecell { from_column, to_cell } => {
-                self.execute_tableau_to_freecell(*from_column, *to_cell, m)
+            (Tableau(from), Freecell(to)) => {
+                self.execute_tableau_to_freecell(from.index(), to.index(), m)
             }
-            FreecellToTableau { from_cell, to_column } => {
-                self.execute_freecell_to_tableau(*from_cell, *to_column, m)
+            (Freecell(from), Tableau(to)) => {
+                self.execute_freecell_to_tableau(from.index(), to.index(), m)
             }
-            FreecellToFoundation { from_cell, to_pile } => {
-                self.execute_freecell_to_foundation(*from_cell, *to_pile, m)
+            (Freecell(from), Foundation(to)) => {
+                self.execute_freecell_to_foundation(from.index(), to.index(), m)
             }
-            TableauToTableau { from_column, to_column, card_count } => {
-                self.execute_tableau_to_tableau(*from_column, *to_column, *card_count, m)
+            (Tableau(from), Tableau(to)) => {
+                self.execute_tableau_to_tableau(from.index(), to.index(), m.card_count, m)
             }
+            _ => Err(GameError::InvalidMove {
+                reason: "Moves between these locations are not supported".to_string(),
+                attempted_move: *m,
+            }),
         }
     }
 
@@ -80,14 +82,25 @@ impl GameState {
         to_pile: u8,
         m: &Move,
     ) -> Result<(), GameError> {
-        let _card = *self
-            .tableau
-            .get_card(from_column as usize)?
-            .ok_or(GameError::EmptySource)?;
         self.is_move_valid(m)?;
-        let removed = self.tableau.remove_card(from_column as usize)?;
-        let removed_card = removed.ok_or(GameError::EmptySource)?;
-        self.foundations.place_card(to_pile as usize, removed_card)?;
+        let from_location = crate::location::TableauLocation::new(from_column).map_err(GameError::Location)?;
+        let removed = self.tableau.remove_card(from_location).map_err(|e| GameError::Tableau {
+            error: e,
+            attempted_move: Some(*m),
+            operation: "execute_tableau_to_foundation".to_string(),
+        })?;
+        let removed_card = removed.ok_or_else(|| GameError::InvalidMove {
+            reason: "Source tableau column is empty".to_string(),
+            attempted_move: *m,
+        })?;
+        let to_location = crate::location::FoundationLocation::new(to_pile).map_err(GameError::Location)?;
+        self.foundations
+            .place_card(to_location, removed_card)
+            .map_err(|e| GameError::Foundation {
+                error: e,
+                attempted_move: Some(*m),
+                operation: "execute_tableau_to_foundation".to_string(),
+            })?;
         Ok(())
     }
 
@@ -112,18 +125,25 @@ impl GameState {
         to_cell: u8,
         m: &Move,
     ) -> Result<(), GameError> {
-        let _card = *self
-            .tableau
-            .get_card(from_column as usize)?
-            .ok_or(GameError::EmptySource)?;
-        let _card = *self
-            .tableau
-            .get_card(from_column as usize)?
-            .ok_or(GameError::EmptySource)?;
         self.is_move_valid(m)?;
-        let removed = self.tableau.remove_card(from_column as usize)?;
-        let removed_card = removed.ok_or(GameError::EmptySource)?;
-        self.freecells.place_card(to_cell as usize, removed_card)?;
+        let from_location = crate::location::TableauLocation::new(from_column).map_err(GameError::Location)?;
+        let removed = self.tableau.remove_card(from_location).map_err(|e| GameError::Tableau {
+            error: e,
+            attempted_move: Some(*m),
+            operation: "execute_tableau_to_freecell".to_string(),
+        })?;
+        let removed_card = removed.ok_or_else(|| GameError::InvalidMove {
+            reason: "Source tableau column is empty".to_string(),
+            attempted_move: *m,
+        })?;
+        let to_location = crate::location::FreecellLocation::new(to_cell).map_err(GameError::Location)?;
+        self.freecells
+            .place_card(to_location, removed_card)
+            .map_err(|e| GameError::FreeCell {
+                error: e,
+                attempted_move: Some(*m),
+                operation: "execute_tableau_to_freecell".to_string(),
+            })?;
         Ok(())
     }
 
@@ -148,18 +168,25 @@ impl GameState {
         to_column: u8,
         m: &Move,
     ) -> Result<(), GameError> {
-        let _card = *self
-            .freecells
-            .get_card(from_cell as usize)?
-            .ok_or(GameError::InvalidMove("No card in freecell".to_string()))?;
-        let _card = *self
-            .freecells
-            .get_card(from_cell as usize)?
-            .ok_or(GameError::InvalidMove("No card in freecell".to_string()))?;
         self.is_move_valid(m)?;
-        let removed = self.freecells.remove_card(from_cell as usize)?;
-        let removed_card = removed.ok_or(GameError::EmptySource)?;
-        self.tableau.place_card(to_column as usize, removed_card)?;
+        let from_location = crate::location::FreecellLocation::new(from_cell).map_err(GameError::Location)?;
+        let removed = self.freecells.remove_card(from_location).map_err(|e| GameError::FreeCell {
+            error: e,
+            attempted_move: Some(*m),
+            operation: "execute_freecell_to_tableau".to_string(),
+        })?;
+        let removed_card = removed.ok_or_else(|| GameError::InvalidMove {
+            reason: "Source freecell is empty".to_string(),
+            attempted_move: *m,
+        })?;
+        let to_location = crate::location::TableauLocation::new(to_column).map_err(GameError::Location)?;
+        self.tableau
+            .place_card(to_location, removed_card)
+            .map_err(|e| GameError::Tableau {
+                error: e,
+                attempted_move: Some(*m),
+                operation: "execute_freecell_to_tableau".to_string(),
+            })?;
         Ok(())
     }
 
@@ -184,14 +211,25 @@ impl GameState {
         to_pile: u8,
         m: &Move,
     ) -> Result<(), GameError> {
-        let _card = *self
-            .freecells
-            .get_card(from_cell as usize)?
-            .ok_or(GameError::InvalidMove("No card in freecell".to_string()))?;
         self.is_move_valid(m)?;
-        let removed = self.freecells.remove_card(from_cell as usize)?;
-        let removed_card = removed.ok_or(GameError::EmptySource)?;
-        self.foundations.place_card(to_pile as usize, removed_card)?;
+        let from_location = crate::location::FreecellLocation::new(from_cell).map_err(GameError::Location)?;
+        let removed = self.freecells.remove_card(from_location).map_err(|e| GameError::FreeCell {
+            error: e,
+            attempted_move: Some(*m),
+            operation: "execute_freecell_to_foundation".to_string(),
+        })?;
+        let removed_card = removed.ok_or_else(|| GameError::InvalidMove {
+            reason: "Source freecell is empty".to_string(),
+            attempted_move: *m,
+        })?;
+        let to_location = crate::location::FoundationLocation::new(to_pile).map_err(GameError::Location)?;
+        self.foundations
+            .place_card(to_location, removed_card)
+            .map_err(|e| GameError::Foundation {
+                error: e,
+                attempted_move: Some(*m),
+                operation: "execute_freecell_to_foundation".to_string(),
+            })?;
         Ok(())
     }
 
@@ -219,18 +257,27 @@ impl GameState {
         m: &Move,
     ) -> Result<(), GameError> {
         if card_count != 1 {
-            return Err(GameError::InvalidMove(
-                "Only single card moves supported".to_string(),
-            ));
+            return Err(GameError::OnlySingleCardMovesSupported);
         }
-        let _card = *self
-            .tableau
-            .get_card(from_column as usize)?
-            .ok_or(GameError::EmptySource)?;
         self.is_move_valid(m)?;
-        let removed = self.tableau.remove_card(from_column as usize)?;
-        let removed_card = removed.ok_or(GameError::EmptySource)?;
-        self.tableau.place_card(to_column as usize, removed_card)?;
+        let from_location = crate::location::TableauLocation::new(from_column).map_err(GameError::Location)?;
+        let removed = self.tableau.remove_card(from_location).map_err(|e| GameError::Tableau {
+            error: e,
+            attempted_move: Some(*m),
+            operation: "execute_tableau_to_tableau".to_string(),
+        })?;
+        let removed_card = removed.ok_or_else(|| GameError::InvalidMove {
+            reason: "Source tableau column is empty".to_string(),
+            attempted_move: *m,
+        })?;
+        let to_location = crate::location::TableauLocation::new(to_column).map_err(GameError::Location)?;
+        self.tableau
+            .place_card(to_location, removed_card)
+            .map_err(|e| GameError::Tableau {
+                error: e,
+                attempted_move: Some(*m),
+                operation: "execute_tableau_to_tableau".to_string(),
+            })?;
         Ok(())
     }
 
@@ -254,61 +301,62 @@ impl GameState {
     /// # Examples
     ///
     /// ```
-    /// use freecell_game_engine::{GameState, r#move::Move, Card, Rank, Suit};
+    /// use freecell_game_engine::{GameState, Move, Card, Rank, Suit};
+    /// use freecell_game_engine::location::{TableauLocation, FreecellLocation};
     ///
     /// let mut game = GameState::new();
-    /// // Assume game state is set up and a move is executed
-    /// // game.tableau_mut().place_card(0, Card::new(Rank::Ace, Suit::Spades)).unwrap();
-    /// let move_cmd = Move::TableauToFreecell { from_column: 0, to_cell: 0 };
-    /// // game.execute_move(&move_cmd).unwrap();
+    /// // Assume game state is set up and a move has been executed.
+    /// let move_cmd = Move::tableau_to_freecell(0, 0).unwrap();
+    /// if game.execute_move(&move_cmd).is_ok() {
+    ///    // Now, undo the move.
+    ///    game.undo_move(&move_cmd);
+    /// }
     ///
-    /// // Now, undo the move
-    /// // game.undo_move(&move_cmd);
-    /// // assert!(game.freecells().is_cell_empty(0).unwrap());
-    /// // assert!(!game.tableau().get_card(0).unwrap().is_none());
+    /// // The game state should now be reverted.
+    /// // let location = FreecellLocation::new(0).unwrap();
+    /// // assert!(game.freecells().is_cell_empty(location).unwrap());
+    /// // assert!(!game.tableau().get_card(TableauLocation::new(0).unwrap()).unwrap().is_none());
     /// ```
     pub fn undo_move(&mut self, m: &Move) {
-        use Move::*;
-        match m {
-            TableauToFoundation {
-                from_column,
-                to_pile,
-            } => {
-                let removed = self.foundations.remove_card(*to_pile as usize).expect("Undo: foundation error");
+        use crate::location::Location::*;
+        match (m.source, m.destination) {
+            (Tableau(from), Foundation(to)) => {
+                let to_location = crate::location::FoundationLocation::new(to.index()).unwrap();
+                let removed = self.foundations.remove_card(to_location).expect("Undo: foundation error");
                 let card = removed.expect("Undo: foundation not empty");
-                self.tableau.place_card(*from_column as usize, card).expect("Undo: tableau error");
+                let from_location = crate::location::TableauLocation::new(from.index()).unwrap();
+                self.tableau.place_card(from_location, card).expect("Undo: tableau error");
             }
-            TableauToFreecell {
-                from_column,
-                to_cell,
-            } => {
-                let removed = self.freecells.remove_card(*to_cell as usize).expect("Undo: freecell error");
+            (Tableau(from), Freecell(to)) => {
+                let to_location = crate::location::FreecellLocation::new(to.index()).unwrap();
+                let removed = self.freecells.remove_card(to_location).expect("Undo: freecell error");
                 let card = removed.expect("Undo: freecell not empty");
-                self.tableau.place_card(*from_column as usize, card).expect("Undo: tableau error");
+                let from_location = crate::location::TableauLocation::new(from.index()).unwrap();
+                self.tableau.place_card(from_location, card).expect("Undo: tableau error");
             }
-            FreecellToTableau {
-                from_cell,
-                to_column,
-            } => {
-                let removed = self.tableau.remove_card(*to_column as usize).expect("Undo: tableau error");
+            (Freecell(from), Tableau(to)) => {
+                let to_location = crate::location::TableauLocation::new(to.index()).unwrap();
+                let removed = self.tableau.remove_card(to_location).expect("Undo: tableau error");
                 let card = removed.expect("Undo: tableau not empty");
-                self.freecells.place_card(*from_cell as usize, card).expect("Undo: freecell error");
+                let from_location = crate::location::FreecellLocation::new(from.index()).unwrap();
+                self.freecells.place_card(from_location, card).expect("Undo: freecell error");
             }
-            FreecellToFoundation { from_cell, to_pile } => {
-                let removed = self.foundations.remove_card(*to_pile as usize).expect("Undo: foundation error");
+            (Freecell(from), Foundation(to)) => {
+                let to_location = crate::location::FoundationLocation::new(to.index()).unwrap();
+                let removed = self.foundations.remove_card(to_location).expect("Undo: foundation error");
                 let card = removed.expect("Undo: foundation not empty");
-                self.freecells.place_card(*from_cell as usize, card).expect("Undo: freecell error");
+                let from_location = crate::location::FreecellLocation::new(from.index()).unwrap();
+                self.freecells.place_card(from_location, card).expect("Undo: freecell error");
             }
-            TableauToTableau {
-                from_column,
-                to_column,
-                card_count,
-            } => {
-                assert_eq!(*card_count, 1, "Undo only supports single card moves");
-                let removed = self.tableau.remove_card(*to_column as usize).expect("Undo: tableau error");
+            (Tableau(from), Tableau(to)) => {
+                assert_eq!(m.card_count, 1, "Undo only supports single card moves");
+                let to_location = crate::location::TableauLocation::new(to.index()).unwrap();
+                let removed = self.tableau.remove_card(to_location).expect("Undo: tableau error");
                 let card = removed.expect("Undo: tableau not empty");
-                self.tableau.place_card(*from_column as usize, card).expect("Undo: tableau error");
+                let from_location = crate::location::TableauLocation::new(from.index()).unwrap();
+                self.tableau.place_card(from_location, card).expect("Undo: tableau error");
             }
+            _ => {}
         }
     }
 }

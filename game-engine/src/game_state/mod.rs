@@ -10,7 +10,7 @@ It exposes methods for creating, inspecting, and manipulating the game state, fo
 use freecell_game_engine::game_state::GameState;
 
 let mut state = GameState::default();
-assert!(!state.is_won());
+assert!(!state.is_won().unwrap());
 ```
 */
 
@@ -40,6 +40,24 @@ impl GameState {
             tableau: Tableau::new(),
             freecells: FreeCells::new(),
             foundations: Foundations::new(),
+        }
+    }
+
+    /// Create a new game state with a given tableau
+    pub(crate) fn new_with_tableau(tableau: Tableau) -> Self {
+        Self {
+            tableau,
+            freecells: FreeCells::new(),
+            foundations: Foundations::new(),
+        }
+    }
+
+    /// Create a new game state with given components
+    pub fn from_components(tableau: Tableau, freecells: FreeCells, foundations: Foundations) -> Self {
+        Self {
+            tableau,
+            freecells,
+            foundations,
         }
     }
     
@@ -90,53 +108,6 @@ impl GameState {
     /// ```
     pub fn foundations(&self) -> &Foundations { &self.foundations }
     
-    /// Returns a mutable reference to the game's tableau.
-    ///
-    /// This method allows for direct modification of the tableau. Use with caution,
-    /// as improper modifications can lead to an invalid game state.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use freecell_game_engine::{GameState, Card, Rank, Suit};
-    ///
-    /// let mut game = GameState::new();
-    /// let tableau_mut = game.tableau_mut();
-    /// // You can now modify the tableau, e.g., tableau_mut.place_card(...)
-    /// ```
-    pub fn tableau_mut(&mut self) -> &mut Tableau { &mut self.tableau }
-
-    /// Returns a mutable reference to the game's freecells.
-    ///
-    /// This method allows for direct modification of the freecells. Use with caution,
-    /// as improper modifications can lead to an invalid game state.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use freecell_game_engine::{GameState, Card, Rank, Suit};
-    ///
-    /// let mut game = GameState::new();
-    /// let freecells_mut = game.freecells_mut();
-    /// // You can now modify the freecells, e.g., freecells_mut.place_card(...)
-    /// ```
-    pub fn freecells_mut(&mut self) -> &mut FreeCells { &mut self.freecells }
-
-    /// Returns a mutable reference to the game's foundations.
-    ///
-    /// This method allows for direct modification of the foundations. Use with caution,
-    /// as improper modifications can lead to an invalid game state.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use freecell_game_engine::{GameState, Card, Rank, Suit};
-    ///
-    /// let mut game = GameState::new();
-    /// let foundations_mut = game.foundations_mut();
-    /// // You can now modify the foundations, e.g., foundations_mut.place_card(...)
-    /// ```
-    pub fn foundations_mut(&mut self) -> &mut Foundations { &mut self.foundations }
     
     /// Checks if the game has been won.
     ///
@@ -155,14 +126,58 @@ impl GameState {
     ///
     /// let mut game = GameState::new();
     /// // Initially, the game is not won
-    /// assert!(!game.is_won());
+    /// assert!(!game.is_won().unwrap());
     ///
     /// // (Imagine game state is manipulated to a winning state)
-    /// // game.foundations_mut().force_complete_all_piles(); // Hypothetical method
-    /// // assert!(game.is_won());
+    /// // let mut foundations = Foundations::new();
+    /// // ... populate foundations ...
+    /// // let game = GameState::from_components(Tableau::new(), FreeCells::new(), foundations);
+    /// // assert!(game.is_won().unwrap());
     /// ```
-    pub fn is_won(&self) -> bool {
-        self.foundations.is_complete()
+    pub fn is_won(&self) -> Result<bool, GameError> {
+        Ok(self.foundations.is_complete())
+    }
+
+    pub fn get_card(&self, location: crate::location::Location) -> Result<Option<&crate::card::Card>, GameError> {
+        use crate::location::Location::*;
+        match location {
+            Tableau(l) => self.tableau.get_card(l).map_err(|e| GameError::Tableau {
+                error: e,
+                attempted_move: None,
+                operation: "get_card".to_string(),
+            }),
+            Freecell(l) => self.freecells.get_card(l).map_err(|e| GameError::FreeCell {
+                error: e,
+                attempted_move: None,
+                operation: "get_card".to_string(),
+            }),
+            Foundation(l) => self.foundations.get_card(l).map_err(|e| GameError::Foundation {
+                error: e,
+                attempted_move: None,
+                operation: "get_card".to_string(),
+            }),
+        }
+    }
+
+    pub fn is_empty(&self, location: crate::location::Location) -> Result<bool, GameError> {
+        use crate::location::Location::*;
+        match location {
+            Tableau(l) => self.tableau.is_column_empty(l.index() as usize).map_err(|e| GameError::Tableau {
+                error: e,
+                attempted_move: None,
+                operation: "is_empty".to_string(),
+            }),
+            Freecell(l) => self.freecells.is_cell_empty(l).map_err(|e| GameError::FreeCell {
+                error: e,
+                attempted_move: None,
+                operation: "is_empty".to_string(),
+            }),
+            Foundation(l) => self.foundations.is_pile_empty(l).map_err(|e| GameError::Foundation {
+                error: e,
+                attempted_move: None,
+                operation: "is_empty".to_string(),
+            }),
+        }
     }
 }
 

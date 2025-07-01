@@ -10,100 +10,101 @@
 //! # Examples
 //!
 //! ```
-//! use freecell_game_engine::{GameState, r#move::Move};
+//! use freecell_game_engine::{GameState, Move};
 //! use freecell_game_engine::game_state::GameError;
+//! use freecell_game_engine::location::{TableauLocation, FreecellLocation};
 //!
 //! let mut game = GameState::new();
 //! // Attempt an invalid move (e.g., moving from an empty column)
-//! let invalid_move = Move::TableauToFreecell { from_column: 0, to_cell: 0 };
-//! let result = game.execute_move(&invalid_move);
+//! let invalid_move = Move::tableau_to_freecell(0, 0).unwrap();
+//! let result = game.is_move_valid(&invalid_move);
 //!
-//! assert!(result.is_err());
-//! if let Err(GameError::EmptySource) = result {
-//!     println!("Caught expected error: Empty source column!");
+//! if let Err(err) = result {
+//!    // The error message will be more specific now, e.g.:
+//!    // "Invalid move T(0)->F(0): Source tableau column is empty"
+//!    println!("Invalid move: {}", err);
 //! }
 //! ```
 
+use crate::r#move::Move;
+
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum GameError {
-    /// Represents a general invalid move with a descriptive message.
-    InvalidMove(String),
-    /// Indicates an attempt to access an index outside the valid range for a component.
-    IndexOutOfBounds {
-        /// The name of the component (e.g., "freecell", "tableau", "foundation").
-        component: &'static str,
-        /// The index that was out of bounds.
-        index: usize,
+    /// A location-based error occurred.
+    Location(LocationError),
+    /// A freecell-related error occurred.
+    FreeCell {
+        error: FreeCellError,
+        attempted_move: Option<Move>,
+        operation: String,
     },
-    /// Attempted to move a card from an empty source (e.g., empty tableau column or freecell).
-    EmptySource,
+    /// A foundation-related error occurred.
+    Foundation {
+        error: FoundationError,
+        attempted_move: Option<Move>,
+        operation: String,
+    },
+    /// A tableau-related error occurred.
+    Tableau {
+        error: TableauError,
+        attempted_move: Option<Move>,
+        operation: String,
+    },
+    /// The attempted move is invalid for a specific reason.
+    InvalidMove {
+        reason: String,
+        attempted_move: Move,
+    },
     /// Indicates that a multi-card move was attempted when only single card moves are supported.
     OnlySingleCardMovesSupported,
-    /// No card was found in the specified tableau column for an operation.
-    NoCardInTableauColumn,
-    /// Attempted to stack a card on a tableau column in an invalid way (e.g., wrong rank or color).
-    CannotStackOnTableau,
 }
 
 use std::fmt;
 use crate::freecells::FreeCellError;
 use crate::foundations::FoundationError;
+use crate::location::LocationError;
 use crate::tableau::TableauError;
 
-impl From<FreeCellError> for GameError {
-    fn from(err: FreeCellError) -> Self {
-        match err {
-            FreeCellError::InvalidCell => GameError::IndexOutOfBounds {
-                component: "freecell",
-                index: 0, // Could be enhanced to include actual index
-            },
-            FreeCellError::CellOccupied => GameError::InvalidMove("Freecell is already occupied".to_string()),
-            FreeCellError::NoEmptyCells => GameError::InvalidMove("No empty freecells available".to_string()),
-        }
+impl From<LocationError> for GameError {
+    fn from(err: LocationError) -> Self {
+        GameError::Location(err)
     }
 }
 
-impl From<FoundationError> for GameError {
-    fn from(err: FoundationError) -> Self {
-        match err {
-            FoundationError::InvalidPile => GameError::IndexOutOfBounds {
-                component: "foundation",
-                index: 0, // Could be enhanced to include actual index
-            },
-            FoundationError::NonAceOnEmptyPile => GameError::InvalidMove("Can only add Ace to empty foundation pile".to_string()),
-            FoundationError::InvalidSequence => GameError::InvalidMove("Card must be one rank higher and same suit".to_string()),
-            FoundationError::PileComplete => GameError::InvalidMove("Foundation pile is already complete".to_string()),
-        }
-    }
-}
-
-impl From<TableauError> for GameError {
-    fn from(err: TableauError) -> Self {
-        match err {
-            TableauError::InvalidColumn => GameError::IndexOutOfBounds {
-                component: "tableau",
-                index: 0, // Could be enhanced to include actual index
-            },
-            TableauError::InvalidStack => GameError::InvalidMove("Invalid tableau stack move".to_string()),
-            TableauError::EmptyColumn => GameError::NoCardInTableauColumn,
-            TableauError::InvalidCardIndex => GameError::InvalidMove("Invalid card index in tableau column".to_string()),
-            TableauError::InvalidColor => GameError::InvalidMove("Cards must be of alternating colors".to_string()),
-            TableauError::InvalidRank => GameError::InvalidMove("Cards must be in descending rank order".to_string()),
-        }
-    }
-}
 
 impl fmt::Display for GameError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            GameError::InvalidMove(msg) => write!(f, "Invalid move: {}", msg),
-            GameError::IndexOutOfBounds { component, index } => {
-                write!(f, "Index {} out of bounds for {}", index, component)
+            GameError::Location(err) => write!(f, "Location error: {}", err),
+            GameError::FreeCell { error, attempted_move, operation } => {
+                let move_str = attempted_move.map_or("".to_string(), |m| format!(" during move {}", m));
+                write!(f, "FreeCell error during {}: {}{}", operation, error, move_str)
             }
-            GameError::EmptySource => write!(f, "Cannot move from empty source"),
+            GameError::Foundation { error, attempted_move, operation } => {
+                let move_str = attempted_move.map_or("".to_string(), |m| format!(" during move {}", m));
+                write!(f, "Foundation error during {}: {}{}", operation, error, move_str)
+            }
+            GameError::Tableau { error, attempted_move, operation } => {
+                let move_str = attempted_move.map_or("".to_string(), |m| format!(" during move {}", m));
+                write!(f, "Tableau error during {}: {}{}", operation, error, move_str)
+            }
+            GameError::InvalidMove { reason, attempted_move } => {
+                write!(f, "Invalid move {}: {}", attempted_move, reason)
+            }
             GameError::OnlySingleCardMovesSupported => write!(f, "Only single card moves are supported"),
-            GameError::NoCardInTableauColumn => write!(f, "No card in tableau column"),
-            GameError::CannotStackOnTableau => write!(f, "Cannot stack card on tableau"),
+        }
+    }
+}
+
+impl std::error::Error for GameError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            GameError::Location(err) => Some(err),
+            GameError::FreeCell { error, .. } => Some(error),
+            GameError::Foundation { error, .. } => Some(error),
+            GameError::Tableau { error, .. } => Some(error),
+            _ => None,
         }
     }
 }

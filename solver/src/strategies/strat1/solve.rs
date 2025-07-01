@@ -61,7 +61,7 @@ fn dfs(game: GameState, path: &mut Vec<Move>, counter: &mut Counter) -> bool {
     {
         return false;
     }
-    if game.is_won() {
+    if game.is_won().unwrap_or(false) {
         return true;
     }
     if path.len() > 200 {
