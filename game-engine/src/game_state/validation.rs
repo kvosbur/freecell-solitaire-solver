@@ -5,6 +5,10 @@
 
 use super::{GameState, GameError};
 use crate::r#move::Move;
+use crate::{
+    foundations::FOUNDATION_COUNT,
+    location::FoundationLocation,
+};
 
 impl GameState {
     /// Validates a move without executing it.
@@ -109,7 +113,8 @@ impl GameState {
                 reason: "Source tableau column is empty".to_string(),
                 attempted_move: *m,
             })?;
-        self.foundations.validate_card_placement(to_pile as usize, card)
+        let foundation_location = FoundationLocation::new(to_pile).unwrap();
+        self.foundations.validate_card_placement(foundation_location, card)
             .map_err(|e| GameError::Foundation {
                 error: e,
                 attempted_move: Some(*m),
@@ -281,7 +286,8 @@ impl GameState {
                 reason: "Source freecell is empty".to_string(),
                 attempted_move: *m,
             })?;
-        self.foundations.validate_card_placement(to_pile as usize, card)
+        let foundation_location = FoundationLocation::new(to_pile).unwrap();
+        self.foundations.validate_card_placement(foundation_location, card)
             .map_err(|e| GameError::Foundation {
                 error: e,
                 attempted_move: Some(*m),

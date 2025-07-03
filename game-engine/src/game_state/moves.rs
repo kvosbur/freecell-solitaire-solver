@@ -4,7 +4,12 @@
 //! It contains methods to identify possible moves between tableau columns, freecells and foundations.
 
 use super::GameState;
-use crate::r#move::Move;
+use crate::{
+    foundations::FOUNDATION_COUNT,
+    freecells::FREECELL_COUNT,
+    location::FoundationLocation,
+    r#move::Move,
+};
 
 impl GameState {
     /// Returns all valid moves from the current state.
@@ -74,8 +79,9 @@ impl GameState {
                 _ => continue,
             };
 
-            for to_pile in 0..self.foundations().pile_count() {
-                if self.foundations().validate_card_placement(to_pile, card).is_ok() {
+            for to_pile in 0..FOUNDATION_COUNT {
+                let foundation_location = FoundationLocation::new(to_pile as u8).unwrap();
+                if self.foundations().validate_card_placement(foundation_location, card).is_ok() {
                     if let Ok(m) = Move::tableau_to_foundation(from_col as u8, to_pile as u8) {
                         moves.push(m);
                     }
@@ -111,24 +117,25 @@ impl GameState {
     /// ```
     pub fn get_freecell_to_foundation_moves(&self) -> Vec<Move> {
         let mut moves = Vec::new();
-    
-        for from_cell in 0..self.freecells().cell_count() {
+        
+        for from_cell in 0..FREECELL_COUNT {
             let location = crate::location::FreecellLocation::new(from_cell as u8).unwrap();
             let card_result = self.freecells().get_card(location);
             let card = match card_result {
-                Ok(Some(card)) => card,
-                _ => continue, // Skip this cell if no card or error
+                Ok(Some(c)) => c,
+                _ => continue,
             };
-
-            for to_pile in 0..self.foundations().pile_count() {
-                if self.foundations().validate_card_placement(to_pile, card).is_ok() {
+            
+            for to_pile in 0..FOUNDATION_COUNT {
+                let foundation_location = FoundationLocation::new(to_pile as u8).unwrap();
+                if self.foundations().validate_card_placement(foundation_location, card).is_ok() {
                     if let Ok(m) = Move::freecell_to_foundation(from_cell as u8, to_pile as u8) {
                         moves.push(m);
                     }
                 }
             }
         }
-    
+        
         moves
     }
 
@@ -160,7 +167,7 @@ impl GameState {
     pub fn get_freecell_to_tableau_moves(&self) -> Vec<Move> {
         let mut moves = Vec::new();
         
-        for from_cell in 0..self.freecells().cell_count() {
+        for from_cell in 0..crate::freecells::FREECELL_COUNT {
             let location = crate::location::FreecellLocation::new(from_cell as u8).unwrap();
             let card_result = self.freecells().get_card(location);
             let card = match card_result {
@@ -208,9 +215,9 @@ impl GameState {
     fn calculate_max_movable_cards(&self) -> usize {
         // Count empty freecells
         let mut empty_freecells = 0;
-        for cell in 0..self.freecells().cell_count() {
+        for cell in 0..crate::freecells::FREECELL_COUNT {
             let location = crate::location::FreecellLocation::new(cell as u8).unwrap();
-            if self.freecells().is_cell_empty(location).unwrap_or(false) {
+            if self.freecells().get_card(location).unwrap_or(None).is_none() {
                 empty_freecells += 1;
             }
         }
@@ -438,9 +445,9 @@ impl GameState {
                 _ => continue, // Skip this column if no card or error
             };
 
-            for to_cell in 0..self.freecells().cell_count() {
+            for to_cell in 0..crate::freecells::FREECELL_COUNT {
                 let location = crate::location::FreecellLocation::new(to_cell as u8).unwrap();
-                if self.freecells().is_cell_empty(location).unwrap_or(false) {
+                if self.freecells().get_card(location).unwrap_or(None).is_none() {
                     if let Ok(m) = Move::tableau_to_freecell(from_col as u8, to_cell as u8) {
                         moves.push(m);
                     }

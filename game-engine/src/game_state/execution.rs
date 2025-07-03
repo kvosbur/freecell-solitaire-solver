@@ -95,7 +95,7 @@ impl GameState {
         })?;
         let to_location = crate::location::FoundationLocation::new(to_pile).map_err(GameError::Location)?;
         self.foundations
-            .place_card(to_location, removed_card)
+            .place_card_at(to_location, removed_card)
             .map_err(|e| GameError::Foundation {
                 error: e,
                 attempted_move: Some(*m),
@@ -138,7 +138,7 @@ impl GameState {
         })?;
         let to_location = crate::location::FreecellLocation::new(to_cell).map_err(GameError::Location)?;
         self.freecells
-            .place_card(to_location, removed_card)
+            .place_card_at(to_location, removed_card)
             .map_err(|e| GameError::FreeCell {
                 error: e,
                 attempted_move: Some(*m),
@@ -224,7 +224,7 @@ impl GameState {
         })?;
         let to_location = crate::location::FoundationLocation::new(to_pile).map_err(GameError::Location)?;
         self.foundations
-            .place_card(to_location, removed_card)
+            .place_card_at(to_location, removed_card)
             .map_err(|e| GameError::Foundation {
                 error: e,
                 attempted_move: Some(*m),
@@ -314,7 +314,7 @@ impl GameState {
     ///
     /// // The game state should now be reverted.
     /// // let location = FreecellLocation::new(0).unwrap();
-    /// // assert!(game.freecells().is_cell_empty(location).unwrap());
+    /// // assert!(game.freecells().get_card(location).unwrap().is_none());
     /// // assert!(!game.tableau().get_card(TableauLocation::new(0).unwrap()).unwrap().is_none());
     /// ```
     pub fn undo_move(&mut self, m: &Move) {
@@ -339,14 +339,14 @@ impl GameState {
                 let removed = self.tableau.remove_card(to_location).expect("Undo: tableau error");
                 let card = removed.expect("Undo: tableau not empty");
                 let from_location = crate::location::FreecellLocation::new(from.index()).unwrap();
-                self.freecells.place_card(from_location, card).expect("Undo: freecell error");
+                self.freecells.place_card_at(from_location, card).expect("Undo: freecell error");
             }
             (Freecell(from), Foundation(to)) => {
                 let to_location = crate::location::FoundationLocation::new(to.index()).unwrap();
                 let removed = self.foundations.remove_card(to_location).expect("Undo: foundation error");
                 let card = removed.expect("Undo: foundation not empty");
                 let from_location = crate::location::FreecellLocation::new(from.index()).unwrap();
-                self.freecells.place_card(from_location, card).expect("Undo: freecell error");
+                self.freecells.place_card_at(from_location, card).expect("Undo: freecell error");
             }
             (Tableau(from), Tableau(to)) => {
                 assert_eq!(m.card_count, 1, "Undo only supports single card moves");

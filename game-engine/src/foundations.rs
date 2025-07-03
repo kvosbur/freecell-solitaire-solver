@@ -695,14 +695,17 @@ mod tests {
         // Place Ace of Diamonds in second pile
         let location1 = FoundationLocation::new(1).unwrap();
         foundations.place_card_at(location1, Card::new(Rank::Ace, Suit::Diamonds)).unwrap();
-        
-        // For hearts, should return the first pile
+
+        // Place Ace of Diamonds in second pile
+        let location2 = FoundationLocation::new(2).unwrap();
+        foundations.place_card_at(location2, Card::new(Rank::Ace, Suit::Spades)).unwrap();
+
+        // Place Ace of Diamonds in second pile
+        let location3 = FoundationLocation::new(3).unwrap();
+        foundations.place_card_at(location3, Card::new(Rank::Ace, Suit::Clubs)).unwrap();
+
         assert_eq!(foundations.find_pile_for_suit(Suit::Hearts), Some(0));
-        
-        // For diamonds, should return the second pile
         assert_eq!(foundations.find_pile_for_suit(Suit::Diamonds), Some(1));
-        
-        // For spades or clubs, should return the next empty pile
         assert_eq!(foundations.find_pile_for_suit(Suit::Spades), Some(2));
         assert_eq!(foundations.find_pile_for_suit(Suit::Clubs), Some(3));
         
@@ -717,6 +720,67 @@ mod tests {
         assert_eq!(foundations.find_pile_for_suit(Suit::Diamonds), Some(1));
         assert_eq!(foundations.find_pile_for_suit(Suit::Clubs), Some(2));
         assert_eq!(foundations.find_pile_for_suit(Suit::Spades), Some(3));
+    }
+
+    #[test]
+    fn find_pile_for_suit_returns_first_empty_pile_for_new_suit() {
+        let mut foundations = Foundations::new();
+        
+        // With all piles empty, first pile should be returned for any suit
+        assert_eq!(foundations.find_pile_for_suit(Suit::Hearts), Some(0));
+        
+        // Place Ace of Hearts in first pile
+        let location0 = FoundationLocation::new(0).unwrap();
+        foundations.place_card_at(location0, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
+        
+        // For a new suit, should return the next empty pile (index 1)
+        assert_eq!(foundations.find_pile_for_suit(Suit::Diamonds), Some(1));
+        
+        // Place Ace of Diamonds in second pile
+        let location1 = FoundationLocation::new(1).unwrap();
+        foundations.place_card_at(location1, Card::new(Rank::Ace, Suit::Diamonds)).unwrap();
+        
+        // For next new suit, should return the next empty pile (index 2)
+        assert_eq!(foundations.find_pile_for_suit(Suit::Clubs), Some(2));
+        
+        // Place Ace of Clubs in third pile
+        let location2 = FoundationLocation::new(2).unwrap();
+        foundations.place_card_at(location2, Card::new(Rank::Ace, Suit::Clubs)).unwrap();
+        
+        // For final new suit, should return the last empty pile (index 3)
+        assert_eq!(foundations.find_pile_for_suit(Suit::Spades), Some(3));
+    }
+
+    #[test]
+    fn find_pile_for_suit_returns_correct_pile_for_existing_suit() {
+        let mut foundations = Foundations::new();
+        
+        // Place each suit in a specific pile
+        let hearts_pile = FoundationLocation::new(0).unwrap();
+        foundations.place_card_at(hearts_pile, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
+        
+        let diamonds_pile = FoundationLocation::new(1).unwrap();
+        foundations.place_card_at(diamonds_pile, Card::new(Rank::Ace, Suit::Diamonds)).unwrap();
+        
+        let clubs_pile = FoundationLocation::new(2).unwrap();
+        foundations.place_card_at(clubs_pile, Card::new(Rank::Ace, Suit::Clubs)).unwrap();
+        
+        let spades_pile = FoundationLocation::new(3).unwrap();
+        foundations.place_card_at(spades_pile, Card::new(Rank::Ace, Suit::Spades)).unwrap();
+        
+        // Now test that each suit maps to the correct pile
+        assert_eq!(foundations.find_pile_for_suit(Suit::Hearts), Some(0));
+        assert_eq!(foundations.find_pile_for_suit(Suit::Diamonds), Some(1));
+        assert_eq!(foundations.find_pile_for_suit(Suit::Clubs), Some(2));
+        assert_eq!(foundations.find_pile_for_suit(Suit::Spades), Some(3));
+        
+        // Add some more cards to piles to ensure we're looking at suit, not just first card
+        foundations.place_card_at(hearts_pile, Card::new(Rank::Two, Suit::Hearts)).unwrap();
+        foundations.place_card_at(diamonds_pile, Card::new(Rank::Two, Suit::Diamonds)).unwrap();
+        
+        // Verify we still find the correct piles
+        assert_eq!(foundations.find_pile_for_suit(Suit::Hearts), Some(0));
+        assert_eq!(foundations.find_pile_for_suit(Suit::Diamonds), Some(1));
     }
 
     #[test]

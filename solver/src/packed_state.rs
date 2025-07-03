@@ -65,7 +65,7 @@ impl PackedGameState {
             if card_id != 0 {
                 let card = unpack_card(card_id)?;
                 let location = freecell_game_engine::location::FreecellLocation::new(i as u8).unwrap();
-                freecells.place_card(location, card).map_err(|_| UnpackError::InvalidCardId(card_id))?;
+                freecells.place_card_at(location, card).map_err(|_| UnpackError::InvalidCardId(card_id))?;
             }
         }
 
@@ -82,7 +82,7 @@ impl PackedGameState {
                     let rank = Rank::try_from(r).map_err(|_| UnpackError::InvalidRank(r))?;
                     let card = Card::new(rank, suit);
                     let location = freecell_game_engine::location::FoundationLocation::new(i as u8).unwrap();
-                    foundations.place_card(location, card).map_err(|_| UnpackError::InvalidFoundationRank(top_rank))?;
+                    foundations.place_card_at(location, card).map_err(|_| UnpackError::InvalidFoundationRank(top_rank))?;
                 }
             }
         }
@@ -108,7 +108,7 @@ impl PackedGameState {
             }
         }
         let mut freecells = [0u8; 4];
-        for i in 0..gs.freecells().cell_count() {
+        for i in 0..freecell_game_engine::freecells::FREECELL_COUNT {
             let location = freecell_game_engine::location::FreecellLocation::new(i as u8).unwrap();
             freecells[i] = gs.freecells().get_card(location).unwrap_or(None).map_or(0, pack_card);
         }
@@ -159,14 +159,14 @@ mod tests {
         let mut freecells = FreeCells::new();
         let card3 = Card::new(Rank::Queen, Suit::Diamonds);
         let location = freecell_game_engine::location::FreecellLocation::new(0).unwrap();
-        freecells.place_card(location, card3).unwrap();
+        freecells.place_card_at(location, card3).unwrap();
 
         let mut foundations = Foundations::new();
         for r in 1..=3 {
             let rank = Rank::try_from(r).unwrap();
             let card = Card::new(rank, Suit::Diamonds);
             let location = freecell_game_engine::location::FoundationLocation::new(2).unwrap();
-            foundations.place_card(location, card).unwrap();
+            foundations.place_card_at(location, card).unwrap();
         }
 
         let gs = GameState::from_components(tableau, freecells, foundations);

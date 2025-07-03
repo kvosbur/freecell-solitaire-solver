@@ -167,12 +167,14 @@ impl GameState {
                 attempted_move: None,
                 operation: "is_empty".to_string(),
             }),
-            Freecell(l) => self.freecells.is_cell_empty(l).map_err(|e| GameError::FreeCell {
-                error: e,
-                attempted_move: None,
-                operation: "is_empty".to_string(),
-            }),
-            Foundation(l) => self.foundations.is_pile_empty(l).map_err(|e| GameError::Foundation {
+            Freecell(l) => self.freecells.get_card(l)
+                .map(|opt_card| opt_card.is_none())
+                .map_err(|e| GameError::FreeCell {
+                    error: e,
+                    attempted_move: None,
+                    operation: "is_empty".to_string(),
+                }),
+            Foundation(l) => self.foundations.is_empty(l).map_err(|e| GameError::Foundation {
                 error: e,
                 attempted_move: None,
                 operation: "is_empty".to_string(),
