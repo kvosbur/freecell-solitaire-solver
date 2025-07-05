@@ -571,7 +571,6 @@ impl Foundations {
         // No suitable pile found
         None
     }
-}
 
     /// Get the height (number of cards) of a foundation pile.
     ///
@@ -580,8 +579,6 @@ impl Foundations {
         self.heights[location.index() as usize]
     }
 }
-
-impl std::error::Error for FoundationError {}
 
 #[cfg(test)]
 mod tests {
