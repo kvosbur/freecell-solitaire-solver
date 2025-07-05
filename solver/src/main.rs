@@ -11,7 +11,6 @@ use std::sync::Arc;
 use clap::{Arg, Command};
 mod harness;
 use freecell_game_engine::generation::generate_deal;
-use strategies::strat5::solve;
 
 fn do_benchmark(strategy_name: &str, timeout_secs: u64) {
     let seed = 1;
@@ -52,7 +51,6 @@ fn do_benchmark(strategy_name: &str, timeout_secs: u64) {
 fn do_adhoc(strategy_name: &str, timeout_secs: u64) {
     let seed = 1;
     let move_count_to_undue = 40; // Change this to test different scenarios
-    let allowed_timeout_secs = 60 * 60 * 24; // 24 hours
     let game_state_initial = generate_deal(seed).unwrap();
     let solution = game_prep::get_game_solution(seed);
     let mut game_state = game_state_initial.clone();

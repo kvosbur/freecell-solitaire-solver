@@ -1,6 +1,6 @@
 use freecell_game_engine::r#move::Move;
 
-pub fn get_game_solution(seed: u64) -> Vec<Action> {
+pub fn get_game_solution(seed: u64) -> Vec<Move> {
     match seed {
         1 => vec![
             Move::tableau_to_freecell(5, 0).unwrap(), // 1
