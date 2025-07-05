@@ -58,7 +58,7 @@ pub fn solve(game: GameState) {
 
 fn dfs(
     game: GameState,
-    path: &mut Vec<Move>,
+    path: &mut Vec<Action>,
     counter: &mut Counter,
     visited: &mut HashSet<GameState>,
 ) -> bool {

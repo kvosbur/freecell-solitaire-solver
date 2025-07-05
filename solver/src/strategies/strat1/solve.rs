@@ -53,7 +53,7 @@ pub fn solve(game: GameState) {
     }
 }
 
-fn dfs(game: GameState, path: &mut Vec<Move>, counter: &mut Counter) -> bool {
+fn dfs(game: GameState, path: &mut Vec<Action>, counter: &mut Counter) -> bool {
     if counter
         .cancel_flag
         .as_ref()

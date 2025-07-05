@@ -12,7 +12,7 @@ struct Counter {
 /// Attempts to solve the given FreeCell game state using recursive DFS.
 fn dfs(
     game: &mut GameState,
-    path: &mut Vec<Move>,
+    path: &mut Vec<Action>,
     counter: &mut Counter,
     visited: &mut HashSet<PackedGameState>,
 ) -> bool {
