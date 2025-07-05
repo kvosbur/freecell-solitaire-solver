@@ -155,9 +155,9 @@ impl Tableau {
     /// assert_eq!(tableau.empty_columns_count(), TABLEAU_COLUMN_COUNT);
     /// ```
     pub fn new() -> Self {
-        Self { 
+        Self {
             columns: Default::default(),
-         }
+        }
     }
 
     /// Add a card to the specified column, validating placement according to FreeCell rules.
