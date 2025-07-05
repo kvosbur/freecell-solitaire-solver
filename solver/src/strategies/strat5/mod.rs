@@ -27,7 +27,7 @@ impl SolverStrategy for Strat5 {
     }
     
     fn description(&self) -> &'static str {
-        "strat4 except set a cap on cache size so that ram isn't overrun. Allowed program to run for a long time, but still didn't get any further."
+        "strat5 except set a cap on cache size so that ram isn't overrun. Allowed program to run for a long time, but still didn't get any further."
     }
     
     fn solve(&self, game_state: GameState, cancel_flag: Arc<AtomicBool>) -> SolverResult {
