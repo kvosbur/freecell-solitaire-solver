@@ -20,11 +20,11 @@ game-engine (library)
 
 
 ### solver (Algorithm Application)
-- **Role**: Automated solution finder for FreeCell deals
+- **Role**: High-performance, multi-strategy, automated solution finder for FreeCell deals.
 - **Dependencies**: game-engine
-- **Integration Points**: Uses GameState for state validation, Move generation
-- **Current Status**: Skeleton created, algorithm implementation pending
-- **Development Priority**: Medium (after game completion)
+- **Integration Points**: Uses GameState for state validation, Move generation, and leverages a sophisticated strategy pattern for solving.
+- **Current Status**: Advanced implementation with 5 solving strategies, a CLI, and a benchmarking harness.
+- **Development Priority**: High (Optimization and Integration).
 
 ### appAutomation (Standalone System)
 - **Role**: Mobile app interaction and automation

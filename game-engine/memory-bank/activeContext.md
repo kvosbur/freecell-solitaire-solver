@@ -12,7 +12,7 @@ Tracks the current work focus, recent changes, next steps, active decisions and 
 - The engine is designed for integration with UIs, solvers, and other applications, with no direct user interface or I/O.
 - Focus is on providing a clean, well-documented API and preparing for downstream integration.
 - **Recent focus:** Interface consistency refactor for `FreeCells`, `Foundations`, and `Tableau` to standardize method signatures and error handling across all core components.
-- **Current Focus**: Consumer readiness and API refinement. A comprehensive review has confirmed the engine is in an excellent state, with a pure design and strong adherence to Rust best practices. The immediate priority is to refine the API for easier consumption by others, addressing minor inconsistencies and improving ergonomics.
+- **Current Focus**: Production-ready. The game-engine is stable, well-documented, and ready for integration with consumer applications like the solver and appAutomation.
 
 ## Recent Changes
 
@@ -25,20 +25,8 @@ Tracks the current work focus, recent changes, next steps, active decisions and 
 
 ## Next Steps
 
-- **Consumer Readiness Refinements (v0.2.0)**: Implement targeted improvements to make the API exceptionally easy to consume.
-    1.  **Standardize API Return Types**: Ensure all fallible operations consistently return `Result<T, Error>`.
-        - **Action**: Refactor component methods that currently return `Option` (e.g., `get_card`) to return `Result` for uniformity.
-    2.  **Simplify Error Handling**: Refine the `GameError` enum to be more ergonomic.
-        - **Action**: Reduce redundancy and simplify the error hierarchy to make it easier for consumers to match and handle errors.
-    3.  **Streamline Move Construction**: Make creating `Move` instances more intuitive.
-        - **Action**: Introduce a builder pattern or convenience methods for `Move` to reduce verbosity.
-    4.  **Clean Up API Surface**: Remove any remaining internal complexity from the public API.
-        - **Action**: Consolidate dual APIs (e.g., index-based and location-based methods) and remove unused features like the `card_count` field in `Move`.
-- **Enhance Documentation for Consumers**:
-    - **Action**: Add a "Getting Started" guide for consumers of the library.
-    - **Action**: Provide clear migration notes for the upcoming v0.2.0 breaking changes.
-    - **Action**: Include end-to-end integration examples.
-- **Comprehensive Testing**: Ensure all API refinements are covered by tests.
+- **Maintenance Mode**: Address any bugs or performance issues that arise.
+- **Support Integration**: Provide support for the solver and appAutomation components as they integrate with the game-engine.
 
 ## Active Decisions & Considerations
 
