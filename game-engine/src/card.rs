@@ -1,11 +1,68 @@
 //! Card-related types and functionality for FreeCell.
+//!
+//! This module provides the core card primitives needed for implementing
+//! a FreeCell solitaire game, including:
+//!
+//! - [`Card`] - Represents a playing card with a rank and suit
+//! - [`Rank`] - Enumerates possible card ranks (Ace through King)
+//! - [`Suit`] - Enumerates possible card suits (Spades, Hearts, Diamonds, Clubs)
+//! - [`Color`] - Enumerates card colors (Red or Black)
+//!
+//! # Examples
+//!
+//! ```
+//! use freecell_game_engine::card::{Card, Rank, Suit, Color};
+//!
+//! // Create a new card
+//! let card = Card::new(Rank::Ace, Suit::Spades);
+//! 
+//! // Get card properties
+//! assert_eq!(card.rank(), Rank::Ace);
+//! assert_eq!(card.suit(), Suit::Spades);
+//! assert_eq!(card.color(), Color::Black);
+//! 
+//! // Compare cards
+//! let higher_card = Card::new(Rank::Two, Suit::Spades);
+//! assert!(higher_card.is_one_higher_than(&card));
+//! ```
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+use core::fmt;
+
+/// Represents a playing card with a rank and suit.
+///
+/// Cards are used as the primary building block for the FreeCell solitaire game.
+/// Each card has a rank (Ace through King) and a suit (Spades, Hearts, Diamonds, or Clubs).
+///
+/// # Examples
+///
+/// ```
+/// use freecell_game_engine::card::{Card, Rank, Suit};
+///
+/// let card = Card::new(Rank::Ace, Suit::Spades);
+/// println!("{}", card); // Outputs: "Ace of Spades"
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Card {
-    pub rank: Rank,
-    pub suit: Suit,
+    rank: Rank,
+    suit: Suit,
 }
 
+/// Represents the rank of a playing card.
+///
+/// Ranks range from Ace (value 1) to King (value 13).
+/// The numeric value is accessible by casting to u8: `rank as u8`.
+///
+/// # Examples
+///
+/// ```
+/// use freecell_game_engine::card::Rank;
+///
+/// let rank = Rank::Ace;
+/// assert_eq!(rank as u8, 1);
+///
+/// let rank_from_number = Rank::try_from(5).unwrap();
+/// assert_eq!(rank_from_number, Rank::Five);
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Rank {
     Ace = 1,
@@ -23,6 +80,50 @@ pub enum Rank {
     King,
 }
 
+/// Represents the suit of a playing card.
+///
+/// The four standard suits are Spades, Hearts, Diamonds, and Clubs.
+///
+/// # Examples
+///
+/// ```
+/// use freecell_game_engine::card::{Suit, Color};
+///
+/// let suit = Suit::Hearts;
+/// // Hearts are red
+/// assert_eq!(suit.color(), Color::Red);
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Suit {
+    Spades,
+    Hearts,
+    Diamonds,
+    Clubs,
+}
+
+/// Represents the color of a playing card (Red or Black).
+///
+/// - Red suits: Hearts and Diamonds
+/// - Black suits: Spades and Clubs
+///
+/// This is particularly important for FreeCell rules where
+/// cards must alternate colors in tableau columns.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Color {
+    Red,
+    Black,
+}
+
+/// Conversion from numeric values to Rank.
+///
+/// Allows creating a Rank from a u8 value (1-13), where:
+/// - 1 = Ace
+/// - 2-10 = Corresponding number card
+/// - 11 = Jack
+/// - 12 = Queen
+/// - 13 = King
+///
+/// Returns an error for values outside the range 1-13.
 impl TryFrom<u8> for Rank {
     type Error = ();
 
@@ -46,14 +147,15 @@ impl TryFrom<u8> for Rank {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub enum Suit {
-    Spades,
-    Hearts,
-    Diamonds,
-    Clubs,
-}
-
+/// Conversion from numeric values to Suit.
+///
+/// Allows creating a Suit from a u8 value (0-3), where:
+/// - 0 = Spades
+/// - 1 = Hearts
+/// - 2 = Diamonds
+/// - 3 = Clubs
+///
+/// Returns an error for values outside the range 0-3.
 impl TryFrom<u8> for Suit {
     type Error = ();
 
@@ -68,19 +170,57 @@ impl TryFrom<u8> for Suit {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum Color {
-    Red,
-    Black,
+/// Returns the color associated with this suit.
+///
+/// - Hearts and Diamonds are Red
+/// - Spades and Clubs are Black
+impl Suit {
+    /// Returns the color of this suit.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use freecell_game_engine::card::{Suit, Color};
+    ///
+    /// assert_eq!(Suit::Hearts.color(), Color::Red);
+    /// assert_eq!(Suit::Spades.color(), Color::Black);
+    /// ```
+    pub fn color(&self) -> Color {
+        match self {
+            Suit::Hearts | Suit::Diamonds => Color::Red,
+            Suit::Clubs | Suit::Spades => Color::Black,
+        }
+    }
 }
 
 impl Card {
-    /// Create a new card with the given rank and suit
+    /// Creates a new card with the given rank and suit.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use freecell_game_engine::card::{Card, Rank, Suit};
+    ///
+    /// let card = Card::new(Rank::Ace, Suit::Spades);
+    /// ```
     pub fn new(rank: Rank, suit: Suit) -> Self {
         Self { rank, suit }
     }
     
-    /// Get the color of the card (Red or Black)
+    /// Returns the color of the card (Red or Black).
+    ///
+    /// The color is determined by the suit:
+    /// - Hearts and Diamonds are Red
+    /// - Spades and Clubs are Black
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use freecell_game_engine::card::{Card, Rank, Suit, Color};
+    ///
+    /// let card = Card::new(Rank::Ace, Suit::Hearts);
+    /// assert_eq!(card.color(), Color::Red);
+    /// ```
     pub fn color(&self) -> Color {
         match self.suit {
             Suit::Hearts | Suit::Diamonds => Color::Red,
@@ -88,14 +228,69 @@ impl Card {
         }
     }
     
-    /// Get the card's rank
-    pub fn rank(&self) -> u8 {
-        self.rank as u8
+    /// Returns the card's rank.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use freecell_game_engine::card::{Card, Rank, Suit};
+    ///
+    /// let card = Card::new(Rank::Ace, Suit::Spades);
+    /// assert_eq!(card.rank(), Rank::Ace);
+    /// ```
+    pub fn rank(&self) -> Rank {
+        self.rank
     }
     
-    /// Get the card's suit
+    /// Returns the card's suit.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use freecell_game_engine::card::{Card, Rank, Suit};
+    ///
+    /// let card = Card::new(Rank::Ace, Suit::Spades);
+    /// assert_eq!(card.suit(), Suit::Spades);
+    /// ```
     pub fn suit(&self) -> Suit {
         self.suit
+    }
+    
+    /// Checks if this card is exactly one rank higher than the other card.
+    ///
+    /// This is primarily used to determine valid moves in FreeCell,
+    /// where cards in the tableau must be stacked in descending order.
+    ///
+    /// Note that this only checks rank, not suit or color.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use freecell_game_engine::card::{Card, Rank, Suit};
+    ///
+    /// let higher = Card::new(Rank::Two, Suit::Spades);
+    /// let lower = Card::new(Rank::Ace, Suit::Hearts);
+    ///
+    /// assert!(higher.is_one_higher_than(&lower));
+    /// ```
+    pub fn is_one_higher_than(&self, other: &Card) -> bool {
+        self.rank as u8 == other.rank as u8 + 1
+    }
+}
+
+/// Formats the card for display as "Rank of Suit".
+///
+/// # Examples
+///
+/// ```
+/// use freecell_game_engine::card::{Card, Rank, Suit};
+///
+/// let card = Card::new(Rank::Ace, Suit::Spades);
+/// assert_eq!(format!("{}", card), "Ace of Spades");
+/// ```
+impl fmt::Display for Card {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?} of {:?}", self.rank, self.suit)
     }
 }
 
@@ -115,5 +310,22 @@ mod tests {
             suit,
         };
         assert_eq!(card.color(), expected_color);
+    }
+
+    #[rstest]
+    #[case(Rank::Ace, Suit::Spades, Rank::Two, Suit::Spades, false)]
+    #[case(Rank::Ace, Suit::Hearts, Rank::Ace, Suit::Hearts, false)]
+    #[case(Rank::Three, Suit::Hearts, Rank::Two, Suit::Hearts, true)]
+    #[case(Rank::Ten, Suit::Diamonds, Rank::Nine, Suit::Diamonds, true)]
+    fn card_is_higher_than(
+        #[case] rank1: Rank,
+        #[case] suit1: Suit,
+        #[case] rank2: Rank,
+        #[case] suit2: Suit,
+        #[case] expected: bool,
+    ) {
+        let card1 = Card::new(rank1, suit1);
+        let card2 = Card::new(rank2, suit2);
+        assert_eq!(expected, card1.is_one_higher_than(&card2));
     }
 }

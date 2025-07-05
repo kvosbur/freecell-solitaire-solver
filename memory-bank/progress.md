@@ -18,17 +18,11 @@
 - **API**: Stable interface for consumer applications
 - **Testing**: Core game logic tested and verified
 
-#### game/ (Interactive Application) - IN DEVELOPMENT 🔄
-- **Integration**: Successfully imports and uses game-engine
-- **Structure**: Basic application skeleton in place
-- **Status**: Needs UI implementation in src/main.rs
-- **Priority**: Current development focus
-
 #### solver/ (Algorithm Application) - SKELETON ⏳
 - **Structure**: Basic Cargo.toml and main.rs created
 - **Dependencies**: Configured to use game-engine
 - **Status**: Algorithm implementation pending
-- **Priority**: After game/ completion
+- **Priority**: After game-engine refactoring
 
 #### appAutomation/ (Mobile Integration) - PLANNED ⏳
 - **Structure**: Directory exists
@@ -51,11 +45,10 @@
 
 ### Component Development Priorities
 
-#### game/ - Immediate Focus
-- **Display System**: Visual representation of game state
-- **Input System**: User command parsing and processing
-- **Game Loop**: Continuous gameplay until completion
-- **Error Handling**: Comprehensive user feedback
+#### game-engine/ - Immediate Focus
+- **API Refinement**: Implement v0.2.0 breaking changes (Enhanced Error System, Type-Safe Locations, Clean Move System, Focused GameState API, Component Interface Refinement)
+- **Documentation Update**: Thoroughly update all API documentation
+- **Testing**: Ensure comprehensive test coverage
 
 #### solver/ - Next Priority
 - **Algorithm Design**: Choose solving strategy (A*, BFS, etc.)
@@ -79,8 +72,7 @@
 
 ### Workspace Completion
 - **Infrastructure**: 95% ✅ (memory bank optimization remaining)
-- **game-engine**: 90% ✅ (stable foundation)
-- **game**: 10% 🔄 (basic structure, needs implementation)
+- **game-engine**: 90% 🔄 (stable foundation, undergoing refactoring)
 - **solver**: 5% ⏳ (skeleton only)
 - **appAutomation**: 0% ⏳ (not started)
 
@@ -99,10 +91,8 @@
 
 ### Component Issues
 
-#### game/
-- **No Playable Interface**: Skeleton only, needs full implementation
-- **Missing Display Logic**: Game state not visually represented
-- **No Input Processing**: User cannot interact with game
+#### game-engine/
+- **API Refinement**: Breaking changes for v0.2.0 are in progress.
 
 #### solver/
 - **Algorithm Selection**: Need to choose and implement solving approach
@@ -140,19 +130,18 @@
 3. **Verify Navigation Strategy**: Test new memory bank approach
 
 ### Short Term (1-2 Sessions)
-1. **game/ Implementation**: Focus on interactive gameplay
-2. **Interface Design**: Choose CLI/TUI/GUI approach
-3. **Basic Gameplay Loop**: Minimal playable version
+1. **game-engine v0.2.0 Refactoring**: Implement the refined API design.
+2. **Documentation Update**: Update all API documentation.
+3. **Testing**: Ensure comprehensive test coverage.
 
 ### Medium Term (3-5 Sessions)
-1. **Complete game/ Component**: Full interactive FreeCell game
-2. **Begin solver/ Development**: Algorithm design and implementation
-3. **Integration Testing**: Cross-component compatibility
+1. **Begin solver/ Development**: Algorithm design and implementation.
+2. **Integration Testing**: Cross-component compatibility.
 
 ### Long Term (Future)
-1. **solver/ Completion**: Full solving capability
-2. **appAutomation/ Implementation**: Mobile app integration
-3. **Ecosystem Integration**: All components working together
+1. **solver/ Completion**: Full solving capability.
+2. **appAutomation/ Implementation**: Mobile app integration.
+3. **Ecosystem Integration**: All components working together.
 
 ## Success Metrics 📏
 
@@ -163,10 +152,10 @@
 - [ ] Integration patterns are established and documented
 
 ### Component Success
-- [ ] game/: Provides enjoyable interactive FreeCell gameplay
-- [ ] solver/: Finds optimal solutions for FreeCell deals
-- [ ] appAutomation/: Successfully interfaces with mobile apps
-- [ ] All components use game-engine consistently
+- [ ] game-engine/: Provides a pure, focused, and robust FreeCell game engine API.
+- [ ] solver/: Finds optimal solutions for FreeCell deals.
+- [ ] appAutomation/: Successfully interfaces with mobile apps.
+- [ ] All components use game-engine consistently.
 
 ### Technical Excellence
 - [ ] Code follows Rust best practices across workspace
@@ -183,9 +172,9 @@
 - Component relationship documentation
 
 ### Next Session Goals
-- Complete memory bank structure optimization
-- Begin focused game/ component development
-- Establish practical development workflow
+- Complete memory bank structure optimization.
+- Continue game-engine v0.2.0 API Refinement.
+- Establish practical development workflow.
 
 ### Milestone Timeline
 - **Week 1**: Complete game/ interactive interface

@@ -1,5 +1,5 @@
-use freecell_game_engine::{GameState, PackedGameState};
-use freecell_game_engine::action::Action;
+use freecell_game_engine::{r#move::Move, GameState};
+use crate::packed_state::PackedGameState;
 use std::collections::HashSet;
 use std::time::Instant;
 
@@ -23,7 +23,7 @@ fn dfs(
     {
         return false;
     }
-    if game.is_won() {
+    if game.is_won().unwrap_or(false) {
         return true;
     }
     if path.len() > 200 {

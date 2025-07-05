@@ -20,16 +20,14 @@
 - ✅ Moved workspace-wide concerns from components to root memory bank
 
 ## Next Steps
-1. **Propagate Interface Consistency**
-   - Ensure all consumers (e.g., solver, UI) use the new interfaces.
-   - Update documentation and memory banks in all affected components.
-2. **Begin Component Development**
-   - Focus on game/ component implementation
-   - Implement interactive FreeCell gameplay
-   - Test new memory bank navigation strategy in practice
-3. **Memory Bank Strategy Validation**
-   - Verify navigation efficiency in real development scenarios
-   - Fine-tune component memory banks based on usage patterns
+- **game-engine v0.2.0 Refactoring**: Implement the refined API design focusing on a pure game engine.
+    1.  **Enhanced Error System**: Implement a rich `GameError` that preserves full context from component-specific errors.
+    2.  **Type-Safe Locations**: Introduce a validated `Location` struct for all game areas, ensuring type safety and preventing invalid indices.
+    3.  **Clean Move System**: Redesign the `Move` struct to be type-safe and focused solely on game mechanics, removing solver-specific metadata.
+    4.  **Focused GameState API**: Streamline the `GameState` API, ensuring all methods are core to game rules and mechanics, and provide consistent `Result`-based return types.
+    5.  **Component Interface Refinement**: Ensure all component methods (`Tableau`, `FreeCells`, `Foundations`) return `Result` for all fallible operations, providing consistent error handling.
+- **Documentation Update**: Thoroughly update all API documentation to reflect the new design and provide clear migration guides.
+- **Testing**: Ensure comprehensive test coverage for all new and modified APIs.
 
 ## Active Decisions and Considerations
 
@@ -45,10 +43,9 @@
 - Unknown scope: Always start with root `activeContext.md`
 
 ### Current Development Priority
-**Active Component**: game/ (interactive FreeCell application)
-- Building on established game-engine foundation
-- Needs UI implementation in `src/main.rs`
-- Priority: Complete basic gameplay loop
+**Active Component**: game-engine (v0.2.0 API Refinement)
+- Building a pure, focused game engine library
+- Priority: Complete the breaking changes for v0.2.0
 
 ## Important Patterns and Preferences
 
@@ -59,7 +56,7 @@
 - **Memory Bank Efficiency**: Avoid reading unnecessary context
 
 ### Development Approach
-- **Component-First**: Focus on one component at a time when possible
+- **Foundation-First**: Complete game-engine refactoring before building applications
 - **Integration-Aware**: Consider cross-component impacts
 - **Documentation-Driven**: Memory banks guide all development decisions
 - **Iterative Progress**: Build working increments across components
@@ -74,9 +71,8 @@
 
 ### Component Relationships
 - **game-engine**: Stable foundation, affects all consumers
-- **game**: Current development focus, needs UI implementation
-- **solver**: Next priority after game completion
-- **appAutomation**: Final integration phase
+- **solver**: Depends on game-engine, next priority after game-engine refactoring
+- **appAutomation**: Future integration phase
 
 ### Workspace Health
 - ✅ All components compile successfully
@@ -93,9 +89,8 @@
 - Document breaking changes clearly
 
 ### Integration Points
-- **game + game-engine**: GameState, Move validation, game rules
 - **solver + game-engine**: State validation, Move generation
-- **solver + appAutomation**: Solution format compatibility
+- **appAutomation + solver**: Solution format compatibility
 
 ### Testing Strategy
 - Component-level unit tests
@@ -123,5 +118,5 @@
 - **Start Here**: Always read this file first to understand current focus
 - **Component Work**: Check if work is component-specific or cross-component
 - **Memory Bank Navigation**: Follow the established three-tier strategy
-- **Current Priority**: Complete root memory bank, then focus on game/ component
+- **Current Priority**: Complete game-engine v0.2.0 API Refinement
 - **Integration Awareness**: Consider cross-component impacts for all changes
