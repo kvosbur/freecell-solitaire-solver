@@ -109,6 +109,71 @@ impl FreeCells {
     pub fn new() -> Self {
         Self { cells: [None; FREECELL_COUNT] }
     }
+
+    /// Place a card in the first available empty freecell automatically.
+    ///
+    /// This method finds an empty freecell, places the card there, and returns 
+    /// the location where the card was placed.
+    ///
+    /// # Returns
+    ///
+    /// Returns the location where the card was placed.
+    ///
+    /// # Errors
+    ///
+    /// Returns `FreeCellError::NoEmptyCells` if all freecells are already occupied.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use freecell_game_engine::freecells::FreeCells;
+    /// use freecell_game_engine::card::{Card, Rank, Suit};
+    ///
+    /// let mut freecells = FreeCells::new();
+    /// 
+    /// // Place a card in any empty cell
+    /// let card = Card::new(Rank::Ace, Suit::Spades);
+    /// let location = freecells.place_card(card).unwrap();
+    /// 
+    /// // Verify the card was placed at the returned location
+    /// assert_eq!(freecells.get_card(location).unwrap(), Some(&card));
+    /// ```
+    pub fn place_card(&mut self, card: Card) -> Result<FreecellLocation, FreeCellError> {
+        for (idx, cell) in self.cells.iter_mut().enumerate() {
+            if cell.is_none() {
+                *cell = Some(card);
+                return Ok(FreecellLocation::new(idx as u8).unwrap());
+            }
+        }
+        Err(FreeCellError::NoEmptyCells)
+    }
+
+    /// Place a card in a freecell at the specified location.
+    ///
+    /// # Errors
+    ///
+    /// Returns `FreeCellError::CellOccupied` if the cell already contains a card.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use freecell_game_engine::freecells::FreeCells;
+    /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FreecellLocation;
+    ///
+    /// let mut freecells = FreeCells::new();
+    /// let card = Card::new(Rank::Ace, Suit::Spades);
+    /// freecells.place_card_at(FreecellLocation::new(0).unwrap(), card).unwrap();
+    /// ```
+    pub fn place_card_at(&mut self, location: FreecellLocation, card: Card) -> Result<(), FreeCellError> {
+        // Validate first, without modifying state
+        self.validate_card_placement(location, &card)?;
+        
+        // If validation passes, place the card
+        let cell_index = location.index() as usize;
+        self.cells[cell_index] = Some(card);
+        Ok(())
+    }
     
     /// Validates if a card can be legally placed in a freecell according to FreeCell rules.
     /// Does not modify any state - only provides validation.
@@ -141,7 +206,7 @@ impl FreeCells {
     /// let another_card = Card::new(Rank::Two, Suit::Hearts);
     /// assert!(freecells.validate_card_placement(location, &another_card).is_err());
     /// ```
-    pub fn validate_card_placement(&self, location: FreecellLocation, card: &Card) -> Result<(), FreeCellError> {
+    fn validate_card_placement(&self, location: FreecellLocation, card: &Card) -> Result<(), FreeCellError> {
         if let Some(existing_card) = self.cells[location.index() as usize] {
             return Err(FreeCellError::CellOccupied {
                 cell_index: location.index(),
@@ -149,33 +214,6 @@ impl FreeCells {
                 new_card: *card,
             });
         }
-        Ok(())
-    }
-    
-    /// Place a card in a freecell at the specified location.
-    ///
-    /// # Errors
-    ///
-    /// Returns `FreeCellError::CellOccupied` if the cell already contains a card.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use freecell_game_engine::freecells::FreeCells;
-    /// use freecell_game_engine::card::{Card, Rank, Suit};
-    /// use freecell_game_engine::location::FreecellLocation;
-    ///
-    /// let mut freecells = FreeCells::new();
-    /// let card = Card::new(Rank::Ace, Suit::Spades);
-    /// freecells.place_card_at(FreecellLocation::new(0).unwrap(), card).unwrap();
-    /// ```
-    pub fn place_card_at(&mut self, location: FreecellLocation, card: Card) -> Result<(), FreeCellError> {
-        // Validate first, without modifying state
-        self.validate_card_placement(location, &card)?;
-        
-        // If validation passes, place the card
-        let cell_index = location.index() as usize;
-        self.cells[cell_index] = Some(card);
         Ok(())
     }
     
@@ -235,12 +273,6 @@ impl FreeCells {
         Ok(self.cells[location.index() as usize].as_ref())
     }
     
-    /// Get the number of freecells.
-    /// This is an internal helper method.
-    fn cell_count(&self) -> usize {
-        self.cells.len()
-    }
-    
     /// Count the number of empty cells.
     ///
     /// # Examples
@@ -291,47 +323,6 @@ impl FreeCells {
             .enumerate()
             .filter_map(|(idx, cell)| cell.as_ref().map(|card| (idx, card)))
     }
-    
-    /// Place a card in the first available empty freecell automatically.
-    ///
-    /// This method finds an empty freecell, places the card there, and returns 
-    /// the location where the card was placed.
-    ///
-    /// # Returns
-    ///
-    /// Returns the location where the card was placed.
-    ///
-    /// # Errors
-    ///
-    /// Returns `FreeCellError::NoEmptyCells` if all freecells are already occupied.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use freecell_game_engine::freecells::FreeCells;
-    /// use freecell_game_engine::card::{Card, Rank, Suit};
-    ///
-    /// let mut freecells = FreeCells::new();
-    /// 
-    /// // Place a card in any empty cell
-    /// let card = Card::new(Rank::Ace, Suit::Spades);
-    /// let location = freecells.place_card(card).unwrap();
-    /// 
-    /// // Verify the card was placed at the returned location
-    /// assert_eq!(freecells.get_card(location).unwrap(), Some(&card));
-    /// ```
-    pub fn place_card(&mut self, card: Card) -> Result<FreecellLocation, FreeCellError> {
-        for (idx, cell) in self.cells.iter_mut().enumerate() {
-            if cell.is_none() {
-                *cell = Some(card);
-                return Ok(FreecellLocation::new(idx as u8).unwrap());
-            }
-        }
-        Err(FreeCellError::NoEmptyCells)
-    }
-
-    // is_cell_empty method has been fully removed
-    // Use get_card(location).unwrap().is_none() instead
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

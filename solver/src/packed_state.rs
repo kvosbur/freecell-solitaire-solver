@@ -2,7 +2,7 @@
 //!
 //! Used primarily by solver components for efficient state comparison.
 
-use freecell_game_engine::{GameState, Card, Rank, Suit, Tableau, FreeCells, Foundations};
+use freecell_game_engine::{foundations::FOUNDATION_COUNT, tableau::TABLEAU_COLUMN_COUNT, Card, Foundations, FreeCells, GameState, Rank, Suit, Tableau};
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct PackedGameState {
@@ -50,7 +50,7 @@ impl PackedGameState {
                 let card_id = self.tableau_cards[idx];
                 let card = unpack_card(card_id)?;
                 let location = freecell_game_engine::location::TableauLocation::new(col as u8).unwrap();
-                tableau.place_card(location, card).map_err(|_| UnpackError::InvalidTableauLength)?;
+                tableau.place_card_at(location, card).map_err(|_| UnpackError::InvalidTableauLength)?;
                 idx += 1;
             }
         }
@@ -97,11 +97,12 @@ impl PackedGameState {
         let mut tableau_cards = [0u8; 52];
         let mut tableau_lens = [0u8; 8];
         let mut idx = 0;
-        for (col, len_ref) in tableau_lens.iter_mut().enumerate().take(gs.tableau().column_count()) {
-            let len = gs.tableau().column_length(col);
+        for (col, len_ref) in tableau_lens.iter_mut().enumerate().take(TABLEAU_COLUMN_COUNT) {
+            let location = freecell_game_engine::location::TableauLocation::new(col as u8).unwrap();
+            let len = gs.tableau().column_length(location).unwrap_or(0);
             *len_ref = len as u8;
-            for _i in 0..len {
-                if let Ok(card) = gs.tableau().get_card_at(col, _i) {
+            for i in 0..len {
+                if let Ok(card) = gs.tableau().get_card_at(location, i) {
                     tableau_cards[idx] = pack_card(card);
                     idx += 1;
                 }
@@ -113,7 +114,7 @@ impl PackedGameState {
             freecells[i] = gs.freecells().get_card(location).unwrap_or(None).map_or(0, pack_card);
         }
         let mut foundations = [0u8; 4];
-        for i in 0..gs.foundations().pile_count() {
+        for i in 0..FOUNDATION_COUNT {
             let location = freecell_game_engine::location::FoundationLocation::new(i as u8).unwrap();
             foundations[i] = gs.foundations().get_card(location).unwrap_or(None).map_or(0, |c| c.rank() as u8);
         }
@@ -153,8 +154,8 @@ mod tests {
         let card2 = Card::new(Rank::King, Suit::Spades);
         let location0 = freecell_game_engine::location::TableauLocation::new(0).unwrap();
         let location1 = freecell_game_engine::location::TableauLocation::new(1).unwrap();
-        tableau.place_card(location0, card1).unwrap();
-        tableau.place_card(location1, card2).unwrap();
+        tableau.place_card_at(location0, card1).unwrap();
+        tableau.place_card_at(location1, card2).unwrap();
 
         let mut freecells = FreeCells::new();
         let card3 = Card::new(Rank::Queen, Suit::Diamonds);

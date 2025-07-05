@@ -295,12 +295,13 @@ impl Foundations {
 
     /// Place a card in a specific foundation pile at the given location.
     ///
+    /// This method validates that the card placement follows FreeCell rules before placing the card.
+    ///
     /// # Errors
     ///
-    /// Returns `FoundationError::InvalidPile` if the location is invalid.
-    /// Note that this method does not validate whether the card placement follows FreeCell rules.
-    /// Use `validate_card_placement()` for rule validation or use `place_card()` 
-    /// to automatically find the right pile and validate the placement.
+    /// - `FoundationError::NonAceOnEmptyPile` if trying to place a non-Ace on an empty pile
+    /// - `FoundationError::InvalidSequence` if the card doesn't follow the sequence rules
+    /// - `FoundationError::PileComplete` if the pile already has a King
     ///
     /// # Examples
     ///
@@ -314,16 +315,11 @@ impl Foundations {
     /// foundations.place_card_at(FoundationLocation::new(0).unwrap(), card).unwrap();
     /// ```
     pub fn place_card_at(&mut self, location: FoundationLocation, card: Card) -> Result<(), FoundationError> {
+        // Validate the card placement first - this covers all the rule checks including capacity
+        self.validate_card_placement(location, &card)?;
+        
         let idx = location.index() as usize;
         let height = self.heights[idx];
-        
-        // Make sure we're not exceeding the capacity
-        if height >= FOUNDATION_CAPACITY {
-            return Err(FoundationError::PileComplete {
-                pile_index: location.index(),
-                new_card: card,
-            });
-        }
         
         // Store the card at the current height position
         self.piles[idx][height] = Some(card);

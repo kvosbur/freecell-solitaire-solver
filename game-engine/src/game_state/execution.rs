@@ -181,7 +181,7 @@ impl GameState {
         })?;
         let to_location = crate::location::TableauLocation::new(to_column).map_err(GameError::Location)?;
         self.tableau
-            .place_card(to_location, removed_card)
+            .place_card_at(to_location, removed_card)
             .map_err(|e| GameError::Tableau {
                 error: e,
                 attempted_move: Some(*m),
@@ -272,7 +272,7 @@ impl GameState {
         })?;
         let to_location = crate::location::TableauLocation::new(to_column).map_err(GameError::Location)?;
         self.tableau
-            .place_card(to_location, removed_card)
+            .place_card_at(to_location, removed_card)
             .map_err(|e| GameError::Tableau {
                 error: e,
                 attempted_move: Some(*m),
@@ -325,14 +325,14 @@ impl GameState {
                 let removed = self.foundations.remove_card(to_location).expect("Undo: foundation error");
                 let card = removed.expect("Undo: foundation not empty");
                 let from_location = crate::location::TableauLocation::new(from.index()).unwrap();
-                self.tableau.place_card(from_location, card).expect("Undo: tableau error");
+                self.tableau.place_card_at(from_location, card).expect("Undo: tableau error");
             }
             (Tableau(from), Freecell(to)) => {
                 let to_location = crate::location::FreecellLocation::new(to.index()).unwrap();
                 let removed = self.freecells.remove_card(to_location).expect("Undo: freecell error");
                 let card = removed.expect("Undo: freecell not empty");
                 let from_location = crate::location::TableauLocation::new(from.index()).unwrap();
-                self.tableau.place_card(from_location, card).expect("Undo: tableau error");
+                self.tableau.place_card_at(from_location, card).expect("Undo: tableau error");
             }
             (Freecell(from), Tableau(to)) => {
                 let to_location = crate::location::TableauLocation::new(to.index()).unwrap();
@@ -354,7 +354,7 @@ impl GameState {
                 let removed = self.tableau.remove_card(to_location).expect("Undo: tableau error");
                 let card = removed.expect("Undo: tableau not empty");
                 let from_location = crate::location::TableauLocation::new(from.index()).unwrap();
-                self.tableau.place_card(from_location, card).expect("Undo: tableau error");
+                self.tableau.place_card_at(from_location, card).expect("Undo: tableau error");
             }
             _ => {}
         }

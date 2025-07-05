@@ -158,29 +158,6 @@ impl GameState {
             }),
         }
     }
-
-    pub fn is_empty(&self, location: crate::location::Location) -> Result<bool, GameError> {
-        use crate::location::Location::*;
-        match location {
-            Tableau(l) => self.tableau.is_column_empty(l.index() as usize).map_err(|e| GameError::Tableau {
-                error: e,
-                attempted_move: None,
-                operation: "is_empty".to_string(),
-            }),
-            Freecell(l) => self.freecells.get_card(l)
-                .map(|opt_card| opt_card.is_none())
-                .map_err(|e| GameError::FreeCell {
-                    error: e,
-                    attempted_move: None,
-                    operation: "is_empty".to_string(),
-                }),
-            Foundation(l) => self.foundations.is_empty(l).map_err(|e| GameError::Foundation {
-                error: e,
-                attempted_move: None,
-                operation: "is_empty".to_string(),
-            }),
-        }
-    }
 }
 
 impl Default for GameState {

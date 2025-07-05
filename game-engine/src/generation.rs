@@ -213,7 +213,7 @@ pub fn generate_deal(seed: u64) -> Result<GameState, GenerationError> {
     // Distribute cards into tableau columns
     while let Some(card) = deck.pop() {
         let location = crate::location::TableauLocation::new(column_idx as u8).unwrap();
-        tableau.place_card(location, card)
+        tableau.place_card_at(location, card)
             .map_err(|_| GenerationError::DealGenerationFailed)?; // Should not fail in normal operation
 
         column_idx = (column_idx + 1) % max_columns;
@@ -315,8 +315,9 @@ mod tests {
 
         // Check that each column has the expected cards
         for (col_idx, expected_column) in expected_layout.iter().enumerate() {
+            let location = crate::location::TableauLocation::new(col_idx as u8).unwrap();
             assert_eq!(
-                game.tableau().column_length(col_idx),
+                game.tableau().column_length(location).unwrap(),
                 expected_column.len(),
                 "Column {} has wrong number of cards",
                 col_idx
@@ -324,7 +325,7 @@ mod tests {
 
             for (card_idx, expected_card) in expected_column.iter().enumerate() {
                 assert_eq!(
-                    game.tableau().get_card_at(col_idx, card_idx).unwrap(),
+                    game.tableau().get_card_at(location, card_idx).unwrap(),
                     expected_card,
                     "Mismatch at column {}, card {}",
                     col_idx,
@@ -370,8 +371,9 @@ mod tests {
             let game = generate_deal(seed).unwrap();
 
             // Test just the first column
+            let location = crate::location::TableauLocation::new(0).unwrap();
             assert_eq!(
-                game.tableau().column_length(0),
+                game.tableau().column_length(location).unwrap(),
                 expected_column.len(),
                 "Game #{} column 0 has wrong number of cards",
                 seed
@@ -379,7 +381,7 @@ mod tests {
 
             for (card_idx, expected_card) in expected_column.iter().enumerate() {
                 assert_eq!(
-                    game.tableau().get_card_at(0, card_idx).unwrap(),
+                    game.tableau().get_card_at(location, card_idx).unwrap(),
                     expected_card,
                     "Game #{} mismatch at column 0, card {}",
                     seed,
