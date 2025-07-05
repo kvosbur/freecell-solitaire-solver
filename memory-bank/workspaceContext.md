@@ -5,7 +5,6 @@
 ```
 game-engine (library)
     ↑
-    ├── game (binary)
     ├── solver (binary) 
     └── appAutomation (standalone)
 ```
@@ -15,16 +14,10 @@ game-engine (library)
 ### game-engine (Foundation Library)
 - **Role**: Core shared library providing FreeCell game logic
 - **Dependencies**: None (pure Rust library)
-- **Consumers**: game, solver
+- **Consumers**: solver
 - **Key Exports**: GameState, Card, Move, game rules, validation logic
 - **Status**: Foundational implementation complete
 
-### game (Interactive Application)
-- **Role**: User-facing FreeCell game interface
-- **Dependencies**: game-engine
-- **Integration Points**: Uses GameState for game logic, Move validation
-- **Current Status**: Basic structure in place, needs UI implementation
-- **Development Priority**: High (current focus)
 
 ### solver (Algorithm Application)
 - **Role**: Automated solution finder for FreeCell deals
@@ -65,7 +58,6 @@ game-engine (library)
 - Maintain backward compatibility when possible
 
 ### Cross-Component Communication
-- game and solver: Both consume game-engine API
 - solver and appAutomation: Solution format compatibility needed
 - All components: Consistent error handling and data structures
 
@@ -76,13 +68,13 @@ game-engine (library)
 
 ## Current Development Focus
 
-### Active Component: game/
-- Implementing interactive FreeCell gameplay
-- Building on established game-engine foundation
-- Priority: Complete basic gameplay loop
+### Active Component: game-engine/
+- Preparing for v0.2.0 API Refinement
+- Building a pure, focused game engine library
+- Priority: Complete the breaking changes for v0.2.0
 
 ### Next Steps
-1. Complete game application implementation
+1. Complete game-engine v0.2.0 API Refinement
 2. Begin solver algorithm development
 3. Design solution format for appAutomation integration
 4. Implement mobile automation system

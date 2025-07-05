@@ -23,6 +23,7 @@ Documents the technologies used, development setup, technical constraints, depen
 - Library crate only: no built-in UI or direct user interaction
 - Minimize dependencies unless they provide clear learning or usability benefits
 - Code must be idiomatic Rust and pass clippy/rustfmt checks
+- **New Constraint**: The `freecell-game-engine` crate must remain pure, focusing solely on core FreeCell game rules and mechanics. Features related to solver heuristics, game analysis, or UI-specific logic are explicitly excluded and will reside in separate, higher-level crates.
 
 ## Dependencies
 
@@ -49,8 +50,8 @@ Documents the technologies used, development setup, technical constraints, depen
 
 ## Next Steps
 
-- Expand and document the API for integration with UIs and solvers
-- Add deck creation, shuffling, and Microsoft-compatible deal logic
-- Add seed-based reproducible deals for testing/solvers
-- Continue using TDD and parameterized testing for new features
-- Expand documentation as the codebase evolves
+- Expand and document the API for integration with UIs and solvers. This will involve implementing the refined API design for the next major version (v0.2.0) as detailed in `activeContext.md` and `progress.md`.
+- Add deck creation, shuffling, and Microsoft-compatible deal logic.
+- Add seed-based reproducible deals for testing/solvers.
+- Continue using TDD and parameterized testing for new features.
+- Expand documentation as the codebase evolves, especially for the upcoming API changes.

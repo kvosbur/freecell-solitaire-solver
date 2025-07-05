@@ -5,20 +5,20 @@
 mod game_prep;
 mod harness;
 mod strategies;
+pub mod packed_state;
 
-use freecell_game_engine::generation::GameGenerator;
+use freecell_game_engine::generation::generate_deal;
 use strategies::strat5::solve;
 
 fn do_benchmark() {
     let allowed_timeout_secs = 60 * 60 * 24; // 24 hours
     let seed = 1;
     let mut move_count_to_undue: usize = 32;
-    let mut game_generator = GameGenerator::new(seed);
-    game_generator.generate();
+    let game_state_initial = generate_deal(seed).unwrap();
     let solution = game_prep::get_game_solution(seed);
 
     while move_count_to_undue < solution.len() {
-        let mut game_state = game_generator.game_state.clone();
+        let mut game_state = game_state_initial.clone();
         println!(
             "Trying to undue {} moves from solution of length {}",
             move_count_to_undue,
@@ -47,10 +47,9 @@ fn do_adhoc() {
     let seed = 1;
     let move_count_to_undue = 40; // Change this to test different scenarios
     let allowed_timeout_secs = 60 * 60 * 24; // 24 hours
-    let mut game_generator = GameGenerator::new(seed);
-    game_generator.generate();
+    let game_state_initial = generate_deal(seed).unwrap();
     let solution = game_prep::get_game_solution(seed);
-    let mut game_state = game_generator.game_state.clone();
+    let mut game_state = game_state_initial.clone();
 
     let subset_moves_to_apply = solution[0..solution.len() - move_count_to_undue].to_vec();
     for m in &subset_moves_to_apply {

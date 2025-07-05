@@ -10,6 +10,22 @@ The game engine follows a strict library-only architecture:
 - **API-First**: All functionality exposed through well-defined public interfaces
 
 ### Modular Component Structure
+
+The `game_state` module is split into focused submodules for maintainability and clarity:
+
+```
+game_state/
+  ├── mod.rs         // Main struct, core methods, docs, Default
+  ├── error.rs       // GameError type, Display impl
+  ├── validation.rs  // is_move_valid and private helpers per move type
+  ├── moves.rs       // Move generation logic
+  └── execution.rs   // Move execution and undo logic
+```
+
+- `is_move_valid` delegates to private helper methods for each move type, improving readability and testability.
+- All error handling is unified under a single `GameError` type with a `Display` implementation.
+- Comprehensive documentation is provided at the module, struct, and method level.
+
 ```rust
 pub struct GameState {
     pub tableau: Tableau,      // 8 columns of cards
@@ -44,41 +60,46 @@ impl Card {
 ```
 
 ### Move System Architecture
+The `Move` struct uses the type-safe `Location` enum for its source and destination, ensuring that all moves are between valid game areas. It includes a `card_count` field, though currently only single-card moves are implemented.
+
 ```rust
-pub enum Move {
-    TableauToFoundation { from_column: usize, to_pile: usize },
-    TableauToFreecell { from_column: usize, to_cell: usize },
-    TableauToTableau { from_column: usize, to_column: usize },
-    FreecellToFoundation { from_cell: usize, to_pile: usize },
-    FreecellToTableau { from_cell: usize, to_column: usize },
+// Current Move struct
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Move {
+    pub source: Location,
+    pub destination: Location,
+    pub card_count: u8, // Currently only 1 is supported
 }
 ```
 
 ## Rule Engine Patterns
 
 ### Pure Function Rule Validation
-Each FreeCell rule is implemented as an independent, testable function:
+Each component (`Tableau`, `Foundations`) provides a `validate_card_placement` method that encapsulates its specific placement rules. These functions are pure, testable, and return a `Result<(), Error>`.
+
 ```rust
-pub fn can_place_on_tableau(card: &Card, target_card: &Card) -> bool {
+// In Tableau
+pub fn validate_card_placement(&self, column: usize, card: &Card) -> Result<(), TableauError> {
     // Alternating colors and descending rank validation
 }
 
-pub fn can_place_on_foundation(card: &Card, foundation_top: Option<&Card>) -> bool {
+// In Foundations
+pub fn validate_card_placement(&self, pile: usize, card: &Card) -> Result<(), FoundationError> {
     // Same suit and ascending rank validation
 }
 ```
 
 ### Validation Before Mutation
+The `GameState` orchestrates validation and execution. `execute_move` first calls `is_move_valid` to ensure correctness before mutating the state.
+
 ```rust
 impl GameState {
-    pub fn execute_move(&mut self, move_to_make: &Move) -> Result<(), String> {
-        // 1. Validate move using rule functions
-        if !self.is_move_valid(move_to_make) {
-            return Err("Invalid move".to_string());
-        }
+    pub fn execute_move(&mut self, m: &Move) -> Result<(), GameError> {
+        // 1. is_move_valid is called internally to ensure correctness
+        self.is_move_valid(m)?;
         
-        // 2. Execute move only after validation passes
-        self.apply_move(move_to_make);
+        // 2. Private execute_* methods apply the move
+        // ...
         Ok(())
     }
 }
@@ -86,14 +107,29 @@ impl GameState {
 
 ## API Design Patterns
 
-### Result-Based Error Handling
+### Result-Based API (Mostly Consistent)
+Most fallible operations return `Result<T, Error>`, providing rich error context. However, some component methods still return `Option` where `Result` would be more consistent. This is a key area for refinement in v0.2.0.
+
 ```rust
-pub fn execute_move(&mut self, move_to_make: &Move) -> Result<(), String> {
-    // Returns Result for graceful error handling
+// Example of current API
+impl GameState {
+    // Good: Consistent Result return
+    pub fn execute_move(&mut self, m: &Move) -> Result<(), GameError> {
+        // ...
+    }
+
+    // Good: Consistent Result return
+    pub fn get_card(&self, location: Location) -> Result<Option<&Card>, GameError> {
+        // ...
+    }
 }
 
-pub fn get_available_moves(&self) -> Vec<Move> {
-    // Returns all valid moves for current state
+// Inconsistency example in a component
+impl Tableau {
+    // Should be Result<Option<&Card>, TableauError> for consistency
+    pub fn get_card(&self, column: usize) -> Result<Option<&Card>, TableauError> {
+        // ...
+    }
 }
 ```
 
@@ -146,39 +182,51 @@ impl GameState {
 - **FreeCells**: Manages temporary storage with occupancy rules
 - **Foundations**: Manages completion piles with suit/rank rules
 
-## Testing Patterns
+---
 
-### Test-Driven Development
+## Interface Consistency Pattern (2025-06)
+
+### Motivation
+To improve maintainability, predictability, and integration, the interfaces for `FreeCells`, `Foundations`, and `Tableau` were standardized. This ensures all core components expose a consistent set of methods for card placement, removal, and inspection.
+
+### Standardized Method Signatures
+
+All three components now provide:
+
 ```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    #[test]
-    fn test_valid_tableau_placement() {
-        let red_king = Card { rank: 13, suit: Suit::Hearts };
-        let black_queen = Card { rank: 12, suit: Suit::Spades };
-        assert!(can_place_on_tableau(&black_queen, &red_king));
-    }
-}
+fn place_card(&mut self, location: usize, card: Card) -> Result<(), ErrorType>;
+fn remove_card(&mut self, location: usize) -> Result<Option<Card>, ErrorType>;
+fn get_card(&self, location: usize) -> Option<&Card>;
 ```
+- `location` is `cell_index`, `pile`, or `column` as appropriate.
+- Each component retains its own domain-specific error type (`FreeCellError`, `FoundationError`, `TableauError`).
 
-### Parameterized Testing
-```rust
-use rstest::rstest;
+#### Helper Methods (Consistent Naming)
+- `*_count()` for number of locations (cells, piles, columns)
+- `empty_*_count()` for number of empty locations
+- `is_*_empty(location)` for emptiness check
 
-#[rstest]
-#[case(Card { rank: 1, suit: Suit::Hearts }, None, true)]
-#[case(Card { rank: 2, suit: Suit::Hearts }, Some(&Card { rank: 1, suit: Suit::Hearts }), true)]
-#[case(Card { rank: 3, suit: Suit::Hearts }, Some(&Card { rank: 1, suit: Suit::Hearts }), false)]
-fn test_foundation_placement(
-    #[case] card: Card,
-    #[case] foundation_top: Option<&Card>,
-    #[case] expected: bool
-) {
-    assert_eq!(can_place_on_foundation(&card, foundation_top), expected);
-}
-```
+### Rationale for Domain-Specific Error Types
+
+- **Type Safety & Clarity**: Each component's error enum reflects its unique rules and constraints.
+- **Debuggability**: Errors are descriptive and context-specific.
+- **Extensibility**: New error variants can be added per component as rules evolve.
+
+### Impact
+
+- **Move execution and undo logic** now use the new interfaces, handling `Result<Option<Card>, ErrorType>` for all removals.
+- **Tests** updated to match new signatures and error handling.
+- **Documentation** and memory banks updated to reflect this architectural improvement.
+
+### Benefits
+
+- Predictable, uniform API for all card containers
+- Easier integration for downstream consumers (UI, solver, automation)
+- Clear separation of concerns and error domains
+
+**Note**: While the current interface consistency pattern is strong, the upcoming major version will further refine error handling and return types to ensure all fallible operations consistently return `Result<T, GameError>`, providing even richer context and type safety.
+
+---
 
 ## Performance Patterns
 
@@ -200,13 +248,33 @@ impl GameState {
 
 ## Error Handling Patterns
 
-### Comprehensive Validation
+### Enhanced Error System
+The `GameError` enum will be significantly enhanced to preserve full context from component-specific errors. This means `GameError` will wrap the original `FreeCellError`, `FoundationError`, or `TableauError`, along with additional context like the attempted `Move` and operation description. This provides rich, debuggable error information without losing the specificity of component-level errors.
+
 ```rust
-impl GameState {
-    fn validate_move_indices(&self, move_to_make: &Move) -> Result<(), String> {
-        // Validate all array indices before accessing
-        // Return descriptive error messages
-    }
+// Proposed new GameError structure
+#[derive(Debug, Clone, PartialEq)]
+pub enum GameError {
+    FreeCellError { 
+        error: FreeCellError, 
+        attempted_move: Option<Move>,
+        operation: String,
+    },
+    FoundationError { 
+        error: FoundationError, 
+        attempted_move: Option<Move>,
+        operation: String,
+    },
+    TableauError { 
+        error: TableauError, 
+        attempted_move: Option<Move>,
+        operation: String,
+    },
+    InvalidMove { 
+        move_cmd: Move, 
+        reason: InvalidMoveReason 
+    },
+    // ... other game-level errors
 }
 ```
 
