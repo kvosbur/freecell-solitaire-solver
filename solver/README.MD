@@ -16,3 +16,15 @@ You can then look at the results using the `callgrind_annotate` annotate tool.
 Base: `callgrind_annotate callgrind.out.<pid>`
 The command I found most useful was the following but you should mess around with its few options to see what helps you understand better: `callgrind_annotate callgrind.out.<pid> --show-percs=yes --tree=caller --inclusive=yes`
 
+
+# Profile Guided Optimization
+
+Idea to use a profile as the basis for compile so that it knows what the hot paths are and can use that information.
+Used the following guide for help: https://doc.rust-lang.org/rustc/profile-guided-optimization.html
+## Commands to run on linux:
+```
+RUSTFLAGS="-Cprofile-generate=/tmp/pgo-data" cargo build --release --bin solver
+./target/release/solver
+llvm-profdata merge -o /tmp/pgo-data/merged.profdata /tmp/pgo-data
+RUSTFLAGS="-Cprofile-use=/tmp/pgo-data/merged.profdata" cargo build --release --bin solver
+```
