@@ -5,11 +5,8 @@
 
 use super::GameState;
 use crate::{
-    foundations::FOUNDATION_COUNT,
-    freecells::FREECELL_COUNT,
-    location::FoundationLocation,
-    tableau::TABLEAU_COLUMN_COUNT,
-    r#move::Move,
+    foundations::FOUNDATION_COUNT, freecells::FREECELL_COUNT, location::FoundationLocation,
+    r#move::Move, tableau::TABLEAU_COLUMN_COUNT,
 };
 
 impl GameState {
@@ -36,12 +33,12 @@ impl GameState {
     /// // Solvers would typically iterate through these moves to explore the game tree.
     /// ```
     pub fn get_available_moves(&self) -> Vec<Move> {
-        let mut moves = Vec::new();
-        moves.extend(self.get_tableau_to_foundation_moves());
-        moves.extend(self.get_freecell_to_foundation_moves());
-        moves.extend(self.get_freecell_to_tableau_moves());
-        moves.extend(self.get_tableau_to_tableau_moves());
-        moves.extend(self.get_tableau_to_freecell_moves());
+        let mut moves = Vec::with_capacity(20);
+        self.get_tableau_to_foundation_moves(&mut moves);
+        self.get_freecell_to_foundation_moves(&mut moves);
+        self.get_freecell_to_tableau_moves(&mut moves);
+        self.get_tableau_to_tableau_moves(&mut moves);
+        self.get_tableau_to_freecell_moves(&mut moves);
         moves
     }
 
@@ -69,9 +66,7 @@ impl GameState {
     /// let moves = game.get_tableau_to_foundation_moves();
     /// // assert!(moves.contains(&Move::TableauToFoundation { from: TableauLocation::new(0).unwrap(), to: FoundationLocation::new(0).unwrap() }));
     /// ```
-    pub fn get_tableau_to_foundation_moves(&self) -> Vec<Move> {
-        let mut moves = Vec::new();
-
+    pub fn get_tableau_to_foundation_moves(&self, moves: &mut Vec<Move>) {
         for from_col in 0..TABLEAU_COLUMN_COUNT {
             let location = crate::location::TableauLocation::new(from_col as u8).unwrap();
             let card_result = self.tableau().get_card(location);
@@ -82,15 +77,17 @@ impl GameState {
 
             for to_pile in 0..FOUNDATION_COUNT {
                 let foundation_location = FoundationLocation::new(to_pile as u8).unwrap();
-                if self.foundations().validate_card_placement(foundation_location, card).is_ok() {
+                if self
+                    .foundations()
+                    .validate_card_placement(foundation_location, card)
+                    .is_ok()
+                {
                     if let Ok(m) = Move::tableau_to_foundation(from_col as u8, to_pile as u8) {
                         moves.push(m);
                     }
                 }
             }
         }
-
-        moves
     }
 
     /// Generates all valid moves from freecells to foundation piles.
@@ -116,9 +113,7 @@ impl GameState {
     /// let moves = game.get_freecell_to_foundation_moves();
     /// // assert!(moves.contains(&Move::FreecellToFoundation { from: FreecellLocation::new(0).unwrap(), to: FoundationLocation::new(0).unwrap() }));
     /// ```
-    pub fn get_freecell_to_foundation_moves(&self) -> Vec<Move> {
-        let mut moves = Vec::new();
-        
+    pub fn get_freecell_to_foundation_moves(&self, moves: &mut Vec<Move>) {
         for from_cell in 0..FREECELL_COUNT {
             let location = crate::location::FreecellLocation::new(from_cell as u8).unwrap();
             let card_result = self.freecells().get_card(location);
@@ -126,18 +121,20 @@ impl GameState {
                 Ok(Some(c)) => c,
                 _ => continue,
             };
-            
+
             for to_pile in 0..FOUNDATION_COUNT {
                 let foundation_location = FoundationLocation::new(to_pile as u8).unwrap();
-                if self.foundations().validate_card_placement(foundation_location, card).is_ok() {
+                if self
+                    .foundations()
+                    .validate_card_placement(foundation_location, card)
+                    .is_ok()
+                {
                     if let Ok(m) = Move::freecell_to_foundation(from_cell as u8, to_pile as u8) {
                         moves.push(m);
                     }
                 }
             }
         }
-        
-        moves
     }
 
     /// Generates all valid moves from freecells to tableau columns.
@@ -165,9 +162,7 @@ impl GameState {
     /// let moves = game.get_freecell_to_tableau_moves();
     /// // assert!(moves.contains(&Move::FreecellToTableau { from: FreecellLocation::new(0).unwrap(), to: TableauLocation::new(0).unwrap() }));
     /// ```
-    pub fn get_freecell_to_tableau_moves(&self) -> Vec<Move> {
-        let mut moves = Vec::new();
-        
+    pub fn get_freecell_to_tableau_moves(&self, moves: &mut Vec<Move>) {
         for from_cell in 0..crate::freecells::FREECELL_COUNT {
             let location = crate::location::FreecellLocation::new(from_cell as u8).unwrap();
             let card_result = self.freecells().get_card(location);
@@ -178,15 +173,17 @@ impl GameState {
 
             for to_col in 0..TABLEAU_COLUMN_COUNT {
                 let to_location = crate::location::TableauLocation::new(to_col as u8).unwrap();
-                if self.tableau().validate_card_placement(to_location, card).is_ok() {
+                if self
+                    .tableau()
+                    .validate_card_placement(to_location, card)
+                    .is_ok()
+                {
                     if let Ok(m) = Move::freecell_to_tableau(from_cell as u8, to_col as u8) {
                         moves.push(m);
                     }
                 }
             }
         }
-        
-        moves
     }
 
     /// Calculates the maximum number of cards that can be moved as a sequence.
@@ -219,14 +216,19 @@ impl GameState {
         let mut empty_freecells = 0;
         for cell in 0..crate::freecells::FREECELL_COUNT {
             let location = crate::location::FreecellLocation::new(cell as u8).unwrap();
-            if self.freecells().get_card(location).unwrap_or(None).is_none() {
+            if self
+                .freecells()
+                .get_card(location)
+                .unwrap_or(None)
+                .is_none()
+            {
                 empty_freecells += 1;
             }
         }
 
         // Count empty tableau columns
         let empty_tableau_columns = self.tableau().empty_columns_count();
-        
+
         // Cap empty_tableau_columns to prevent overflow (2^20 is reasonable upper bound)
         let capped_empty_columns = empty_tableau_columns.min(20);
         (empty_freecells + 1) * (1_usize << capped_empty_columns)
@@ -264,46 +266,46 @@ impl GameState {
     fn get_movable_sequence_from_column(&self, column: usize) -> Vec<crate::Card> {
         let max_movable = self.calculate_max_movable_cards();
         let mut sequence = Vec::new();
-        
+
         // Early exit if no cards can be moved
         if max_movable == 0 {
             return sequence;
         }
-        
+
         let column_location = match crate::location::TableauLocation::new(column as u8) {
             Ok(loc) => loc,
             Err(_) => return sequence, // Invalid column
         };
-        
+
         let column_length = match self.tableau().column_length(column_location) {
             Ok(length) => length,
             Err(_) => return sequence, // Error getting column length
         };
-        
+
         if column_length == 0 {
             return sequence; // Empty column
         }
-        
+
         // Start from the top card and work backwards to build the sequence
         // The top card is always valid to move (if any card can be moved)
         let top_card_index = column_length - 1;
-        
+
         // Get the top card first
         if let Ok(top_card) = self.tableau().get_card_at(column_location, top_card_index) {
             sequence.push(*top_card);
         } else {
             return sequence; // Can't get top card
         }
-        
+
         // Build sequence by checking cards below the top card
         let max_sequence_length = max_movable.min(column_length);
-        
+
         for sequence_length in 2..=max_sequence_length {
             let next_card_index = column_length - sequence_length;
-            
+
             if let Ok(next_card) = self.tableau().get_card_at(column_location, next_card_index) {
                 let last_card_in_sequence = sequence[sequence.len() - 1];
-                
+
                 // Check if this card can be part of the sequence
                 if Self::forms_valid_tableau_sequence(*next_card, last_card_in_sequence) {
                     sequence.push(*next_card);
@@ -314,7 +316,7 @@ impl GameState {
                 break; // Can't access this card
             }
         }
-        
+
         // Reverse the sequence so it's ordered from top to bottom
         sequence.reverse();
         sequence
@@ -339,7 +341,7 @@ impl GameState {
     ///
     /// let red_queen = Card::new(Rank::Queen, Suit::Hearts);
     /// let black_jack = Card::new(Rank::Jack, Suit::Spades);
-    /// 
+    ///
     /// assert!(GameState::forms_valid_tableau_sequence(red_queen, black_jack));
     /// ```
     #[inline]
@@ -381,15 +383,14 @@ impl GameState {
     /// let moves = game.get_tableau_to_tableau_moves();
     /// // Moves may include single cards or multi-card sequences
     /// ```
-    pub fn get_tableau_to_tableau_moves(&self) -> Vec<Move> {
-        let mut moves = Vec::new();
+    pub fn get_tableau_to_tableau_moves(&self, moves: &mut Vec<Move>) {
         let max_movable = self.calculate_max_movable_cards();
-        
+
         // Early exit if no cards can be moved
         if max_movable == 0 {
-            return moves;
+            return;
         }
-        
+
         for from_col in 0..TABLEAU_COLUMN_COUNT {
             let sequence = self.get_movable_sequence_from_column(from_col);
             if sequence.is_empty() {
@@ -400,18 +401,23 @@ impl GameState {
                 if from_col == to_col {
                     continue;
                 }
-                
                 // Try sequence lengths from longest to shortest
                 // This prioritizes more valuable moves and avoids generating redundant shorter moves
                 let max_sequence_length = sequence.len().min(max_movable);
-                
+
                 for card_count in (1..=max_sequence_length).rev() {
                     // The bottom card of the sequence is what we're trying to place
                     let bottom_card = sequence[card_count - 1];
-                    
+
                     let to_location = crate::location::TableauLocation::new(to_col as u8).unwrap();
-                    if self.tableau().validate_card_placement(to_location, &bottom_card).is_ok() {
-                        if let Ok(m) = Move::tableau_to_tableau(from_col as u8, to_col as u8, card_count as u8) {
+                    if self
+                        .tableau()
+                        .validate_card_placement(to_location, &bottom_card)
+                        .is_ok()
+                    {
+                        if let Ok(m) =
+                            Move::tableau_to_tableau(from_col as u8, to_col as u8, card_count as u8)
+                        {
                             moves.push(m);
                         }
                         break; // Only add the longest valid sequence to avoid redundant moves
@@ -419,8 +425,6 @@ impl GameState {
                 }
             }
         }
-        
-        moves
     }
 
     /// Generates all valid moves from tableau columns to freecells.
@@ -446,9 +450,7 @@ impl GameState {
     /// let moves = game.get_tableau_to_freecell_moves();
     /// // assert!(moves.contains(&Move::TableauToFreecell { from: TableauLocation::new(0).unwrap(), to: FreecellLocation::new(0).unwrap() }));
     /// ```
-    pub fn get_tableau_to_freecell_moves(&self) -> Vec<Move> {
-        let mut moves = Vec::new();
-        
+    pub fn get_tableau_to_freecell_moves(&self, moves: &mut Vec<Move>) {
         for from_col in 0..TABLEAU_COLUMN_COUNT {
             let location = crate::location::TableauLocation::new(from_col as u8).unwrap();
             let card_result = self.tableau().get_card(location);
@@ -459,14 +461,17 @@ impl GameState {
 
             for to_cell in 0..crate::freecells::FREECELL_COUNT {
                 let location = crate::location::FreecellLocation::new(to_cell as u8).unwrap();
-                if self.freecells().get_card(location).unwrap_or(None).is_none() {
+                if self
+                    .freecells()
+                    .get_card(location)
+                    .unwrap_or(None)
+                    .is_none()
+                {
                     if let Ok(m) = Move::tableau_to_freecell(from_col as u8, to_cell as u8) {
                         moves.push(m);
                     }
                 }
             }
         }
-        
-        moves
     }
 }
