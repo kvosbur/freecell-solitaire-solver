@@ -1,5 +1,5 @@
-use freecell_game_engine::{r#move::Move, GameState};
 use crate::packed_state::PackedGameState;
+use freecell_game_engine::{r#move::Move, GameState};
 use lru::LruCache;
 use std::num::NonZeroUsize;
 use std::time::Instant;
@@ -80,6 +80,11 @@ pub fn solve_with_cancel(
             counter.start.elapsed()
         );
     }
+    println!(
+        "Checked {} game states, at end time:{:?}",
+        counter.count,
+        counter.start.elapsed()
+    );
     return result;
 }
 

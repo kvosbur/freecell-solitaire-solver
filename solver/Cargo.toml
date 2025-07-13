@@ -11,6 +11,10 @@ path = "src/main.rs"
 [dependencies]
 freecell-game-engine = { path = "../game-engine" }
 lru = "0.12"
+mimalloc = "0.1"
 
 [profile.release]
 debug = "line-tables-only"
+codegen-units = 1
+lto = "fat"
+opt-level = 2

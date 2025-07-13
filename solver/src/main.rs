@@ -2,16 +2,20 @@
 //!
 //! This application finds solutions to FreeCell solitaire games using the
 //! shared game-engine library.
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 mod game_prep;
 mod harness;
-mod strategies;
 pub mod packed_state;
+mod strategies;
 
 use freecell_game_engine::generation::generate_deal;
 use strategies::strat5::solve;
 
 fn do_benchmark() {
-    let allowed_timeout_secs = 60 * 60 * 24; // 24 hours
+    // let allowed_timeout_secs = 60 * 60 * 24; // 24 hours
+    let allowed_timeout_secs = 60; // 1 minute
     let seed = 1;
     let mut move_count_to_undue: usize = 32;
     let game_state_initial = generate_deal(seed).unwrap();
