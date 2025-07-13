@@ -213,8 +213,7 @@ pub fn generate_deal(seed: u64) -> Result<GameState, GenerationError> {
     // Distribute cards into tableau columns
     while let Some(card) = deck.pop() {
         let location = crate::location::TableauLocation::new(column_idx as u8).unwrap();
-        tableau.place_card_at(location, card)
-            .map_err(|_| GenerationError::DealGenerationFailed)?; // Should not fail in normal operation
+        tableau.place_card_at_no_checks(location, card);
 
         column_idx = (column_idx + 1) % max_columns;
     }
@@ -239,77 +238,77 @@ mod tests {
             vec![
                 Card::new(Rank::Jack, Suit::Diamonds), // J♦
                 Card::new(Rank::King, Suit::Diamonds), // K♦
-                Card::new(Rank::Two, Suit::Spades), // 2♠
-                Card::new(Rank::Four, Suit::Clubs), // 4♣
-                Card::new(Rank::Three, Suit::Spades), // 3♠
-                Card::new(Rank::Six, Suit::Diamonds), // 6♦
-                Card::new(Rank::Six, Suit::Spades), // 6♠
+                Card::new(Rank::Two, Suit::Spades),    // 2♠
+                Card::new(Rank::Four, Suit::Clubs),    // 4♣
+                Card::new(Rank::Three, Suit::Spades),  // 3♠
+                Card::new(Rank::Six, Suit::Diamonds),  // 6♦
+                Card::new(Rank::Six, Suit::Spades),    // 6♠
             ],
             // Column 1
             vec![
                 Card::new(Rank::Two, Suit::Diamonds), // 2♦
-                Card::new(Rank::King, Suit::Clubs), // K♣
-                Card::new(Rank::King, Suit::Spades), // K♠
-                Card::new(Rank::Five, Suit::Clubs), // 5♣
+                Card::new(Rank::King, Suit::Clubs),   // K♣
+                Card::new(Rank::King, Suit::Spades),  // K♠
+                Card::new(Rank::Five, Suit::Clubs),   // 5♣
                 Card::new(Rank::Ten, Suit::Diamonds), // 10♦
                 Card::new(Rank::Eight, Suit::Spades), // 8♠
-                Card::new(Rank::Nine, Suit::Clubs), // 9♣
+                Card::new(Rank::Nine, Suit::Clubs),   // 9♣
             ],
             // Column 2
             vec![
-                Card::new(Rank::Nine, Suit::Hearts), // 9♥
-                Card::new(Rank::Nine, Suit::Spades), // 9♠
-                Card::new(Rank::Nine, Suit::Diamonds), // 9♦
-                Card::new(Rank::Ten, Suit::Spades), // 10♠
-                Card::new(Rank::Four, Suit::Spades), // 4♠
+                Card::new(Rank::Nine, Suit::Hearts),    // 9♥
+                Card::new(Rank::Nine, Suit::Spades),    // 9♠
+                Card::new(Rank::Nine, Suit::Diamonds),  // 9♦
+                Card::new(Rank::Ten, Suit::Spades),     // 10♠
+                Card::new(Rank::Four, Suit::Spades),    // 4♠
                 Card::new(Rank::Eight, Suit::Diamonds), // 8♦
-                Card::new(Rank::Two, Suit::Hearts), // 2♥
+                Card::new(Rank::Two, Suit::Hearts),     // 2♥
             ],
             // Column 3
             vec![
-                Card::new(Rank::Jack, Suit::Clubs), // J♣
-                Card::new(Rank::Five, Suit::Spades), // 5♠
+                Card::new(Rank::Jack, Suit::Clubs),     // J♣
+                Card::new(Rank::Five, Suit::Spades),    // 5♠
                 Card::new(Rank::Queen, Suit::Diamonds), // Q♦
-                Card::new(Rank::Queen, Suit::Hearts), // Q♥
-                Card::new(Rank::Ten, Suit::Hearts), // 10♥
-                Card::new(Rank::Queen, Suit::Spades), // Q♠
-                Card::new(Rank::Six, Suit::Hearts), // 6♥
+                Card::new(Rank::Queen, Suit::Hearts),   // Q♥
+                Card::new(Rank::Ten, Suit::Hearts),     // 10♥
+                Card::new(Rank::Queen, Suit::Spades),   // Q♠
+                Card::new(Rank::Six, Suit::Hearts),     // 6♥
             ],
             // Column 4
             vec![
                 Card::new(Rank::Five, Suit::Diamonds), // 5♦
-                Card::new(Rank::Ace, Suit::Diamonds), // A♦
-                Card::new(Rank::Jack, Suit::Spades), // J♠
-                Card::new(Rank::Four, Suit::Hearts), // 4♥
-                Card::new(Rank::Eight, Suit::Hearts), // 8♥
-                Card::new(Rank::Six, Suit::Clubs), // 6♣
+                Card::new(Rank::Ace, Suit::Diamonds),  // A♦
+                Card::new(Rank::Jack, Suit::Spades),   // J♠
+                Card::new(Rank::Four, Suit::Hearts),   // 4♥
+                Card::new(Rank::Eight, Suit::Hearts),  // 8♥
+                Card::new(Rank::Six, Suit::Clubs),     // 6♣
             ],
             // Column 5
             vec![
-                Card::new(Rank::Seven, Suit::Hearts), // 7♥
-                Card::new(Rank::Queen, Suit::Clubs), // Q♣
-                Card::new(Rank::Ace, Suit::Spades), // A♠
-                Card::new(Rank::Ace, Suit::Clubs), // A♣
-                Card::new(Rank::Two, Suit::Clubs), // 2♣
+                Card::new(Rank::Seven, Suit::Hearts),   // 7♥
+                Card::new(Rank::Queen, Suit::Clubs),    // Q♣
+                Card::new(Rank::Ace, Suit::Spades),     // A♠
+                Card::new(Rank::Ace, Suit::Clubs),      // A♣
+                Card::new(Rank::Two, Suit::Clubs),      // 2♣
                 Card::new(Rank::Three, Suit::Diamonds), // 3♦
             ],
             // Column 6
             vec![
-                Card::new(Rank::Seven, Suit::Clubs), // 7♣
-                Card::new(Rank::King, Suit::Hearts), // K♥
-                Card::new(Rank::Ace, Suit::Hearts), // A♥
+                Card::new(Rank::Seven, Suit::Clubs),   // 7♣
+                Card::new(Rank::King, Suit::Hearts),   // K♥
+                Card::new(Rank::Ace, Suit::Hearts),    // A♥
                 Card::new(Rank::Four, Suit::Diamonds), // 4♦
-                Card::new(Rank::Jack, Suit::Hearts), // J♥
-                Card::new(Rank::Eight, Suit::Clubs), // 8♣
+                Card::new(Rank::Jack, Suit::Hearts),   // J♥
+                Card::new(Rank::Eight, Suit::Clubs),   // 8♣
             ],
             // Column 7
             vec![
-                Card::new(Rank::Five, Suit::Hearts), // 5♥
-                Card::new(Rank::Three, Suit::Hearts), // 3♥
-                Card::new(Rank::Three, Suit::Clubs), // 3♣
-                Card::new(Rank::Seven, Suit::Spades), // 7♠
+                Card::new(Rank::Five, Suit::Hearts),    // 5♥
+                Card::new(Rank::Three, Suit::Hearts),   // 3♥
+                Card::new(Rank::Three, Suit::Clubs),    // 3♣
+                Card::new(Rank::Seven, Suit::Spades),   // 7♠
                 Card::new(Rank::Seven, Suit::Diamonds), // 7♦
-                Card::new(Rank::Ten, Suit::Clubs), // 10♣
+                Card::new(Rank::Ten, Suit::Clubs),      // 10♣
             ],
         ];
 
@@ -344,25 +343,25 @@ mod tests {
                 617,
                 vec![
                     Card::new(Rank::Seven, Suit::Diamonds), // 7♦
-                    Card::new(Rank::Ten, Suit::Diamonds), // 10♦
-                    Card::new(Rank::Ten, Suit::Hearts), // 10♥
-                    Card::new(Rank::King, Suit::Diamonds), // K♦
-                    Card::new(Rank::Four, Suit::Clubs), // 4♣
-                    Card::new(Rank::Four, Suit::Spades), // 4♠
-                    Card::new(Rank::Jack, Suit::Diamonds), // J♦
+                    Card::new(Rank::Ten, Suit::Diamonds),   // 10♦
+                    Card::new(Rank::Ten, Suit::Hearts),     // 10♥
+                    Card::new(Rank::King, Suit::Diamonds),  // K♦
+                    Card::new(Rank::Four, Suit::Clubs),     // 4♣
+                    Card::new(Rank::Four, Suit::Spades),    // 4♠
+                    Card::new(Rank::Jack, Suit::Diamonds),  // J♦
                 ],
             ),
             // Game #11982 (famously unsolvable with standard FreeCell rules)
             (
                 11982,
                 vec![
-                    Card::new(Rank::Ace, Suit::Hearts), // A♥
+                    Card::new(Rank::Ace, Suit::Hearts),     // A♥
                     Card::new(Rank::Three, Suit::Diamonds), // 3♦
-                    Card::new(Rank::King, Suit::Diamonds), // K♦
-                    Card::new(Rank::Jack, Suit::Clubs), // J♣
-                    Card::new(Rank::Six, Suit::Clubs), // 6♣
-                    Card::new(Rank::Jack, Suit::Diamonds), // J♦
-                    Card::new(Rank::King, Suit::Clubs), // K♣
+                    Card::new(Rank::King, Suit::Diamonds),  // K♦
+                    Card::new(Rank::Jack, Suit::Clubs),     // J♣
+                    Card::new(Rank::Six, Suit::Clubs),      // 6♣
+                    Card::new(Rank::Jack, Suit::Diamonds),  // J♦
+                    Card::new(Rank::King, Suit::Clubs),     // K♣
                 ],
             ),
         ];
