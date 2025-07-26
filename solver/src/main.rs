@@ -13,11 +13,18 @@ pub mod packed_state;
 mod strategies;
 
 use freecell_game_engine::generation::generate_deal;
+use freecell_game_engine::r#move::Move;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::time::Duration;
 use strategies::strat11::solve;
+
+#[derive(Debug, Clone)]
+pub struct SolverResult {
+    pub solved: bool,
+    pub solution_moves: Option<Vec<Move>>,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct GameResult {
@@ -25,6 +32,17 @@ struct GameResult {
     solved: bool,
     execution_time_ms: u64,
     timestamp: String,
+    move_count: Option<usize>, // None if not solved
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct DetailedGameResult {
+    seed: u64,
+    solved: bool,
+    execution_time_ms: u64,
+    timestamp: String,
+    solution_moves: Option<Vec<Move>>, // None if not solved
+    move_count: Option<usize>, // None if not solved
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -69,6 +87,21 @@ fn save_results_to_json(results: &Vec<GameResult>, filename: &str, timeout_secs:
     println!("Results saved to {}", filename);
 }
 
+fn save_detailed_game_result(detailed_result: &DetailedGameResult, results_dir: &str) {
+    // Create results directory if it doesn't exist
+    if let Err(e) = fs::create_dir_all(results_dir) {
+        println!("Warning: Failed to create results directory {}: {:?}", results_dir, e);
+        return;
+    }
+    
+    let filename = format!("{}/{}.json", results_dir, detailed_result.seed);
+    let json_string = serde_json::to_string_pretty(detailed_result).unwrap();
+    
+    if let Err(e) = fs::write(&filename, json_string) {
+        println!("Warning: Failed to save detailed result for seed {}: {:?}", detailed_result.seed, e);
+    }
+}
+
 fn load_existing_results(filename: &str) -> Vec<GameResult> {
     if let Ok(contents) = fs::read_to_string(filename) {
         if let Ok(benchmark_results) = serde_json::from_str::<BenchmarkResults>(&contents) {
@@ -79,10 +112,11 @@ fn load_existing_results(filename: &str) -> Vec<GameResult> {
 }
 
 fn do_seed_benchmark() {
-    let allowed_timeout_secs = 120; // 2 minutes per game
+    let allowed_timeout_secs = 120; // 2 minutes per game 
     let start_seed = 1u64;
     let max_seeds = 100u64; // Test first 100 seeds
-    let results_filename = "benchmark_results.json";
+    let results_filename = "benchmark_summary.json";
+    let results_dir = "results";
     
     // Load existing results if any
     let mut results = load_existing_results(results_filename);
@@ -92,6 +126,8 @@ fn do_seed_benchmark() {
     
     println!("Starting seed benchmark (seeds {}-{}, timeout: {}s)", 
              start_seed, start_seed + max_seeds - 1, allowed_timeout_secs);
+    println!("Summary will be saved to: {}", results_filename);
+    println!("Detailed results will be saved to: {}/", results_dir);
     
     for seed in start_seed..start_seed + max_seeds {
         // Skip if already processed
@@ -110,26 +146,46 @@ fn do_seed_benchmark() {
             }
         };
         
-        let (solved, execution_time) = harness::harness_with_timing(game_state, allowed_timeout_secs);
-        let execution_time_ms = execution_time.as_millis() as u64;
+        let harness_result = harness::harness_with_timing(game_state, allowed_timeout_secs);
+        let execution_time_ms = harness_result.execution_time.as_millis() as u64;
+        let timestamp = chrono::Utc::now().to_rfc3339();
         
-        let result = GameResult {
+        // Create summary result for the master file
+        let summary_result = GameResult {
             seed,
-            solved,
+            solved: harness_result.solved,
             execution_time_ms,
-            timestamp: chrono::Utc::now().to_rfc3339(),
+            timestamp: timestamp.clone(),
+            move_count: harness_result.solution_moves.as_ref().map(|moves| moves.len()),
         };
         
-        results.push(result.clone());
+        // Create detailed result for individual file
+        let detailed_result = DetailedGameResult {
+            seed,
+            solved: harness_result.solved,
+            execution_time_ms,
+            timestamp,
+            solution_moves: harness_result.solution_moves.clone(),
+            move_count: harness_result.solution_moves.as_ref().map(|moves| moves.len()),
+        };
+        
+        // Save detailed result to individual file
+        save_detailed_game_result(&detailed_result, results_dir);
+        
+        results.push(summary_result);
         processed_seeds.insert(seed, true);
         
-        if solved {
-            println!("✓ Seed {} solved in {}ms", seed, execution_time_ms);
+        if harness_result.solved {
+            if let Some(ref moves) = harness_result.solution_moves {
+                println!("✓ Seed {} solved in {}ms with {} moves", seed, execution_time_ms, moves.len());
+            } else {
+                println!("✓ Seed {} solved in {}ms", seed, execution_time_ms);
+            }
         } else {
             println!("✗ Seed {} failed/timeout after {}ms", seed, execution_time_ms);
         }
         
-        // Save results after every 10 games or if this is the last one
+        // Save summary results after every 10 games or if this is the last one
         if results.len() % 10 == 0 || seed == start_seed + max_seeds - 1 {
             save_results_to_json(&results, results_filename, allowed_timeout_secs);
         }
@@ -144,7 +200,8 @@ fn do_seed_benchmark() {
     println!("Games solved: {} ({:.1}%)", solved_count, 
              (solved_count as f64 / results.len() as f64) * 100.0);
     println!("Games failed/timeout: {}", results.len() - solved_count);
-    println!("Results saved to: {}", results_filename);
+    println!("Summary saved to: {}", results_filename);
+    println!("Detailed results saved to: {}/", results_dir);
 }
 
 fn do_benchmark() {

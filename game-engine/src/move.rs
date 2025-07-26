@@ -34,8 +34,9 @@
 //! }
 //! ```
 use crate::location::{Location, TableauLocation, FreecellLocation, FoundationLocation, LocationError};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Move {
     pub source: Location,
     pub destination: Location,

@@ -22,3 +22,6 @@ target/
 
 # ignore profiling outputs
 callgrind.out.*
+
+benchmark_summary.json
+results/**.json

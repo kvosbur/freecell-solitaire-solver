@@ -17,9 +17,10 @@
 //! - [`LocationError`]: An error type for location-related validation failures.
 
 use std::fmt;
+use serde::{Deserialize, Serialize};
 
 // General error for location validation
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LocationError {
     InvalidTableauIndex(u8),
     InvalidFreecellIndex(u8),
@@ -39,7 +40,7 @@ impl fmt::Display for LocationError {
 impl std::error::Error for LocationError {}
 
 /// Represents a validated location in a tableau column (0-7).
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TableauLocation {
     index: u8,
 }
@@ -61,7 +62,7 @@ impl TableauLocation {
 }
 
 /// Represents a validated location in a freecell (0-3).
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct FreecellLocation {
     index: u8,
 }
@@ -83,7 +84,7 @@ impl FreecellLocation {
 }
 
 /// Represents a validated location in a foundation pile (0-3).
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct FoundationLocation {
     index: u8,
 }
@@ -105,7 +106,7 @@ impl FoundationLocation {
 }
 
 /// An enum that consolidates all location types.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Location {
     Tableau(TableauLocation),
     Freecell(FreecellLocation),

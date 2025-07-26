@@ -8,6 +8,12 @@ use std::collections::HashSet;
 use std::num::NonZeroUsize;
 use std::time::Instant;
 
+#[derive(Debug, Clone)]
+pub struct SolverResult {
+    pub solved: bool,
+    pub solution_moves: Option<Vec<Move>>,
+}
+
 struct Counter {
     count: u64,
     start: Instant,
@@ -164,7 +170,7 @@ fn dfs(
     }
     
     let score = score_state(game);
-    if score != 0 && path.len() > 200 {
+    if score != 0 && path.len() > 1000 {
         // Limit the depth to prevent excessive recursion
         return false;
     }
@@ -243,7 +249,7 @@ fn dfs(
 pub fn solve_with_cancel(
     mut game_state: GameState,
     cancel_flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
-) -> bool {
+) -> SolverResult {
     println!("Solving FreeCell game using strategy 11 (Enhanced strat10 with lowest-needed-cards prioritization) with cancellation support...");
     let mut path = Vec::new();
     let mut counter = Counter {
@@ -266,6 +272,10 @@ pub fn solve_with_cancel(
             path.len(),
             counter.start.elapsed()
         );
+        return SolverResult {
+            solved: true,
+            solution_moves: Some(path),
+        };
     } else {
         println!("Final game state:\n{}", game_state);
     }
@@ -274,7 +284,10 @@ pub fn solve_with_cancel(
         counter.count,
         counter.start.elapsed()
     );
-    return result;
+    return SolverResult {
+        solved: false,
+        solution_moves: None,
+    };
 }
 
 pub fn solve(mut game: GameState) {

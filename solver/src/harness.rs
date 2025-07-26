@@ -1,16 +1,24 @@
 use crate::solve;
+use freecell_game_engine::r#move::Move;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-pub fn harness(game_state: freecell_game_engine::game_state::GameState, timeout_secs: u64) -> bool {
-    let result = harness_with_timing(game_state, timeout_secs);
-    result.0
+#[derive(Debug, Clone)]
+pub struct HarnessResult {
+    pub solved: bool,
+    pub execution_time: Duration,
+    pub solution_moves: Option<Vec<Move>>,
 }
 
-pub fn harness_with_timing(game_state: freecell_game_engine::game_state::GameState, timeout_secs: u64) -> (bool, Duration) {
+pub fn harness(game_state: freecell_game_engine::game_state::GameState, timeout_secs: u64) -> bool {
+    let result = harness_with_timing(game_state, timeout_secs);
+    result.solved
+}
+
+pub fn harness_with_timing(game_state: freecell_game_engine::game_state::GameState, timeout_secs: u64) -> HarnessResult {
     let cancel_flag = Arc::new(AtomicBool::new(false));
     let cancel_flag_thread = cancel_flag.clone();
     let start_time = Instant::now();
@@ -26,13 +34,21 @@ pub fn harness_with_timing(game_state: freecell_game_engine::game_state::GameSta
             let execution_time = start_time.elapsed();
             println!("Solve completed within timeout in {:?}.", execution_time);
             match handle.join() {
-                Ok(val) => {
-                    println!("Solve completed: {:?}", val);
-                    return (val, execution_time);
+                Ok(solver_result) => {
+                    println!("Solve completed: {:?}", solver_result.solved);
+                    return HarnessResult {
+                        solved: solver_result.solved,
+                        execution_time,
+                        solution_moves: solver_result.solution_moves,
+                    };
                 }
                 Err(e) => {
                     println!("Error during solve: {:?}", e);
-                    return (false, execution_time);
+                    return HarnessResult {
+                        solved: false,
+                        execution_time,
+                        solution_moves: None,
+                    };
                 }
             }
         }
@@ -44,13 +60,21 @@ pub fn harness_with_timing(game_state: freecell_game_engine::game_state::GameSta
     cancel_flag.store(true, Ordering::SeqCst);
     let result = handle.join();
     match result {
-        Ok(val) => {
-            println!("Solve completed: {:?}", val);
-            return (val, execution_time);
+        Ok(solver_result) => {
+            println!("Solve completed: {:?}", solver_result.solved);
+            return HarnessResult {
+                solved: solver_result.solved,
+                execution_time,
+                solution_moves: solver_result.solution_moves,
+            };
         }
         Err(e) => {
             println!("Error during solve: {:?}", e);
-            return (false, execution_time);
+            return HarnessResult {
+                solved: false,
+                execution_time,
+                solution_moves: None,
+            };
         }
     };
 }
