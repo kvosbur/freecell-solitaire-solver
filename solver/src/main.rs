@@ -12,42 +12,22 @@ mod harness;
 pub mod packed_state;
 mod strategies;
 
+
 use freecell_game_engine::generation::generate_deal;
+use std::env;
+use std::process;
 use strategies::strat11::solve;
 
-fn do_benchmark() {
+fn do_benchmark(seed: u64) {
     // let allowed_timeout_secs = 60 * 60 * 24; // 24 hours
-    let allowed_timeout_secs = 120; // 30 seconds
-    let seed = 1;
-    let mut move_count_to_undue: usize = 30;
+    let allowed_timeout_secs = 120; // 2 minutes
     let game_state_initial = generate_deal(seed).unwrap();
-    let solution = game_prep::get_game_solution(seed);
-    println!("amount of moves in solution: {}", solution.len());
-
-    while move_count_to_undue < solution.len() {
-        let mut game_state = game_state_initial.clone();
-        println!(
-            "Trying to undue {} moves from solution of length {}",
-            move_count_to_undue,
-            solution.len()
-        );
-        let subset_moves_to_apply = solution[0..solution.len() - move_count_to_undue].to_vec();
-        for m in &subset_moves_to_apply {
-            game_state.execute_move(m).unwrap();
-        }
-        let result = harness::harness(game_state.clone(), allowed_timeout_secs);
-        if result {
-            println!("Succeeded with {} moves undone", move_count_to_undue);
-            move_count_to_undue += 1;
-        } else {
-            println!("Failed with {} moves undone", move_count_to_undue);
-            break;
-        }
+    let result = harness::harness(game_state_initial.clone(), allowed_timeout_secs);
+    if result {
+        println!("Succeeded");
+    } else {
+        println!("Failed");
     }
-    println!(
-        "Benchmark completed. Last successful move count to undue: {}",
-        move_count_to_undue - 1
-    );
 }
 
 fn do_adhoc() {
@@ -82,8 +62,21 @@ fn do_adhoc() {
 fn main() {
     println!("FreeCell Solver starting...");
 
+    let args: Vec<String> = env::args().collect();
+    let seed: u64 = if args.len() > 1 {
+        match args[1].parse() {
+            Ok(n) => n,
+            Err(_) => {
+                eprintln!("Invalid seed argument: {}", args[1]);
+                process::exit(1);
+            }
+        }
+    } else {
+        1 // Default seed if not provided
+    };
+
     // Run benchmark to find the maximum number of moves that can be undone
-    do_benchmark();
+    do_benchmark(seed);
 
     // Run adhoc test with a specific seed and move count to undue
     // do_adhoc();

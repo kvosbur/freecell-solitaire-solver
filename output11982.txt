@@ -1,0 +1,7 @@
+FreeCell Solver starting...
+Solving FreeCell game using strategy 11 (Enhanced strat10 with lowest-needed-cards prioritization) with cancellation support...
+Starting score: 22
+Checked 82749 game states, at end time:297.188125ms
+Solve completed within timeout.
+Solve completed: false
+Failed

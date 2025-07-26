@@ -210,7 +210,7 @@ impl std::fmt::Display for GameState {
                             more_rows = true;
                             fmt_card(card)
                         },
-                        None => "    ".to_string(),
+                        None => "     ".to_string(),
                     },
                     Err(e) => format!("Error: {}\n", e),
                 };

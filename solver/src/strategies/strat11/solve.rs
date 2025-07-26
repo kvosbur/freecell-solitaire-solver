@@ -164,7 +164,7 @@ fn dfs(
     }
     
     let score = score_state(game);
-    if score != 0 && path.len() > 200 {
+    if score != 0 && path.len() > 6000 {
         // Limit the depth to prevent excessive recursion
         return false;
     }
@@ -244,6 +244,7 @@ pub fn solve_with_cancel(
     mut game_state: GameState,
     cancel_flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
 ) -> bool {
+    let original_game_state = game_state.clone();
     println!("Solving FreeCell game using strategy 11 (Enhanced strat10 with lowest-needed-cards prioritization) with cancellation support...");
     let mut path = Vec::new();
     let mut counter = Counter {
@@ -266,8 +267,13 @@ pub fn solve_with_cancel(
             path.len(),
             counter.start.elapsed()
         );
-    } else {
-        println!("Final game state:\n{}", game_state);
+
+        let mut game = original_game_state.clone();
+        println!("{}", game);
+        for m in path {
+            let _ = game.execute_move(&m);
+            println!("{}", game);
+        }
     }
     println!(
         "Checked {} game states, at end time:{:?}",
