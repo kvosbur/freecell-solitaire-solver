@@ -13,7 +13,139 @@ pub mod packed_state;
 mod strategies;
 
 use freecell_game_engine::generation::generate_deal;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fs;
+use std::time::Duration;
 use strategies::strat11::solve;
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct GameResult {
+    seed: u64,
+    solved: bool,
+    execution_time_ms: u64,
+    timestamp: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct BenchmarkResults {
+    results: Vec<GameResult>,
+    summary: BenchmarkSummary,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct BenchmarkSummary {
+    total_games: usize,
+    solved_games: usize,
+    failed_games: usize,
+    average_time_ms: f64,
+    timeout_secs: u64,
+}
+
+fn save_results_to_json(results: &Vec<GameResult>, filename: &str, timeout_secs: u64) {
+    let solved_count = results.iter().filter(|r| r.solved).count();
+    let failed_count = results.len() - solved_count;
+    let avg_time = if !results.is_empty() {
+        results.iter().map(|r| r.execution_time_ms as f64).sum::<f64>() / results.len() as f64
+    } else {
+        0.0
+    };
+
+    let summary = BenchmarkSummary {
+        total_games: results.len(),
+        solved_games: solved_count,
+        failed_games: failed_count,
+        average_time_ms: avg_time,
+        timeout_secs,
+    };
+
+    let benchmark_results = BenchmarkResults {
+        results: results.clone(),
+        summary,
+    };
+
+    let json_string = serde_json::to_string_pretty(&benchmark_results).unwrap();
+    fs::write(filename, json_string).expect("Failed to write JSON file");
+    println!("Results saved to {}", filename);
+}
+
+fn load_existing_results(filename: &str) -> Vec<GameResult> {
+    if let Ok(contents) = fs::read_to_string(filename) {
+        if let Ok(benchmark_results) = serde_json::from_str::<BenchmarkResults>(&contents) {
+            return benchmark_results.results;
+        }
+    }
+    Vec::new()
+}
+
+fn do_seed_benchmark() {
+    let allowed_timeout_secs = 120; // 2 minutes per game
+    let start_seed = 1u64;
+    let max_seeds = 100u64; // Test first 100 seeds
+    let results_filename = "benchmark_results.json";
+    
+    // Load existing results if any
+    let mut results = load_existing_results(results_filename);
+    let mut processed_seeds: HashMap<u64, bool> = results.iter()
+        .map(|r| (r.seed, true))
+        .collect();
+    
+    println!("Starting seed benchmark (seeds {}-{}, timeout: {}s)", 
+             start_seed, start_seed + max_seeds - 1, allowed_timeout_secs);
+    
+    for seed in start_seed..start_seed + max_seeds {
+        // Skip if already processed
+        if processed_seeds.contains_key(&seed) {
+            println!("Seed {} already processed, skipping", seed);
+            continue;
+        }
+        
+        println!("Testing seed {} ({}/{})...", seed, seed - start_seed + 1, max_seeds);
+        
+        let game_state = match generate_deal(seed) {
+            Ok(state) => state,
+            Err(e) => {
+                println!("Failed to generate deal for seed {}: {:?}", seed, e);
+                continue;
+            }
+        };
+        
+        let (solved, execution_time) = harness::harness_with_timing(game_state, allowed_timeout_secs);
+        let execution_time_ms = execution_time.as_millis() as u64;
+        
+        let result = GameResult {
+            seed,
+            solved,
+            execution_time_ms,
+            timestamp: chrono::Utc::now().to_rfc3339(),
+        };
+        
+        results.push(result.clone());
+        processed_seeds.insert(seed, true);
+        
+        if solved {
+            println!("✓ Seed {} solved in {}ms", seed, execution_time_ms);
+        } else {
+            println!("✗ Seed {} failed/timeout after {}ms", seed, execution_time_ms);
+        }
+        
+        // Save results after every 10 games or if this is the last one
+        if results.len() % 10 == 0 || seed == start_seed + max_seeds - 1 {
+            save_results_to_json(&results, results_filename, allowed_timeout_secs);
+        }
+    }
+    
+    // Final save and summary
+    save_results_to_json(&results, results_filename, allowed_timeout_secs);
+    
+    let solved_count = results.iter().filter(|r| r.solved).count();
+    println!("\n=== Benchmark Complete ===");
+    println!("Total games tested: {}", results.len());
+    println!("Games solved: {} ({:.1}%)", solved_count, 
+             (solved_count as f64 / results.len() as f64) * 100.0);
+    println!("Games failed/timeout: {}", results.len() - solved_count);
+    println!("Results saved to: {}", results_filename);
+}
 
 fn do_benchmark() {
     // let allowed_timeout_secs = 60 * 60 * 24; // 24 hours
@@ -82,9 +214,10 @@ fn do_adhoc() {
 fn main() {
     println!("FreeCell Solver starting...");
 
-    // Run benchmark to find the maximum number of moves that can be undone
-    do_benchmark();
+    // Run new seed benchmark to test solver across multiple game seeds
+    do_seed_benchmark();
 
-    // Run adhoc test with a specific seed and move count to undue
-    // do_adhoc();
+    // Alternative benchmarks (commented out):
+    // do_benchmark();  // Original benchmark testing move undoing
+    // do_adhoc();      // Single seed testing
 }
