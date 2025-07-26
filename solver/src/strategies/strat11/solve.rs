@@ -266,6 +266,10 @@ pub fn solve_with_cancel(
             path.len(),
             counter.start.elapsed()
         );
+        println!("Moves required:");
+        for (i, m) in path.iter().enumerate() {
+            println!("  {}: {:?}", i + 1, m);
+        }
     } else {
         println!("Final game state:\n{}", game_state);
     }
@@ -299,9 +303,10 @@ pub fn solve(mut game: GameState) {
             path.len(),
             counter.start.elapsed()
         );
-        // for m in path {
-        //     println!("{:?}", m);
-        // }
+        println!("Moves required:");
+        for (i, m) in path.iter().enumerate() {
+            println!("  {}: {:?}", i + 1, m);
+        }
     } else {
         println!("No solution found.");
     }

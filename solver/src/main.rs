@@ -19,12 +19,13 @@ fn do_benchmark() {
     // let allowed_timeout_secs = 60 * 60 * 24; // 24 hours
     let allowed_timeout_secs = 120; // 30 seconds
     let seed = 1;
-    let mut move_count_to_undue: usize = 30;
+    let mut move_count_to_undue: usize = 105;
     let game_state_initial = generate_deal(seed).unwrap();
     let solution = game_prep::get_game_solution(seed);
     println!("amount of moves in solution: {}", solution.len());
+    println!("inital game state:\n{}", game_state_initial);
 
-    while move_count_to_undue < solution.len() {
+    while move_count_to_undue <= solution.len() {
         let mut game_state = game_state_initial.clone();
         println!(
             "Trying to undue {} moves from solution of length {}",
