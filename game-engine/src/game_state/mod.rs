@@ -18,13 +18,15 @@ mod error;
 mod validation;
 mod execution;
 mod moves;
-mod heuristics;
+pub mod heuristics;
 
 pub use error::GameError;
 
-use crate::tableau::Tableau;
-use crate::freecells::FreeCells;
-use crate::foundations::Foundations;
+use crate::location::{FoundationLocation, FreecellLocation};
+use crate::tableau::{Tableau, TABLEAU_COLUMN_COUNT};
+use crate::freecells::{FreeCells, FREECELL_COUNT};
+use crate::foundations::{Foundations, FOUNDATION_COUNT};
+use crate::{Card, Rank, Suit};
 
 /// Represents the complete state of a FreeCell game
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -170,4 +172,84 @@ impl Default for GameState {
             foundations: Foundations::new(),
         }
     }
+}
+
+impl std::fmt::Display for GameState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "GameState:\n")?;
+        for i in 0..FOUNDATION_COUNT {
+            let location = FoundationLocation::new(i as u8).unwrap();
+            let card_display = match self.foundations.get_card(location) {
+                Ok(Some(card)) => fmt_card(card),
+                Ok(None) => "[  ]".to_string(),
+                Err(e) => format!("Error: {}\n", e),
+            };
+            write!(f, "{} ", card_display)?;
+        }
+        write!(f, "  ")?;
+        for i in 0..FREECELL_COUNT {
+            let location = FreecellLocation::new(i as u8).unwrap();
+            let card_display = match self.freecells.get_card(location) {
+                Ok(Some(card)) => fmt_card(card),
+                Ok(None) => "[  ]".to_string(),
+                Err(e) => format!("Error: {}\n", e),
+            };
+            write!(f, "{} ", card_display)?;
+        }
+        write!(f, "\n\n")?;
+        let mut more_rows = true;
+        let mut row_index = 0;
+        while more_rows {
+            more_rows = false;
+            let mut row = String::new();
+            for i in 0..TABLEAU_COLUMN_COUNT {
+                let column_result = self.tableau.get_column(i);
+                let card_display = match column_result {
+                    Ok(column) => match column.get(row_index) {
+                        Some(card) => {
+                            more_rows = true;
+                            fmt_card(card)
+                        },
+                        None => "    ".to_string(),
+                    },
+                    Err(e) => format!("Error: {}\n", e),
+                };
+                row.push_str(&card_display);
+                row.push_str(" ");
+            }
+            if more_rows {
+                write!(f, "{}\n", row)?;
+            }
+            row_index += 1;
+        }
+        Ok(())
+    }
+}
+
+/// Helper function to format a card for display.
+fn fmt_card(card: &Card) -> String {
+    let rank = match card.rank() {
+        Rank::Ace => "A ",
+        Rank::Two => "2 ",
+        Rank::Three => "3 ",
+        Rank::Four => "4 ",
+        Rank::Five => "5 ",
+        Rank::Six => "6 ",
+        Rank::Seven => "7 ",
+        Rank::Eight => "8 ",
+        Rank::Nine => "9 ",
+        Rank::Ten => "10",
+        Rank::Jack => "J ",
+        Rank::Queen => "Q ",
+        Rank::King => "K ",
+    };
+
+    let suit = match card.suit() {
+        Suit::Hearts => "❤️ ",
+        Suit::Diamonds => "♦️ ",
+        Suit::Clubs => "♣️ ",
+        Suit::Spades => "♠️ ",
+    };
+
+    format!("{}{}", suit, rank)
 }
