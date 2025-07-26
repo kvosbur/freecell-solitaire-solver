@@ -7,3 +7,4 @@ pub mod strat6;
 pub mod strat7;
 pub mod strat8;
 pub mod strat9;
+pub mod strat10;

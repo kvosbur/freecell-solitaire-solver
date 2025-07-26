@@ -13,13 +13,13 @@ pub mod packed_state;
 mod strategies;
 
 use freecell_game_engine::generation::generate_deal;
-use strategies::strat9::solve;
+use strategies::strat10::solve;
 
 fn do_benchmark() {
     // let allowed_timeout_secs = 60 * 60 * 24; // 24 hours
-    let allowed_timeout_secs = 30; // 30 seconds
+    let allowed_timeout_secs = 120; // 30 seconds
     let seed = 1;
-    let mut move_count_to_undue: usize = 80;
+    let mut move_count_to_undue: usize = 30;
     let game_state_initial = generate_deal(seed).unwrap();
     let solution = game_prep::get_game_solution(seed);
     println!("amount of moves in solution: {}", solution.len());
