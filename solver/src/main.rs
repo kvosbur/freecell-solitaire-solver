@@ -240,41 +240,31 @@ fn do_benchmark() {
 }
 
 fn do_adhoc() {
-    let seed = 1;
-    let move_count_to_undue = 40; // Change this to test different scenarios
+    let seed = 70;
     let allowed_timeout_secs = 60 * 60 * 24; // 24 hours
-    let game_state_initial = generate_deal(seed).unwrap();
-    let solution = game_prep::get_game_solution(seed);
-    let mut game_state = game_state_initial.clone();
-
-    let subset_moves_to_apply = solution[0..solution.len() - move_count_to_undue].to_vec();
-    for m in &subset_moves_to_apply {
-        game_state.execute_move(m).unwrap();
-    }
-    println!("Game state generated for seed {}", seed);
+    let game_state = generate_deal(seed).unwrap();
 
     // Example of solving the game using strategy 1
-    let result = harness::harness(game_state.clone(), allowed_timeout_secs);
-    if result {
-        println!(
-            "Successfully solved the game with {} moves undone",
-            move_count_to_undue
-        );
-    } else {
-        println!(
-            "Failed to solve the game with {} moves undone",
-            move_count_to_undue
-        );
-    }
+    let harness_result = harness::harness_with_timing(game_state, allowed_timeout_secs);
+    let execution_time_ms = harness_result.execution_time.as_millis() as u64;
+    if harness_result.solved {
+            if let Some(ref moves) = harness_result.solution_moves {
+                println!("✓ Seed {} solved in {}ms with {} moves", seed, execution_time_ms, moves.len());
+            } else {
+                println!("✓ Seed {} solved in {}ms", seed, execution_time_ms);
+            }
+        } else {
+            println!("✗ Seed {} failed/timeout after {}ms", seed, execution_time_ms);
+        }
 }
 
 fn main() {
     println!("FreeCell Solver starting...");
 
     // Run new seed benchmark to test solver across multiple game seeds
-    do_seed_benchmark();
+    // do_seed_benchmark();
 
     // Alternative benchmarks (commented out):
     // do_benchmark();  // Original benchmark testing move undoing
-    // do_adhoc();      // Single seed testing
+    do_adhoc();      // Single seed testing
 }
