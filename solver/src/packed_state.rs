@@ -129,70 +129,74 @@ impl PackedGameState {
     /// Convert a GameState into a canonical PackedGameState for better cache hits.
     /// This version creates an isomorphic representation by sorting tableau columns,
     /// freecells, and foundations to create a canonical ordering.
+    /// Optimized version with reduced allocations and fewer sorting operations.
     pub fn from_game_state_canonical(gs: &GameState) -> Self {
-        // Collect tableau columns with their data
-        let mut tableau_columns: Vec<(Vec<u8>, u8)> = Vec::new();
+        // Pre-allocate arrays to avoid repeated allocations
+        let mut tableau_cards = [0u8; 52];
+        let mut tableau_lens = [0u8; 8];
+        let mut freecells = [0u8; 4];
+        let mut foundations = [0u8; 4];
+
+        // Collect tableau data with minimal allocations
+        // Use a fixed-size array instead of Vec to avoid heap allocations
+        let mut tableau_data: [(u8, u8, usize); 8] = [(255, 0, 0); 8]; // (first_card, len, original_index)
+        
         for col in 0..TABLEAU_COLUMN_COUNT {
             let location = freecell_game_engine::location::TableauLocation::new(col as u8).unwrap();
             let len = gs.tableau().column_length(location).unwrap_or(0);
-            let mut column_cards = Vec::new();
-            for i in 0..len {
+            let first_card = if len > 0 {
+                gs.tableau().get_card_at(location, 0)
+                    .map(pack_card)
+                    .unwrap_or(255)
+            } else {
+                255
+            };
+            tableau_data[col] = (first_card, len as u8, col);
+        }
+
+        // Sort tableau data by first card (empty columns go to end)
+        tableau_data.sort_unstable_by_key(|(first_card, _len, _idx)| *first_card);
+
+        // Pack sorted tableau data efficiently
+        let mut card_idx = 0;
+        for (col_idx, (_first_card, len, original_col)) in tableau_data.iter().enumerate() {
+            tableau_lens[col_idx] = *len;
+            let location = freecell_game_engine::location::TableauLocation::new(*original_col as u8).unwrap();
+            for i in 0..*len as usize {
                 if let Ok(card) = gs.tableau().get_card_at(location, i) {
-                    column_cards.push(pack_card(card));
+                    tableau_cards[card_idx] = pack_card(card);
+                    card_idx += 1;
                 }
             }
-            tableau_columns.push((column_cards, len as u8));
         }
 
-        // Sort tableau columns by their first card (empty columns go to end)
-        // Empty columns get a sort key of 255 to put them at the end
-        tableau_columns.sort_by_key(|(cards, _len)| {
-            cards.first().copied().unwrap_or(255)
-        });
-
-        // Pack sorted tableau data
-        let mut tableau_cards = [0u8; 52];
-        let mut tableau_lens = [0u8; 8];
-        let mut idx = 0;
-        for (col_idx, (cards, len)) in tableau_columns.iter().enumerate() {
-            tableau_lens[col_idx] = *len;
-            for &card in cards {
-                tableau_cards[idx] = card;
-                idx += 1;
-            }
-        }
-
-        // Collect and sort freecells by card value (empty cells get 255)
-        let mut freecell_cards: Vec<u8> = Vec::new();
+        // Collect and sort freecells efficiently using fixed array
+        let mut freecell_data: [u8; 4] = [255; 4];
         for i in 0..freecell_game_engine::freecells::FREECELL_COUNT {
             let location = freecell_game_engine::location::FreecellLocation::new(i as u8).unwrap();
-            let card_id = gs.freecells().get_card(location).unwrap_or(None).map_or(255, pack_card);
-            freecell_cards.push(card_id);
+            freecell_data[i] = gs.freecells().get_card(location)
+                .unwrap_or(None)
+                .map_or(255, pack_card);
         }
-        freecell_cards.sort();
+        freecell_data.sort_unstable();
         
-        // Convert back to fixed array, replacing 255 with 0 for empty cells
-        let mut freecells = [0u8; 4];
-        for (i, &card) in freecell_cards.iter().enumerate() {
+        // Convert to final array, replacing 255 with 0 for empty cells
+        for (i, &card) in freecell_data.iter().enumerate() {
             freecells[i] = if card == 255 { 0 } else { card };
         }
 
-        // Collect and sort foundations by top rank (empty foundations get 255)
-        // Note: We sort the foundation ranks but keep them in a canonical order
-        // since foundations are suit-specific and cannot be arbitrarily reordered
-        let mut foundation_data: Vec<u8> = Vec::new();
+        // Collect and sort foundations efficiently using fixed array
+        let mut foundation_data: [u8; 4] = [0; 4];
         for i in 0..FOUNDATION_COUNT {
             let location = freecell_game_engine::location::FoundationLocation::new(i as u8).unwrap();
-            let rank = gs.foundations().get_card(location).unwrap_or(None).map_or(0, |c| c.rank() as u8);
-            foundation_data.push(rank);
+            foundation_data[i] = gs.foundations().get_card(location)
+                .unwrap_or(None)
+                .map_or(0, |c| c.rank() as u8);
         }
-        foundation_data.sort();
+        foundation_data.sort_unstable();
 
-        // Pack sorted foundations 
-        let mut foundations = [0u8; 4];
-        for (i, &rank) in foundation_data.iter().enumerate() {
-            foundations[i] = rank;
-        }
+        // Copy to final foundations array
+        foundations.copy_from_slice(&foundation_data);
 
         PackedGameState {
             tableau_cards,
