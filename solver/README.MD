@@ -28,3 +28,16 @@ RUSTFLAGS="-Cprofile-generate=/tmp/pgo-data" cargo build --release --bin solver
 llvm-profdata merge -o /tmp/pgo-data/merged.profdata /tmp/pgo-data
 RUSTFLAGS="-Cprofile-use=/tmp/pgo-data/merged.profdata" cargo build --release --bin solver
 ```
+
+
+
+# Hackathon ideas
+
+- Knowing of when to only move to foundations
+    - Score of a state can be based on the number of blocked cards. 
+    - Blocked card defined by higher rank card below it
+    - Goal to get to 0 score
+
+## Heuristics
+    - Open Freecell count
+    

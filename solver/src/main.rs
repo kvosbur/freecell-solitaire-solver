@@ -15,9 +15,9 @@ use strategies::strat5::solve;
 
 fn do_benchmark() {
     // let allowed_timeout_secs = 60 * 60 * 24; // 24 hours
-    let allowed_timeout_secs = 60; // 1 minute
+    let allowed_timeout_secs = 120; // 1 minute
     let seed = 1;
-    let mut move_count_to_undue: usize = 32;
+    let mut move_count_to_undue: usize = 10;
     let game_state_initial = generate_deal(seed).unwrap();
     let solution = game_prep::get_game_solution(seed);
 

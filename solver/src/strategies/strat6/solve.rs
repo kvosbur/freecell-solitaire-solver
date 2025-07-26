@@ -1,7 +1,6 @@
 use crate::packed_state::PackedGameState;
 use freecell_game_engine::{r#move::Move, GameState};
-use lru::LruCache;
-use std::num::NonZeroUsize;
+use std::collections::HashSet;
 use std::time::Instant;
 
 struct Counter {
@@ -10,12 +9,14 @@ struct Counter {
     cancel_flag: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
 }
 
-/// Attempts to solve the given FreeCell game state using recursive DFS with LRU cache for visited states.
+/// Attempts to solve the given FreeCell game state using recursive DFS with ancestor tracking.
+/// Only tracks states from the current path (ancestors) to prevent cycles, allowing revisiting
+/// states from other branches that may now be reachable with fewer moves or different context.
 fn dfs(
     game: &mut GameState,
     path: &mut Vec<Move>,
     counter: &mut Counter,
-    visited: &mut LruCache<PackedGameState, ()>,
+    ancestors: &mut HashSet<PackedGameState>,
 ) -> bool {
     if counter
         .cancel_flag
@@ -31,22 +32,34 @@ fn dfs(
         // Limit the depth to prevent excessive recursion
         return false;
     }
+    
     let packed = PackedGameState::from_game_state(game);
-    if visited.put(packed, ()).is_some() {
-        // Already visited this state (recently)
+    
+    // Check if this state is already in our current path (would create a cycle)
+    if ancestors.contains(&packed) {
         return false;
     }
+    
+    // Add current state to ancestors before exploring children
+    ancestors.insert(packed.clone());
+    
     let moves = game.get_available_moves();
     for m in moves {
         if game.execute_move(&m).is_ok() {
             path.push(m.clone());
-            if dfs(game, path, counter, visited) {
+            if dfs(game, path, counter, ancestors) {
+                // Remove from ancestors before returning success
+                ancestors.remove(&packed);
                 return true;
             }
             path.pop();
             game.undo_move(&m);
         }
     }
+    
+    // Remove current state from ancestors when backtracking
+    ancestors.remove(&packed);
+    
     counter.count += 1;
     if counter.count % 1000000 == 0 {
         println!(
@@ -62,17 +75,16 @@ pub fn solve_with_cancel(
     mut game_state: GameState,
     cancel_flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
 ) -> bool {
-    println!("Solving FreeCell game using strategy 5 (LRU) with cancellation support...");
+    println!("Solving FreeCell game using strategy 6 (Ancestor tracking) with cancellation support...");
     let mut path = Vec::new();
     let mut counter = Counter {
         count: 0,
         start: Instant::now(),
         cancel_flag: Some(cancel_flag.clone()),
     };
-    // Set LRU cache size here (e.g., 10 million entries)
-    let lru_size = NonZeroUsize::new(250_000_000).unwrap();
-    let mut visited = LruCache::new(lru_size);
-    let result = dfs(&mut game_state, &mut path, &mut counter, &mut visited);
+    // Use HashSet to track only ancestor states (states in current path)
+    let mut ancestors = HashSet::new();
+    let result = dfs(&mut game_state, &mut path, &mut counter, &mut ancestors);
     if result {
         println!(
             "Solution found! {:?} moves {:?} time",
@@ -89,17 +101,16 @@ pub fn solve_with_cancel(
 }
 
 pub fn solve(mut game: GameState) {
-    println!("Solving FreeCell game using strategy 5 (LRU)...");
+    println!("Solving FreeCell game using strategy 6 (Ancestor tracking)...");
     let mut path = Vec::new();
     let mut counter = Counter {
         count: 0,
         start: Instant::now(),
         cancel_flag: None,
     };
-    // Set LRU cache size here (e.g., 10 million entries)
-    let lru_size = NonZeroUsize::new(250_000_000).unwrap();
-    let mut visited = LruCache::new(lru_size);
-    if dfs(&mut game, &mut path, &mut counter, &mut visited) {
+    // Use HashSet to track only ancestor states (states in current path)
+    let mut ancestors = HashSet::new();
+    if dfs(&mut game, &mut path, &mut counter, &mut ancestors) {
         println!(
             "Solution found! {:?} moves {:?} time",
             path.len(),

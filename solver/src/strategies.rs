@@ -3,3 +3,4 @@ pub mod strat2;
 pub mod strat3;
 pub mod strat4;
 pub mod strat5;
+pub mod strat6;

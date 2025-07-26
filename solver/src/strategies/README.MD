@@ -24,3 +24,7 @@ Evaluation moves: 32
 ## strat5
 strat4 except set a cap on cache size so that ram isn't overrun. Allowed program to run for a long time, but still didn't get any further
 Evaluation moves: 32
+
+## strat6
+Based on strat5 but with a fundamentally different approach to state tracking. Instead of maintaining a large cache of all previously visited states, only tracks states currently in the search path (ancestors) to prevent infinite cycles. This allows the algorithm to revisit states from different branches that might now be reachable with fewer moves or different context, potentially finding solutions that were missed by more aggressive pruning strategies.
+Evaluation moves: TBD
