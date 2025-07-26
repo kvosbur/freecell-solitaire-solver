@@ -13,7 +13,7 @@ pub mod packed_state;
 mod strategies;
 
 use freecell_game_engine::generation::generate_deal;
-use strategies::strat10::solve;
+use strategies::strat11::solve;
 
 fn do_benchmark() {
     // let allowed_timeout_secs = 60 * 60 * 24; // 24 hours
