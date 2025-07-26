@@ -63,7 +63,7 @@ pub struct Card {
 /// let rank_from_number = Rank::try_from(5).unwrap();
 /// assert_eq!(rank_from_number, Rank::Five);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd)]
 pub enum Rank {
     Ace = 1,
     Two,

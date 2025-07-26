@@ -18,6 +18,7 @@ mod error;
 mod validation;
 mod execution;
 mod moves;
+mod heuristics;
 
 pub use error::GameError;
 
