@@ -31,4 +31,8 @@ Evaluation moves: 32
 
 ## strat7
 Hybrid approach combining the best of strat5 and strat6. Uses both ancestor tracking for cycle detection (preventing infinite loops in the current path) and an LRU cache for efficient pruning of previously visited states. Additionally implements a canonical state representation that sorts tableau columns, freecells, and foundations to increase cache hit rates by recognizing isomorphic game states that differ only in ordering.
-Evaluation moves: 43
+Evaluation moves: 46
+
+## strat8
+Enhanced version of strat7 with tableau column preference heuristic. Builds on all the optimizations from strat7 (hybrid ancestor tracking + LRU cache, canonical state representation) but adds intelligent move ordering that prioritizes moves from the same tableau column as the previous move. This encourages working within the same tableau column to create longer winning sequences more sooner, leading to significantly improved performance by sorting the search space through better heuristic guidance.
+Evaluation moves: 85
