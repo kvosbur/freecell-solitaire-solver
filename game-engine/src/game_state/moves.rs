@@ -37,7 +37,7 @@ impl GameState {
         self.get_tableau_to_foundation_moves(&mut moves);
         self.get_freecell_to_foundation_moves(&mut moves);
         self.get_freecell_to_tableau_moves(&mut moves);
-        self.get_tableau_to_tableau_moves(&mut moves);
+        self.get_tableau_to_tableau_moves_single_card(&mut moves);
         self.get_tableau_to_freecell_moves(&mut moves);
         moves
     }
@@ -421,6 +421,33 @@ impl GameState {
                             moves.push(m);
                         }
                         break; // Only add the longest valid sequence to avoid redundant moves
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn get_tableau_to_tableau_moves_single_card(&self, moves: &mut Vec<Move>) {
+        for from_col in 0..TABLEAU_COLUMN_COUNT {
+            let location = crate::location::TableauLocation::new(from_col as u8).unwrap();
+            let card_result = self.tableau().get_card(location);
+            let card = match card_result {
+                Ok(Some(card)) => card,
+                _ => continue, // Skip this cell if no card or error
+            };
+
+            for to_col in 0..TABLEAU_COLUMN_COUNT {
+                let to_location = crate::location::TableauLocation::new(to_col as u8).unwrap();
+                if from_col == to_col {
+                    continue;
+                }
+                if self
+                    .tableau()
+                    .validate_card_placement(to_location, card)
+                    .is_ok()
+                {
+                    if let Ok(m) = Move::tableau_to_tableau(from_col as u8, to_col as u8, 1) {
+                        moves.push(m);
                     }
                 }
             }

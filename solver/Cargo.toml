@@ -12,9 +12,23 @@ path = "src/main.rs"
 freecell-game-engine = { path = "../game-engine" }
 lru = "0.12"
 mimalloc = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+bincode = "1.3"
+priority-queue = "2.0"
 
 [profile.release]
 debug = "line-tables-only"
 codegen-units = 1
 lto = "fat"
-opt-level = 2
+opt-level = 3
+
+[profile.release-with-debug]
+inherits = "release"
+debug = true
+
+# Profile-guided optimization
+[profile.pgo]
+inherits = "release" 
+opt-level = 3
+lto = "fat"
+codegen-units = 1
