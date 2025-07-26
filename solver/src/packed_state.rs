@@ -4,7 +4,7 @@
 
 use freecell_game_engine::{foundations::FOUNDATION_COUNT, tableau::TABLEAU_COLUMN_COUNT, Card, Foundations, FreeCells, GameState, Rank, Suit, Tableau};
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PackedGameState {
     // 52 cards, 6 bits each (0 = empty, 1-52 = card id)
     tableau_cards: [u8; 52], // 0 means unused slot
@@ -125,6 +125,82 @@ impl PackedGameState {
             foundations,
         }
     }
+
+    /// Convert a GameState into a canonical PackedGameState for better cache hits.
+    /// This version creates an isomorphic representation by sorting tableau columns,
+    /// freecells, and foundations to create a canonical ordering.
+    pub fn from_game_state_canonical(gs: &GameState) -> Self {
+        // Collect tableau columns with their data
+        let mut tableau_columns: Vec<(Vec<u8>, u8)> = Vec::new();
+        for col in 0..TABLEAU_COLUMN_COUNT {
+            let location = freecell_game_engine::location::TableauLocation::new(col as u8).unwrap();
+            let len = gs.tableau().column_length(location).unwrap_or(0);
+            let mut column_cards = Vec::new();
+            for i in 0..len {
+                if let Ok(card) = gs.tableau().get_card_at(location, i) {
+                    column_cards.push(pack_card(card));
+                }
+            }
+            tableau_columns.push((column_cards, len as u8));
+        }
+
+        // Sort tableau columns by their first card (empty columns go to end)
+        // Empty columns get a sort key of 255 to put them at the end
+        tableau_columns.sort_by_key(|(cards, _len)| {
+            cards.first().copied().unwrap_or(255)
+        });
+
+        // Pack sorted tableau data
+        let mut tableau_cards = [0u8; 52];
+        let mut tableau_lens = [0u8; 8];
+        let mut idx = 0;
+        for (col_idx, (cards, len)) in tableau_columns.iter().enumerate() {
+            tableau_lens[col_idx] = *len;
+            for &card in cards {
+                tableau_cards[idx] = card;
+                idx += 1;
+            }
+        }
+
+        // Collect and sort freecells by card value (empty cells get 255)
+        let mut freecell_cards: Vec<u8> = Vec::new();
+        for i in 0..freecell_game_engine::freecells::FREECELL_COUNT {
+            let location = freecell_game_engine::location::FreecellLocation::new(i as u8).unwrap();
+            let card_id = gs.freecells().get_card(location).unwrap_or(None).map_or(255, pack_card);
+            freecell_cards.push(card_id);
+        }
+        freecell_cards.sort();
+        
+        // Convert back to fixed array, replacing 255 with 0 for empty cells
+        let mut freecells = [0u8; 4];
+        for (i, &card) in freecell_cards.iter().enumerate() {
+            freecells[i] = if card == 255 { 0 } else { card };
+        }
+
+        // Collect and sort foundations by top rank (empty foundations get 255)
+        // Note: We sort the foundation ranks but keep them in a canonical order
+        // since foundations are suit-specific and cannot be arbitrarily reordered
+        let mut foundation_data: Vec<u8> = Vec::new();
+        for i in 0..FOUNDATION_COUNT {
+            let location = freecell_game_engine::location::FoundationLocation::new(i as u8).unwrap();
+            let rank = gs.foundations().get_card(location).unwrap_or(None).map_or(0, |c| c.rank() as u8);
+            foundation_data.push(rank);
+        }
+        foundation_data.sort();
+
+        // Pack sorted foundations 
+        let mut foundations = [0u8; 4];
+        for (i, &rank) in foundation_data.iter().enumerate() {
+            foundations[i] = rank;
+        }
+
+        PackedGameState {
+            tableau_cards,
+            tableau_lens,
+            freecells,
+            foundations,
+        }
+    }
 }
 
 /// Packs a card into a 1-based id: 1..52 (0 = empty)
@@ -191,5 +267,63 @@ mod tests {
         packed.foundations[0] = 42; // Invalid foundation rank
         let result = packed.to_game_state();
         assert!(matches!(result, Err(UnpackError::InvalidFoundationRank(42))));
+    }
+
+    #[test]
+    fn canonical_form_same_for_equivalent_states() {
+        // Create two game states that are isomorphic but have different column arrangements
+        let mut tableau1 = Tableau::new();
+        let mut tableau2 = Tableau::new();
+        
+        let card_ace_hearts = Card::new(Rank::Ace, Suit::Hearts);
+        let card_king_spades = Card::new(Rank::King, Suit::Spades);
+        
+        // State 1: Ace in col 0, King in col 1
+        let loc0 = freecell_game_engine::location::TableauLocation::new(0).unwrap();
+        let loc1 = freecell_game_engine::location::TableauLocation::new(1).unwrap();
+        tableau1.place_card_at(loc0, card_ace_hearts).unwrap();
+        tableau1.place_card_at(loc1, card_king_spades).unwrap();
+        
+        // State 2: King in col 0, Ace in col 1 (reversed)
+        tableau2.place_card_at(loc0, card_king_spades).unwrap();
+        tableau2.place_card_at(loc1, card_ace_hearts).unwrap();
+        
+        let gs1 = GameState::from_components(tableau1, FreeCells::new(), Foundations::new());
+        let gs2 = GameState::from_components(tableau2, FreeCells::new(), Foundations::new());
+        
+        // Regular form should be different
+        let packed1 = PackedGameState::from_game_state(&gs1);
+        let packed2 = PackedGameState::from_game_state(&gs2);
+        assert_ne!(packed1, packed2, "Regular packed states should be different");
+        
+        // Canonical form should be the same
+        let canonical1 = PackedGameState::from_game_state_canonical(&gs1);
+        let canonical2 = PackedGameState::from_game_state_canonical(&gs2);
+        assert_eq!(canonical1, canonical2, "Canonical packed states should be identical");
+    }
+
+    #[test]
+    fn canonical_form_sorts_freecells() {
+        let mut freecells = FreeCells::new();
+        let card_ace_hearts = Card::new(Rank::Ace, Suit::Hearts);  // Higher ID: 1*13+1=14
+        let card_king_spades = Card::new(Rank::King, Suit::Spades); // Lower ID: 0*13+13=13
+        
+        let loc0 = freecell_game_engine::location::FreecellLocation::new(0).unwrap();
+        let loc3 = freecell_game_engine::location::FreecellLocation::new(3).unwrap();
+        
+        // Place Ace (higher ID) in first freecell, King (lower ID) in last freecell
+        freecells.place_card_at(loc0, card_ace_hearts).unwrap();
+        freecells.place_card_at(loc3, card_king_spades).unwrap();
+        
+        let gs = GameState::from_components(Tableau::new(), freecells, Foundations::new());
+        let canonical = PackedGameState::from_game_state_canonical(&gs);
+        
+        // Canonical form should have King before Ace (lower card id comes first)
+        let ace_id = pack_card(&card_ace_hearts);
+        let king_id = pack_card(&card_king_spades);
+        assert_eq!(canonical.freecells[0], king_id, "King should come first in canonical form (lower ID)");
+        assert_eq!(canonical.freecells[1], ace_id, "Ace should come second in canonical form (higher ID)");
+        assert_eq!(canonical.freecells[2], 0, "Third freecell should be empty");
+        assert_eq!(canonical.freecells[3], 0, "Fourth freecell should be empty");
     }
 }

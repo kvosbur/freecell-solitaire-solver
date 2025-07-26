@@ -54,6 +54,8 @@ fn dfs(
             }
             path.pop();
             game.undo_move(&m);
+        } else {
+            println!("Failed to execute move: {:?}", m);
         }
     }
     

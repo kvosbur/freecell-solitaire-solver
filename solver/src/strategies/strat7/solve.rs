@@ -1,6 +1,7 @@
 use crate::packed_state::PackedGameState;
 use freecell_game_engine::{r#move::Move, GameState};
 use lru::LruCache;
+use std::collections::HashSet;
 use std::num::NonZeroUsize;
 use std::time::Instant;
 
@@ -10,11 +11,15 @@ struct Counter {
     cancel_flag: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
 }
 
-/// Attempts to solve the given FreeCell game state using recursive DFS with LRU cache for visited states.
+/// Attempts to solve the given FreeCell game state using recursive DFS with both
+/// ancestor tracking for cycle detection and LRU cache for efficient pruning.
+/// This combines the memory efficiency of ancestor tracking with the performance
+/// benefits of caching previously visited states.
 fn dfs(
     game: &mut GameState,
     path: &mut Vec<Move>,
     counter: &mut Counter,
+    ancestors: &mut HashSet<PackedGameState>,
     visited: &mut LruCache<PackedGameState, ()>,
 ) -> bool {
     if counter
@@ -27,20 +32,34 @@ fn dfs(
     if game.is_won().unwrap_or(false) {
         return true;
     }
-    if path.len() > 86 {
+    if path.len() > 200 {
         // Limit the depth to prevent excessive recursion
         return false;
     }
-    let packed = PackedGameState::from_game_state(game);
-    if visited.put(packed, ()).is_some() {
-        // Already visited this state (recently)
+    
+    let packed = PackedGameState::from_game_state_canonical(game);
+    
+    // First check: Is this state in our current path? (Cycle detection)
+    if ancestors.contains(&packed) {
         return false;
     }
+    
+    // Second check: Have we seen this state before in any path? (Pruning optimization)
+    if visited.contains(&packed) {
+        return false;
+    }
+    
+    // Add to both tracking structures
+    ancestors.insert(packed.clone());
+    visited.put(packed.clone(), ());
+    
     let moves = game.get_available_moves();
     for m in moves {
         if game.execute_move(&m).is_ok() {
             path.push(m.clone());
-            if dfs(game, path, counter, visited) {
+            if dfs(game, path, counter, ancestors, visited) {
+                // Remove from ancestors before returning success (visited stays for future pruning)
+                ancestors.remove(&packed);
                 return true;
             }
             path.pop();
@@ -49,6 +68,11 @@ fn dfs(
             println!("Failed to execute move: {:?}", m);
         }
     }
+    
+    // Remove current state from ancestors when backtracking
+    // (visited cache keeps the state for future pruning)
+    ancestors.remove(&packed);
+    
     counter.count += 1;
     if counter.count % 1000000 == 0 {
         println!(
@@ -64,17 +88,20 @@ pub fn solve_with_cancel(
     mut game_state: GameState,
     cancel_flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
 ) -> bool {
-    println!("Solving FreeCell game using strategy 5 (LRU) with cancellation support...");
+    println!("Solving FreeCell game using strategy 7 (Hybrid: Ancestor tracking + LRU cache) with cancellation support...");
     let mut path = Vec::new();
     let mut counter = Counter {
         count: 0,
         start: Instant::now(),
         cancel_flag: Some(cancel_flag.clone()),
     };
-    // Set LRU cache size here (e.g., 10 million entries)
+    // Use HashSet to track only ancestor states (states in current path)
+    let mut ancestors = HashSet::new();
+    // Use LRU cache for efficient pruning of previously visited states
     let lru_size = NonZeroUsize::new(250_000_000).unwrap();
     let mut visited = LruCache::new(lru_size);
-    let result = dfs(&mut game_state, &mut path, &mut counter, &mut visited);
+    
+    let result = dfs(&mut game_state, &mut path, &mut counter, &mut ancestors, &mut visited);
     if result {
         println!(
             "Solution found! {:?} moves {:?} time",
@@ -91,17 +118,20 @@ pub fn solve_with_cancel(
 }
 
 pub fn solve(mut game: GameState) {
-    println!("Solving FreeCell game using strategy 5 (LRU)...");
+    println!("Solving FreeCell game using strategy 7 (Hybrid: Ancestor tracking + LRU cache)...");
     let mut path = Vec::new();
     let mut counter = Counter {
         count: 0,
         start: Instant::now(),
         cancel_flag: None,
     };
-    // Set LRU cache size here (e.g., 10 million entries)
+    // Use HashSet to track only ancestor states (states in current path)
+    let mut ancestors = HashSet::new();
+    // Use LRU cache for efficient pruning of previously visited states
     let lru_size = NonZeroUsize::new(250_000_000).unwrap();
     let mut visited = LruCache::new(lru_size);
-    if dfs(&mut game, &mut path, &mut counter, &mut visited) {
+    
+    if dfs(&mut game, &mut path, &mut counter, &mut ancestors, &mut visited) {
         println!(
             "Solution found! {:?} moves {:?} time",
             path.len(),

@@ -27,4 +27,8 @@ Evaluation moves: 32
 
 ## strat6
 Based on strat5 but with a fundamentally different approach to state tracking. Instead of maintaining a large cache of all previously visited states, only tracks states currently in the search path (ancestors) to prevent infinite cycles. This allows the algorithm to revisit states from different branches that might now be reachable with fewer moves or different context, potentially finding solutions that were missed by more aggressive pruning strategies.
-Evaluation moves: TBD
+Evaluation moves: 32
+
+## strat7
+Hybrid approach combining the best of strat5 and strat6. Uses both ancestor tracking for cycle detection (preventing infinite loops in the current path) and an LRU cache for efficient pruning of previously visited states. Additionally implements a canonical state representation that sorts tableau columns, freecells, and foundations to increase cache hit rates by recognizing isomorphic game states that differ only in ordering.
+Evaluation moves: 43

@@ -457,7 +457,8 @@ impl GameState {
     /// Generates all valid moves from tableau columns to freecells.
     ///
     /// This method checks each tableau column and determines if its top card
-    /// can be moved to an empty freecell.
+    /// can be moved to the first available freecell. Only one move per tableau
+    /// column is generated (to the first empty freecell) to avoid redundant moves.
     ///
     /// # Returns
     ///
@@ -486,6 +487,7 @@ impl GameState {
                 _ => continue, // Skip this column if no card or error
             };
 
+            // Find the first available freecell and add only one move per tableau column
             for to_cell in 0..crate::freecells::FREECELL_COUNT {
                 let location = crate::location::FreecellLocation::new(to_cell as u8).unwrap();
                 if self
@@ -496,6 +498,7 @@ impl GameState {
                 {
                     if let Ok(m) = Move::tableau_to_freecell(from_col as u8, to_cell as u8) {
                         moves.push(m);
+                        break; // Only add move to first available freecell, then move to next tableau column
                     }
                 }
             }
