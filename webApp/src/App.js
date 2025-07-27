@@ -42,6 +42,11 @@ const App = () => {
   // Toast notification state
   const [toasts, setToasts] = useState([]);
 
+  // Auto-play all games state
+  const [isAutoPlayingAll, setIsAutoPlayingAll] = useState(false);
+  const [autoPlayProgress, setAutoPlayProgress] = useState({ current: 0, total: 0 });
+  const [autoPlayController, setAutoPlayController] = useState(null);
+
   // Toast helper functions
   const showToast = useCallback((message, type = 'info') => {
     const id = Date.now() + Math.random();
@@ -408,6 +413,107 @@ const App = () => {
     playbackController.setSpeed(speed);
   }, [playbackController]);
 
+  // Auto-play all games functionality
+  const autoPlayAll = useCallback(async () => {
+    if (isAutoPlayingAll) {
+      // Stop auto-play
+      if (autoPlayController) {
+        autoPlayController.abort();
+        setAutoPlayController(null);
+      }
+      setIsAutoPlayingAll(false);
+      setAutoPlayProgress({ current: 0, total: 0 });
+      showToast('Auto-play stopped', 'info');
+      return;
+    }
+
+    // Start auto-play
+    setIsAutoPlayingAll(true);
+    const controller = new AbortController();
+    setAutoPlayController(controller);
+
+    // Generate list of seeds (1-32000, skip 11982)
+    const allSeeds = [];
+    for (let seed = 1; seed <= 32000; seed++) {
+      if (seed !== 11982) {
+        allSeeds.push(seed);
+      }
+    }
+
+    setAutoPlayProgress({ current: 0, total: allSeeds.length });
+    showToast(`Starting auto-play of ${allSeeds.length} games`, 'info');
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < allSeeds.length; i++) {
+      if (controller.signal.aborted) {
+        break;
+      }
+
+      const seed = allSeeds[i];
+      setAutoPlayProgress({ current: i + 1, total: allSeeds.length });
+
+      try {
+        // Check if solution file exists before trying to load
+        const solutionFile = `${seed}.json`;
+        const validatedFile = validateSolutionFile(solutionFile);
+        const response = await fetch(`/results/${validatedFile}`);
+        
+        if (!response.ok) {
+          console.log(`Skipping seed ${seed} - no solution file`);
+          continue;
+        }
+
+        // Load the solution (this will put us in playback mode)
+        await loadSolution(solutionFile);
+        
+        // Wait a bit for the solution to load
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Set T-Rex speed for fast playback
+        handleSpeedChange(0);
+        
+        // Start playback and wait for completion
+        await handlePlay();
+        
+        // Wait for playback to complete
+        await new Promise((resolve) => {
+          const checkCompletion = () => {
+            if (controller.signal.aborted || currentPlaybackMove >= totalMoves) {
+              resolve();
+            } else {
+              setTimeout(checkCompletion, 100);
+            }
+          };
+          checkCompletion();
+        });
+        
+        successCount++;
+        console.log(`Completed seed ${seed} (${i + 1}/${allSeeds.length})`);
+        
+        // Brief pause between games
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+      } catch (error) {
+        if (controller.signal.aborted) {
+          break;
+        }
+        errorCount++;
+        console.error(`Failed to auto-play seed ${seed}:`, error);
+      }
+    }
+
+    // Cleanup
+    setIsAutoPlayingAll(false);
+    setAutoPlayController(null);
+    setAutoPlayProgress({ current: 0, total: 0 });
+    
+    if (!controller.signal.aborted) {
+      showToast(`Auto-play completed! ${successCount} games played, ${errorCount} errors`, 'success');
+    }
+  }, [isAutoPlayingAll, autoPlayController, validateSolutionFile, loadSolution, handleSpeedChange, handlePlay, currentPlaybackMove, totalMoves, showToast]);
+
   const exitPlaybackMode = useCallback(() => {
     setIsPlaybackMode(false);
     setIsPlaying(false);
@@ -466,12 +572,22 @@ const App = () => {
         <button 
           onClick={autoSolve} 
           className="btn btn-secondary"
-          disabled={!currentSeed || currentSeed < 1 || currentSeed > 32000 || isPlaybackMode}
+          disabled={!currentSeed || currentSeed < 1 || currentSeed > 32000 || isPlaybackMode || isAutoPlayingAll}
           title={currentSeed >= 1 && currentSeed <= 32000 ? 
             `Auto-solve game #${currentSeed}` : 
             'Auto-solve is only available for seeds 1-32000'}
         >
           Auto Solve
+        </button>
+        <button 
+          onClick={autoPlayAll} 
+          className={`btn ${isAutoPlayingAll ? 'btn-primary' : 'btn-secondary'}`}
+          disabled={isPlaybackMode && !isAutoPlayingAll}
+          title={isAutoPlayingAll ? 
+            'Stop auto-playing all games' : 
+            'Auto-play all games with solutions (1-32000, skip 11982)'}
+        >
+          {isAutoPlayingAll ? 'Stop Auto-Play All' : 'Auto-Play All'}
         </button>
         {isPlaybackMode && (
           <button 
@@ -517,6 +633,20 @@ const App = () => {
             <div className="stat-item">
               <strong>Best Game:</strong> {stats?.bestMoveCount || 'N/A'} moves
             </div>
+            {isAutoPlayingAll && (
+              <div className="stat-item auto-play-progress">
+                <strong>Auto-Play Progress:</strong>
+                <div>{autoPlayProgress.current} / {autoPlayProgress.total}</div>
+                <div className="progress-bar">
+                  <div 
+                    className="progress-fill" 
+                    style={{ 
+                      width: `${autoPlayProgress.total > 0 ? (autoPlayProgress.current / autoPlayProgress.total) * 100 : 0}%` 
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
           
           {solvedSeeds.length > 0 && (
