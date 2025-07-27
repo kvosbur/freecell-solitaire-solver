@@ -35,7 +35,10 @@ export class PlaybackController {
     await this.waitForSelection();
     
     // Step 3: Wait for the user-configured delay to show the selection
-    await this.delay(this.playbackSpeed);
+    // For T-Rex speed, skip the delay entirely for ultra-fast playback
+    if (this.playbackSpeed > 0) {
+      await this.delay(this.playbackSpeed);
+    }
     
     // Step 4: Find and click destination
     const destElement = this.findDestinationElement(destination);
@@ -146,7 +149,9 @@ export class PlaybackController {
   }
 
   waitForNextTick() {
-    return new Promise(resolve => setTimeout(resolve, 200));
+    // For T-Rex speed (0ms), use minimal delay
+    const delay = this.playbackSpeed === 0 ? 10 : 200;
+    return new Promise(resolve => setTimeout(resolve, delay));
   }
 
   async play() {

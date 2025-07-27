@@ -503,7 +503,7 @@ const App = () => {
           )}
         </div>
 
-        <div className={`game-board ${isPlaybackMode && isPlaying ? 'playback-active' : ''}`} role="main" aria-label="Freecell game board">
+        <div className={`game-board ${isPlaybackMode && isPlaying ? 'playback-active' : ''} ${playbackSpeed === 0 ? 'trex-speed' : ''}`} role="main" aria-label="Freecell game board">
         <div className="top-row">
           <div className="foundations" role="region" aria-label="Foundation piles">
             <span className="sr-only">Foundation piles where cards are built up by suit from Ace to King</span>
