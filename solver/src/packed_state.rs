@@ -137,38 +137,8 @@ impl PackedGameState {
         let mut freecells = [0u8; 4];
         let mut foundations = [0u8; 4];
 
-        // Collect tableau data with minimal allocations
-        // Use a fixed-size array instead of Vec to avoid heap allocations
-        let mut tableau_data: [(u8, u8, usize); 8] = [(255, 0, 0); 8]; // (first_card, len, original_index)
-        
-        for col in 0..TABLEAU_COLUMN_COUNT {
-            let location = freecell_game_engine::location::TableauLocation::new(col as u8).unwrap();
-            let len = gs.tableau().column_length(location).unwrap_or(0);
-            let first_card = if len > 0 {
-                gs.tableau().get_card_at(location, 0)
-                    .map(pack_card)
-                    .unwrap_or(255)
-            } else {
-                255
-            };
-            tableau_data[col] = (first_card, len as u8, col);
-        }
-
-        // Sort tableau data by first card (empty columns go to end)
-        tableau_data.sort_unstable_by_key(|(first_card, _len, _idx)| *first_card);
-
-        // Pack sorted tableau data efficiently
-        let mut card_idx = 0;
-        for (col_idx, (_first_card, len, original_col)) in tableau_data.iter().enumerate() {
-            tableau_lens[col_idx] = *len;
-            let location = freecell_game_engine::location::TableauLocation::new(*original_col as u8).unwrap();
-            for i in 0..*len as usize {
-                if let Ok(card) = gs.tableau().get_card_at(location, i) {
-                    tableau_cards[card_idx] = pack_card(card);
-                    card_idx += 1;
-                }
-            }
-        }
+        // Collect tableau data with minimal allocations using the efficient method
+        gs.tableau().extract_canonical_data(pack_card, &mut tableau_cards, &mut tableau_lens);
 
         // Collect and sort freecells efficiently using fixed array
         let mut freecell_data: [u8; 4] = [255; 4];

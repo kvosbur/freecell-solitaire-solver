@@ -508,6 +508,73 @@ impl Tableau {
         }
         Ok(&self.columns[column])
     }
+
+    /// Extract canonical tableau data for efficient packed representation.
+    /// Returns sorted tableau columns by first card for canonical ordering.
+    /// This is optimized for use in PackedGameState to avoid creating locations repeatedly.
+    ///
+    /// Returns a tuple of:
+    /// - Array of (first_card_id, column_length, original_column_index) sorted by first_card_id
+    /// - Closure that takes a card packing function and fills tableau_cards and tableau_lens arrays
+    ///
+    /// # Parameters
+    /// - `pack_card_fn`: Function to convert a Card reference to a packed u8 representation
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use freecell_game_engine::tableau::Tableau;
+    /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::TableauLocation;
+    ///
+    /// let mut tableau = Tableau::new();
+    /// let location = TableauLocation::new(0).unwrap();
+    /// tableau.place_card(location, Card::new(Rank::King, Suit::Hearts)).unwrap();
+    ///
+    /// let pack_card = |card: &Card| -> u8 {
+    ///     let suit = card.suit() as u8;
+    ///     let rank = card.rank() as u8;
+    ///     suit * 13 + rank
+    /// };
+    ///
+    /// let mut tableau_cards = [0u8; 52];
+    /// let mut tableau_lens = [0u8; 8];
+    /// tableau.extract_canonical_data(&pack_card, &mut tableau_cards, &mut tableau_lens);
+    /// ```
+    pub fn extract_canonical_data<F>(
+        &self,
+        pack_card_fn: F,
+        tableau_cards: &mut [u8; 52],
+        tableau_lens: &mut [u8; 8],
+    ) where
+        F: Fn(&Card) -> u8,
+    {
+        // Collect tableau data with minimal allocations
+        let mut tableau_data: [(u8, u8, usize); 8] = [(255, 0, 0); 8]; // (first_card, len, original_index)
+        
+        for col in 0..TABLEAU_COLUMN_COUNT {
+            let len = self.columns[col].len();
+            let first_card = if len > 0 {
+                pack_card_fn(&self.columns[col][0])
+            } else {
+                255 // Empty columns use 255 as sentinel value
+            };
+            tableau_data[col] = (first_card, len as u8, col);
+        }
+
+        // Sort tableau data by first card (empty columns go to end)
+        tableau_data.sort_unstable_by_key(|(first_card, _len, _idx)| *first_card);
+
+        // Pack sorted tableau data efficiently
+        let mut card_idx = 0;
+        for (col_idx, (_first_card, len, original_col)) in tableau_data.iter().enumerate() {
+            tableau_lens[col_idx] = *len;
+            for i in 0..*len as usize {
+                tableau_cards[card_idx] = pack_card_fn(&self.columns[*original_col][i]);
+                card_idx += 1;
+            }
+        }
+    }
 }
 
 impl std::fmt::Display for TableauError {
