@@ -10,3 +10,4 @@ pub mod strat9;
 pub mod strat10;
 pub mod strat11;
 pub mod strat12;
+pub mod strat13;

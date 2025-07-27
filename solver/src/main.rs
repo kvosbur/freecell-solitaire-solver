@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::time::Duration;
-use strategies::strat12::solve;
+use strategies::strat13::solve;
 
 #[derive(Debug, Clone)]
 pub struct SolverResult {
@@ -114,7 +114,7 @@ fn load_existing_results(filename: &str) -> Vec<GameResult> {
 fn do_seed_benchmark() {
     let allowed_timeout_secs = 120; // 2 minutes per game 
     let start_seed = 1u64;
-    let max_seeds = 100u64; // Test first 100 seeds
+    let max_seeds = 32000u64; // Test first 100 seeds
     let results_filename = "benchmark_summary.json";
     let results_dir = "results";
     
@@ -262,9 +262,9 @@ fn main() {
     println!("FreeCell Solver starting...");
 
     // Run new seed benchmark to test solver across multiple game seeds
-    // do_seed_benchmark();
+    do_seed_benchmark();
 
     // Alternative benchmarks (commented out):
     // do_benchmark();  // Original benchmark testing move undoing
-    do_adhoc();      // Single seed testing
+    // do_adhoc();      // Single seed testing
 }
