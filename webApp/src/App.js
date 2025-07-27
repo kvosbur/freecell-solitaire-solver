@@ -15,7 +15,9 @@ import {
   getSolvedSeeds,
   addSolvedSeed,
   getGameStats,
-  updateGameStats
+  updateGameStats,
+  getLastCompletedSeed,
+  setLastCompletedSeed as saveLastCompletedSeed
 } from './gameUtils';
 import './index.css';
 
@@ -46,6 +48,8 @@ const App = () => {
   const [isAutoPlayingAll, setIsAutoPlayingAll] = useState(false);
   const [autoPlayProgress, setAutoPlayProgress] = useState({ current: 0, total: 0 });
   const [autoPlayController, setAutoPlayController] = useState(null);
+  const [lastCompletedSeed, setLastCompletedSeed] = useState(0);
+  const [currentAutoPlaySeed, setCurrentAutoPlaySeed] = useState(null);
 
   // Toast helper functions
   const showToast = useCallback((message, type = 'info') => {
@@ -98,6 +102,7 @@ const App = () => {
   useEffect(() => {
     setSolvedSeeds(getSolvedSeeds());
     setStats(getGameStats());
+    setLastCompletedSeed(getLastCompletedSeed());
     startNewGame();
   }, [startNewGame]);
 
@@ -422,26 +427,37 @@ const App = () => {
         setAutoPlayController(null);
       }
       setIsAutoPlayingAll(false);
-      setAutoPlayProgress({ current: 0, total: 0 });
-      showToast('Auto-play stopped', 'info');
+      showToast(`Auto-play paused at seed ${lastCompletedSeed}. Click again to resume.`, 'info');
       return;
     }
 
-    // Start auto-play
+    // Start or resume auto-play
     setIsAutoPlayingAll(true);
     const controller = new AbortController();
     setAutoPlayController(controller);
 
     // Generate list of seeds (1-32000, skip 11982)
     const allSeeds = [];
-    for (let seed = 1; seed <= 32000; seed++) {
+    const startSeed = lastCompletedSeed > 0 ? lastCompletedSeed + 1 : 1;
+    
+    for (let seed = startSeed; seed <= 32000; seed++) {
       if (seed !== 11982) {
         allSeeds.push(seed);
       }
     }
 
-    setAutoPlayProgress({ current: 0, total: allSeeds.length });
-    showToast(`Starting auto-play of ${allSeeds.length} games`, 'info');
+    // Calculate progress based on where we're resuming from
+    const totalGames = 31999; // Total games (32000 - 1 for skipping 11982)
+    const gamesCompleted = lastCompletedSeed > 0 ? 
+      (lastCompletedSeed >= 11982 ? lastCompletedSeed - 1 : lastCompletedSeed) : 0;
+    
+    setAutoPlayProgress({ current: gamesCompleted, total: totalGames });
+    
+    if (lastCompletedSeed > 0) {
+      showToast(`Resuming auto-play from seed ${startSeed} (${allSeeds.length} games remaining)`, 'info');
+    } else {
+      showToast(`Starting auto-play of ${allSeeds.length} games`, 'info');
+    }
 
     let successCount = 0;
     let errorCount = 0;
@@ -452,9 +468,12 @@ const App = () => {
       }
 
       const seed = allSeeds[i];
-      const progressUpdate = { current: i + 1, total: allSeeds.length };
-      setAutoPlayProgress(progressUpdate);
-      console.log(`Progress: ${progressUpdate.current}/${progressUpdate.total} (${((progressUpdate.current / progressUpdate.total) * 100).toFixed(2)}%)`);
+      setCurrentAutoPlaySeed(seed);
+      
+      // Update progress based on total games completed out of 31999
+      const totalCompleted = gamesCompleted + i + 1;
+      setAutoPlayProgress({ current: totalCompleted, total: totalGames });
+      console.log(`Progress: ${totalCompleted}/${totalGames} (${((totalCompleted / totalGames) * 100).toFixed(2)}%) - Playing seed ${seed}`);
 
       try {
         // Check if solution file exists before trying to load
@@ -494,6 +513,10 @@ const App = () => {
         successCount++;
         console.log(`Completed seed ${seed} (${i + 1}/${allSeeds.length})`);
         
+        // Update last completed seed for resume capability
+        setLastCompletedSeed(seed);
+        saveLastCompletedSeed(seed);
+        
         // Brief pause between games
         await new Promise(resolve => setTimeout(resolve, 300));
         
@@ -509,12 +532,20 @@ const App = () => {
     // Cleanup
     setIsAutoPlayingAll(false);
     setAutoPlayController(null);
+    setCurrentAutoPlaySeed(null);
     setAutoPlayProgress({ current: 0, total: 0 });
     
     if (!controller.signal.aborted) {
-      showToast(`Auto-play completed! ${successCount} games played, ${errorCount} errors`, 'success');
+      if (successCount + errorCount >= allSeeds.length) {
+        // All games completed - reset progress
+        setLastCompletedSeed(0);
+        saveLastCompletedSeed(0);
+        showToast(`Auto-play completed! All ${successCount} games played, ${errorCount} errors`, 'success');
+      } else {
+        showToast(`Auto-play completed! ${successCount} games played, ${errorCount} errors`, 'success');
+      }
     }
-  }, [isAutoPlayingAll, autoPlayController, validateSolutionFile, loadSolution, handleSpeedChange, handlePlay, currentPlaybackMove, totalMoves, showToast]);
+  }, [isAutoPlayingAll, autoPlayController, lastCompletedSeed, validateSolutionFile, loadSolution, handleSpeedChange, handlePlay, currentPlaybackMove, totalMoves, showToast]);
 
   const exitPlaybackMode = useCallback(() => {
     setIsPlaybackMode(false);
@@ -638,17 +669,20 @@ const App = () => {
             {isAutoPlayingAll && (
               <div className="stat-item auto-play-progress">
                 <strong>Auto-Play Progress:</strong>
-                <div>{autoPlayProgress.current} / {autoPlayProgress.total}</div>
+                <div>{autoPlayProgress.current} / 31999</div>
+                {currentAutoPlaySeed && (
+                  <div><strong>Current Seed:</strong> {currentAutoPlaySeed}</div>
+                )}
                 <div className="progress-percentage">
-                  {autoPlayProgress.total > 0 ? 
-                    `${((autoPlayProgress.current / autoPlayProgress.total) * 100).toFixed(2)}%` : 
+                  {autoPlayProgress.current > 0 ? 
+                    `${((autoPlayProgress.current / 31999) * 100).toFixed(2)}%` : 
                     '0.00%'}
                 </div>
                 <div className="progress-bar">
                   <div 
                     className="progress-fill" 
                     style={{ 
-                      width: `${autoPlayProgress.total > 0 ? (autoPlayProgress.current / autoPlayProgress.total) * 100 : 0}%`,
+                      width: `${autoPlayProgress.current > 0 ? (autoPlayProgress.current / 31999) * 100 : 0}%`,
                       minWidth: autoPlayProgress.current > 0 ? '2px' : '0px' // Ensure visibility
                     }}
                   />

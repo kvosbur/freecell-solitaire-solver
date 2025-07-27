@@ -162,3 +162,13 @@ export const updateGameStats = (won, moveCount) => {
   localStorage.setItem('freecell-stats', JSON.stringify(stats));
   return stats;
 };
+
+// Auto-play progress utilities
+export const getLastCompletedSeed = () => {
+  const stored = localStorage.getItem('freecell-last-completed-seed');
+  return stored ? parseInt(stored) : 0;
+};
+
+export const setLastCompletedSeed = (seed) => {
+  localStorage.setItem('freecell-last-completed-seed', seed.toString());
+};
