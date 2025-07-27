@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Card from './Card';
+import PlaybackControls from './PlaybackControls';
+import SolutionSelector from './SolutionSelector';
+import { PlaybackController } from './playbackController';
 import {
   shuffleDeck,
   dealCards,
@@ -29,6 +32,14 @@ const App = () => {
   const [solvedSeeds, setSolvedSeeds] = useState([]);
   const [stats, setStats] = useState(null);
   const [draggedCard, setDraggedCard] = useState(null);
+  
+  // Playback state
+  const [playbackController] = useState(() => new PlaybackController());
+  const [isPlaybackMode, setIsPlaybackMode] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentPlaybackMove, setCurrentPlaybackMove] = useState(0);
+  const [playbackSpeed, setPlaybackSpeed] = useState(500);
+  const [totalMoves, setTotalMoves] = useState(0);
 
   useEffect(() => {
     setSolvedSeeds(getSolvedSeeds());
@@ -220,6 +231,83 @@ const App = () => {
     }
   };
 
+  // Playback methods
+  const loadSolution = useCallback(async (solutionFile) => {
+    try {
+      console.log('Loading solution:', solutionFile);
+      const response = await fetch(`/results/${solutionFile}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const solutionData = await response.json();
+      console.log('Solution data loaded:', solutionData);
+      
+      // Reset playback state
+      setIsPlaybackMode(true);
+      setIsPlaying(false);
+      setCurrentPlaybackMove(0);
+      
+      // Start new game with the solution's seed
+      startNewGame(solutionData.seed);
+      
+      // Wait a bit for the game state to update
+      setTimeout(async () => {
+        // Load solution into controller
+        await playbackController.loadSolution(solutionData);
+        setTotalMoves(solutionData.solution_moves.length);
+        console.log('Playback controller loaded with', solutionData.solution_moves.length, 'moves');
+      }, 100);
+      
+    } catch (error) {
+      console.error('Failed to load solution:', error);
+      console.error('Error details:', error.message);
+      alert(`Failed to load solution: ${error.message}`);
+    }
+  }, [playbackController, startNewGame]);
+
+  const handlePlay = useCallback(async () => {
+    setIsPlaying(true);
+    
+    // Monitor progress
+    const progressInterval = setInterval(() => {
+      setCurrentPlaybackMove(playbackController.currentMoveIndex);
+    }, 100);
+    
+    await playbackController.play();
+    
+    clearInterval(progressInterval);
+    setIsPlaying(false);
+    setCurrentPlaybackMove(playbackController.currentMoveIndex);
+  }, [playbackController]);
+
+  const handlePause = useCallback(() => {
+    playbackController.pause();
+    setIsPlaying(false);
+  }, [playbackController]);
+
+  const handleStepForward = useCallback(async () => {
+    await playbackController.stepForward();
+    setCurrentPlaybackMove(playbackController.currentMoveIndex);
+  }, [playbackController]);
+
+  const handleStepBackward = useCallback(() => {
+    // For now, just show a message
+    console.log('Step backward requires undo functionality');
+  }, []);
+
+  const handleSpeedChange = useCallback((speed) => {
+    setPlaybackSpeed(speed);
+    playbackController.setSpeed(speed);
+  }, [playbackController]);
+
+  const exitPlaybackMode = useCallback(() => {
+    setIsPlaybackMode(false);
+    setIsPlaying(false);
+    playbackController.reset();
+  }, [playbackController]);
+
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') {
       setSelectedCard(null);
@@ -269,7 +357,34 @@ const App = () => {
         >
           Undo ({gameHistory.length})
         </button>
+        <SolutionSelector 
+          onSelectSolution={loadSolution}
+          currentSeed={currentSeed}
+        />
+        {isPlaybackMode && (
+          <button 
+            onClick={exitPlaybackMode} 
+            className="btn btn-secondary"
+            title="Exit playback mode"
+          >
+            Exit Playback
+          </button>
+        )}
       </div>
+
+      {isPlaybackMode && (
+        <PlaybackControls
+          isPlaying={isPlaying}
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onStepForward={handleStepForward}
+          onStepBackward={handleStepBackward}
+          onSpeedChange={handleSpeedChange}
+          currentMove={currentPlaybackMove}
+          totalMoves={totalMoves}
+          speed={playbackSpeed}
+        />
+      )}
 
       <div className="main-content">
         <div className="stats-sidebar">
@@ -308,7 +423,7 @@ const App = () => {
           )}
         </div>
 
-        <div className="game-board" role="main" aria-label="Freecell game board">
+        <div className={`game-board ${isPlaybackMode && isPlaying ? 'playback-active' : ''}`} role="main" aria-label="Freecell game board">
         <div className="top-row">
           <div className="foundations" role="region" aria-label="Foundation piles">
             <span className="sr-only">Foundation piles where cards are built up by suit from Ace to King</span>

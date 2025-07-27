@@ -22,6 +22,9 @@ const Card = ({
   return (
     <div
       className={`card ${card.color} ${selected ? 'selected' : ''}`}
+      data-card-id={card.id}
+      data-card-rank={card.rank}
+      data-card-suit={card.suit}
       onClick={onClick}
       onKeyDown={handleKeyDown}
       tabIndex={tabIndex}

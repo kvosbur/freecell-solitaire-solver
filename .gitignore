@@ -24,4 +24,4 @@ target/
 callgrind.out.*
 
 benchmark_summary.json
-results/**.json
+**/results/**.json

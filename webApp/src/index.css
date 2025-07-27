@@ -210,6 +210,7 @@ body {
 .card.selected {
   transform: translateY(-10px);
   box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+  border: 3px solid #4CAF50;
   z-index: 10;
 }
 
@@ -513,4 +514,134 @@ body {
   .btn {
     border: 2px solid;
   }
+}
+
+/* Playback Controls */
+.playback-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background: #f8f8f8;
+  border-radius: 8px;
+  margin: 10px 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.speed-control label {
+  font-weight: 600;
+}
+
+.speed-presets {
+  display: flex;
+  gap: 4px;
+}
+
+.speed-preset {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.speed-preset:hover {
+  background: #f0f0f0;
+  border-color: #4CAF50;
+}
+
+.speed-preset:active {
+  background: #e0e0e0;
+}
+
+.speed-control input[type="range"] {
+  width: 120px;
+}
+
+.speed-value {
+  font-size: 0.9rem;
+  color: #666;
+  min-width: 50px;
+}
+
+.progress {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.move-counter {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.progress-bar {
+  width: 150px;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #4CAF50;
+  transition: width 0.3s ease;
+}
+
+/* Solution Selector */
+.solution-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solution-selector label {
+  font-weight: 600;
+}
+
+.solution-select {
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: white;
+  cursor: pointer;
+}
+
+.solution-select option.current-game {
+  font-weight: 600;
+  color: #4CAF50;
+}
+
+/* Playback mode indicator */
+.game-board.playback-active {
+  border: 2px solid #4CAF50;
+  position: relative;
+}
+
+.game-board.playback-active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(76, 175, 80, 0.1);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.game-board.playback-active .card,
+.game-board.playback-active .card-slot {
+  pointer-events: auto; /* Allow programmatic clicks but this creates visual feedback */
 }
