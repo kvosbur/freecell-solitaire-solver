@@ -191,6 +191,33 @@ impl Suit {
             Suit::Clubs | Suit::Spades => Color::Black,
         }
     }
+
+    /// Returns the foundation index for this suit.
+    ///
+    /// Each suit corresponds to a specific foundation pile:
+    /// - Spades = 0
+    /// - Hearts = 1
+    /// - Diamonds = 2
+    /// - Clubs = 3
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use freecell_game_engine::card::Suit;
+    ///
+    /// assert_eq!(Suit::Spades.foundation_index(), 0);
+    /// assert_eq!(Suit::Hearts.foundation_index(), 1);
+    /// assert_eq!(Suit::Diamonds.foundation_index(), 2);
+    /// assert_eq!(Suit::Clubs.foundation_index(), 3);
+    /// ```
+    pub fn foundation_index(&self) -> u8 {
+        match self {
+            Suit::Spades => 0,
+            Suit::Hearts => 1,
+            Suit::Diamonds => 2,
+            Suit::Clubs => 3,
+        }
+    }
 }
 
 impl Card {

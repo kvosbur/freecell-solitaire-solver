@@ -5,7 +5,7 @@
 
 use super::GameState;
 use crate::{
-    foundations::FOUNDATION_COUNT, freecells::FREECELL_COUNT, location::FoundationLocation,
+    freecells::FREECELL_COUNT, location::FoundationLocation,
     r#move::Move, tableau::TABLEAU_COLUMN_COUNT,
 };
 
@@ -75,16 +75,16 @@ impl GameState {
                 _ => continue,
             };
 
-            for to_pile in 0..FOUNDATION_COUNT {
-                let foundation_location = FoundationLocation::new(to_pile as u8).unwrap();
-                if self
-                    .foundations()
-                    .validate_card_placement(foundation_location, card)
-                    .is_ok()
-                {
-                    if let Ok(m) = Move::tableau_to_foundation(from_col as u8, to_pile as u8) {
-                        moves.push(m);
-                    }
+            // Directly compute the target foundation based on card suit
+            let to_pile = card.suit().foundation_index();
+            let foundation_location = FoundationLocation::new(to_pile).unwrap();
+            if self
+                .foundations()
+                .validate_card_placement(foundation_location, card)
+                .is_ok()
+            {
+                if let Ok(m) = Move::tableau_to_foundation(from_col as u8, to_pile) {
+                    moves.push(m);
                 }
             }
         }
@@ -122,16 +122,16 @@ impl GameState {
                 _ => continue,
             };
 
-            for to_pile in 0..FOUNDATION_COUNT {
-                let foundation_location = FoundationLocation::new(to_pile as u8).unwrap();
-                if self
-                    .foundations()
-                    .validate_card_placement(foundation_location, card)
-                    .is_ok()
-                {
-                    if let Ok(m) = Move::freecell_to_foundation(from_cell as u8, to_pile as u8) {
-                        moves.push(m);
-                    }
+            // Directly compute the target foundation based on card suit
+            let to_pile = card.suit().foundation_index();
+            let foundation_location = FoundationLocation::new(to_pile).unwrap();
+            if self
+                .foundations()
+                .validate_card_placement(foundation_location, card)
+                .is_ok()
+            {
+                if let Ok(m) = Move::freecell_to_foundation(from_cell as u8, to_pile) {
+                    moves.push(m);
                 }
             }
         }
