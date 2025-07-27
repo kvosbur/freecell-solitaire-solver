@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::time::Duration;
-use strategies::strat11::solve;
+use strategies::strat12::solve;
 
 #[derive(Debug, Clone)]
 pub struct SolverResult {
