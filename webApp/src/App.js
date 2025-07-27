@@ -62,11 +62,6 @@ const App = () => {
       throw new Error('Invalid solution file format');
     }
     
-    const seedNumber = parseInt(sanitized.replace('.json', ''));
-    if (seedNumber < 1 || seedNumber > 32000) {
-      throw new Error('Solution file seed out of allowed range');
-    }
-    
     return sanitized;
   }, []);
 
@@ -264,10 +259,10 @@ const App = () => {
     const seed = seedInput.trim();
     if (seed && !isNaN(seed)) {
       const parsedSeed = parseInt(seed);
-      if (parsedSeed >= 1 && parsedSeed <= 32000) {
+      if (parsedSeed >= 1) {
         startNewGame(parsedSeed);
       } else {
-        showToast('Please enter a seed between 1 and 32000', 'warning');
+        showToast('Please enter a seed greater than 1', 'warning');
         return;
       }
     } else {
@@ -299,6 +294,11 @@ const App = () => {
       const solutionData = await response.json();
       console.log('Solution data loaded:', solutionData);
       
+      // Validate solution data has required fields
+      if (!solutionData.seed || !solutionData.solution_moves || !Array.isArray(solutionData.solution_moves)) {
+        throw new Error('Invalid solution file format - missing required fields');
+      }
+      
       // Reset playback state
       setIsPlaybackMode(true);
       setIsPlaying(false);
@@ -309,16 +309,38 @@ const App = () => {
       
       // Wait a bit for the game state to update
       setTimeout(async () => {
-        // Load solution into controller
-        await playbackController.loadSolution(solutionData);
-        setTotalMoves(solutionData.solution_moves.length);
-        console.log('Playback controller loaded with', solutionData.solution_moves.length, 'moves');
+        try {
+          // Load solution into controller
+          await playbackController.loadSolution(solutionData);
+          setTotalMoves(solutionData.solution_moves.length);
+          console.log('Playback controller loaded with', solutionData.solution_moves.length, 'moves');
+        } catch (controllerError) {
+          console.error('Playback controller error:', controllerError);
+          // Clean up on controller error
+          setIsPlaybackMode(false);
+          setIsPlaying(false);
+          setCurrentPlaybackMove(0);
+          setTotalMoves(0);
+          playbackController.reset();
+          showToast('Failed to load solution into playback controller', 'error');
+        }
       }, 100);
       
     } catch (error) {
       console.error('Failed to load solution:', error);
       console.error('Error details:', error.message);
+      
+      // Clean up any partial playback state on error
+      setIsPlaybackMode(false);
+      setIsPlaying(false);
+      setCurrentPlaybackMove(0);
+      setTotalMoves(0);
+      playbackController.reset();
+      
       showToast(`Failed to load solution: ${error.message}`, 'error');
+      
+      // Re-throw the error so autoSolve can handle it
+      throw error;
     }
   }, [playbackController, startNewGame, showToast, validateSolutionFile]);
 
@@ -334,7 +356,10 @@ const App = () => {
       await loadSolution(solutionFile);
     } catch (error) {
       console.error('Auto-solve failed:', error);
-      showToast(`No solution available for seed ${currentSeed}. This game may be unsolvable or the solution hasn't been computed yet.`, 'error');
+      const errorMessage = error.message.includes('Solution file not found') 
+        ? `No solution available for seed ${currentSeed}. This game may be unsolvable or the solution hasn't been computed yet.`
+        : `Failed to auto-solve seed ${currentSeed}: ${error.message}`;
+      showToast(errorMessage, 'error');
     }
   }, [currentSeed, loadSolution, showToast]);
 
@@ -423,11 +448,10 @@ const App = () => {
           type="number"
           value={seedInput}
           onChange={(e) => setSeedInput(e.target.value)}
-          placeholder="Game seed (1-32000)"
+          placeholder="Game seed"
           className="seed-input"
-          aria-label="Game seed number between 1 and 32000"
+          aria-label="Game seed number"
           min="1"
-          max="32000"
         />
         <button onClick={handleNewGameClick} className="btn btn-primary">
           Deal Game
@@ -628,7 +652,10 @@ const App = () => {
           <p>You've excavated all the cards!</p>
           <p>Game #{currentSeed} completed in {moveCount} moves</p>
           <button 
-            onClick={() => setGameWon(false)} 
+            onClick={() => {
+              setGameWon(false);
+              startNewGame(); // Deal a new random game
+            }} 
             className="btn btn-primary"
             style={{ marginTop: '15px' }}
           >
