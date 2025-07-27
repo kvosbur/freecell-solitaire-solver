@@ -13,7 +13,7 @@ export class PlaybackController {
   }
 
   async executeMove(move) {
-    const { source, destination, card_count } = move;
+    const { source, destination, card_count = 1 } = move;
     
     console.log('Executing move:', { source, destination, card_count });
     
@@ -81,7 +81,7 @@ export class PlaybackController {
     console.warn('Move completion may have failed - cards still selected');
   }
 
-  findSourceElement(source, cardCount) {
+  findSourceElement(source, cardCount = 1) {
     if (source.Tableau) {
       // Find the correct card in tableau column
       const columnIndex = source.Tableau.index;
