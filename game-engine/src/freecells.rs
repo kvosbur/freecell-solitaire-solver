@@ -342,6 +342,50 @@ impl FreeCells {
             .enumerate()
             .filter_map(|(idx, cell)| cell.as_ref().map(|card| (idx, card)))
     }
+
+    /// Extract canonical freecell data for efficient packed representation.
+    /// Returns sorted freecell card data for canonical ordering.
+    /// This is optimized for use in PackedGameState to avoid creating locations repeatedly.
+    ///
+    /// # Parameters
+    /// - `pack_card_fn`: Function to convert a Card reference to a packed representation
+    /// - `empty_value`: Value to use for empty freecells in the final output
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use freecell_game_engine::freecells::FreeCells;
+    /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FreecellLocation;
+    ///
+    /// let mut freecells = FreeCells::new();
+    /// let location = FreecellLocation::new(0).unwrap();
+    /// freecells.place_card_at(location, Card::new(Rank::King, Suit::Hearts)).unwrap();
+    ///
+    /// let pack_card = |card: &Card| -> u8 {
+    ///     let suit = card.suit() as u8;
+    ///     let rank = card.rank() as u8;
+    ///     suit * 13 + rank
+    /// };
+    ///
+    /// let mut freecell_data = [0u8; 4];
+    /// freecells.extract_canonical_data(&pack_card, 0, &mut freecell_data);
+    /// ```
+    pub fn extract_canonical_data<F>(
+        &self,
+        pack_card_fn: F,
+        freecell_data: &mut [u8; 4],
+    ) where
+        F: Fn(&Card) -> u8,
+    {
+        // Collect freecell data efficiently, using 255 as temporary empty value for sorting
+        for (i, cell) in self.cells.iter().enumerate() {
+            freecell_data[i] = cell.as_ref().map_or(255, &pack_card_fn);
+        }
+        
+        // Sort for canonical ordering (empty values 255 go to end)
+        freecell_data.sort_unstable();
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

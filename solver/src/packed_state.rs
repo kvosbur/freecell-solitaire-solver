@@ -140,33 +140,11 @@ impl PackedGameState {
         // Collect tableau data with minimal allocations using the efficient method
         gs.tableau().extract_canonical_data(pack_card, &mut tableau_cards, &mut tableau_lens);
 
-        // Collect and sort freecells efficiently using fixed array
-        let mut freecell_data: [u8; 4] = [255; 4];
-        for i in 0..freecell_game_engine::freecells::FREECELL_COUNT {
-            let location = freecell_game_engine::location::FreecellLocation::new(i as u8).unwrap();
-            freecell_data[i] = gs.freecells().get_card(location)
-                .unwrap_or(None)
-                .map_or(255, pack_card);
-        }
-        freecell_data.sort_unstable();
-        
-        // Convert to final array, replacing 255 with 0 for empty cells
-        for (i, &card) in freecell_data.iter().enumerate() {
-            freecells[i] = if card == 255 { 0 } else { card };
-        }
+        // Collect and sort freecells efficiently using the new method
+        gs.freecells().extract_canonical_data(pack_card, &mut freecells);
 
-        // Collect and sort foundations efficiently using fixed array
-        let mut foundation_data: [u8; 4] = [0; 4];
-        for i in 0..FOUNDATION_COUNT {
-            let location = freecell_game_engine::location::FoundationLocation::new(i as u8).unwrap();
-            foundation_data[i] = gs.foundations().get_card(location)
-                .unwrap_or(None)
-                .map_or(0, |c| c.rank() as u8);
-        }
-        foundation_data.sort_unstable();
-
-        // Copy to final foundations array
-        foundations.copy_from_slice(&foundation_data);
+        // Collect and sort foundations efficiently using the new method
+        gs.foundations().extract_canonical_data(|c| c.rank() as u8, &mut foundations);
 
         PackedGameState {
             tableau_cards,
@@ -299,5 +277,30 @@ mod tests {
         assert_eq!(canonical.freecells[1], ace_id, "Ace should come second in canonical form (higher ID)");
         assert_eq!(canonical.freecells[2], 0, "Third freecell should be empty");
         assert_eq!(canonical.freecells[3], 0, "Fourth freecell should be empty");
+    }
+
+    #[test]
+    fn canonical_form_sorts_foundations() {
+        let mut foundations = Foundations::new();
+        
+        // Place cards in foundations in non-sorted order
+        // Foundation 0: Hearts with 3 cards (rank 3 on top)
+        let hearts_foundation = freecell_game_engine::location::FoundationLocation::new(0).unwrap();
+        foundations.place_card_at(hearts_foundation, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
+        foundations.place_card_at(hearts_foundation, Card::new(Rank::Two, Suit::Hearts)).unwrap();
+        foundations.place_card_at(hearts_foundation, Card::new(Rank::Three, Suit::Hearts)).unwrap();
+        
+        // Foundation 2: Clubs with 1 card (rank 1 on top)
+        let clubs_foundation = freecell_game_engine::location::FoundationLocation::new(2).unwrap();
+        foundations.place_card_at(clubs_foundation, Card::new(Rank::Ace, Suit::Clubs)).unwrap();
+        
+        let gs = GameState::from_components(Tableau::new(), FreeCells::new(), foundations);
+        let canonical = PackedGameState::from_game_state_canonical(&gs);
+        
+        // Canonical form should have foundations sorted by rank: 1, 3, then empty (0, 0)
+        assert_eq!(canonical.foundations[0], 1, "First foundation should have rank 1 (Ace)");
+        assert_eq!(canonical.foundations[1], 3, "Second foundation should have rank 3 (Three)");
+        assert_eq!(canonical.foundations[2], 255, "Third foundation should be empty");
+        assert_eq!(canonical.foundations[3], 255, "Fourth foundation should be empty");
     }
 }

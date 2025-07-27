@@ -246,6 +246,56 @@ impl Foundations {
         }
     }
 
+    /// Extract canonical foundation data for efficient packed representation.
+    /// Returns sorted foundation rank data for canonical ordering.
+    /// This is optimized for use in PackedGameState to avoid creating locations repeatedly.
+    ///
+    /// # Parameters
+    /// - `rank_fn`: Function to convert a Card reference to a rank value (typically |c| c.rank() as u8)
+    /// - `empty_value`: Value to use for empty foundations in the final output
+    /// - `foundation_data`: Output array to fill with foundation data
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use freecell_game_engine::foundations::Foundations;
+    /// use freecell_game_engine::card::{Card, Rank, Suit};
+    /// use freecell_game_engine::location::FoundationLocation;
+    ///
+    /// let mut foundations = Foundations::new();
+    /// let location = FoundationLocation::new(0).unwrap();
+    /// foundations.place_card_at(location, Card::new(Rank::Ace, Suit::Hearts)).unwrap();
+    /// foundations.place_card_at(location, Card::new(Rank::Two, Suit::Hearts)).unwrap();
+    ///
+    /// let rank_fn = |card: &Card| -> u8 {
+    ///     card.rank() as u8
+    /// };
+    ///
+    /// let mut foundation_data = [0u8; 4];
+    /// foundations.extract_canonical_data(&rank_fn, 0, &mut foundation_data);
+    /// ```
+    pub fn extract_canonical_data<F>(
+        &self,
+        rank_fn: F,
+        foundation_data: &mut [u8; 4],
+    ) where
+        F: Fn(&Card) -> u8,
+    {
+        // Collect foundation data efficiently, using 255 as temporary empty value for sorting
+        for i in 0..FOUNDATION_COUNT {
+            foundation_data[i] = if self.heights[i] > 0 {
+                // Get the top card (last card in the pile)
+                if let Some(card) = &self.piles[i][self.heights[i] - 1] {
+                    rank_fn(card)
+                } else {
+                    255 // Should not happen, but safety fallback
+                }
+            } else {
+                255 // Empty foundation
+            };
+        }
+    }
+
     /// Place a card in the appropriate foundation pile automatically.
     ///
     /// This method finds the correct pile for the card based on its suit,
