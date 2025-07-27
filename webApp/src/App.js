@@ -433,7 +433,6 @@ const App = () => {
     return <div className="app">Loading...</div>;
   }
 
-  const winRate = stats ? (stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0) : 0;
   const avgMoves = stats ? (stats.gamesPlayed > 0 ? Math.round(stats.totalMoves / stats.gamesPlayed) : 0) : 0;
 
   return (
@@ -511,9 +510,6 @@ const App = () => {
             </div>
             <div className="stat-item">
               <strong>Games Played:</strong> {stats?.gamesPlayed || 0}
-            </div>
-            <div className="stat-item">
-              <strong>Win Rate:</strong> {winRate}%
             </div>
             <div className="stat-item">
               <strong>Avg Moves:</strong> {avgMoves}
