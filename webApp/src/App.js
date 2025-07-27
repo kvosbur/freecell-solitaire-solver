@@ -452,7 +452,9 @@ const App = () => {
       }
 
       const seed = allSeeds[i];
-      setAutoPlayProgress({ current: i + 1, total: allSeeds.length });
+      const progressUpdate = { current: i + 1, total: allSeeds.length };
+      setAutoPlayProgress(progressUpdate);
+      console.log(`Progress: ${progressUpdate.current}/${progressUpdate.total} (${((progressUpdate.current / progressUpdate.total) * 100).toFixed(2)}%)`);
 
       try {
         // Check if solution file exists before trying to load
@@ -637,11 +639,17 @@ const App = () => {
               <div className="stat-item auto-play-progress">
                 <strong>Auto-Play Progress:</strong>
                 <div>{autoPlayProgress.current} / {autoPlayProgress.total}</div>
+                <div className="progress-percentage">
+                  {autoPlayProgress.total > 0 ? 
+                    `${((autoPlayProgress.current / autoPlayProgress.total) * 100).toFixed(2)}%` : 
+                    '0.00%'}
+                </div>
                 <div className="progress-bar">
                   <div 
                     className="progress-fill" 
                     style={{ 
-                      width: `${autoPlayProgress.total > 0 ? (autoPlayProgress.current / autoPlayProgress.total) * 100 : 0}%` 
+                      width: `${autoPlayProgress.total > 0 ? (autoPlayProgress.current / autoPlayProgress.total) * 100 : 0}%`,
+                      minWidth: autoPlayProgress.current > 0 ? '2px' : '0px' // Ensure visibility
                     }}
                   />
                 </div>
