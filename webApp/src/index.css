@@ -123,6 +123,7 @@ body {
   display: flex;
   gap: 10px;
   justify-content: center;
+  min-height: 400px;
 }
 
 .card-slot {
@@ -136,11 +137,17 @@ body {
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
+  box-sizing: content-box;
 }
 
 .card-slot:focus {
   outline: 3px solid #fff;
   outline-offset: 2px;
+}
+
+.card-slot:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .card-slot.valid-drop {
@@ -158,8 +165,10 @@ body {
 }
 
 .tableau-column {
-  min-height: 200px;
+  min-height: 350px;
   position: relative;
+  width: 80px;
+  flex-shrink: 0;
 }
 
 .tableau-column .card-slot {
@@ -184,6 +193,8 @@ body {
   font-size: 14px;
   transition: transform 0.2s, box-shadow 0.2s;
   position: relative;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .card:focus {
@@ -221,6 +232,30 @@ body {
   transform: rotate(180deg);
 }
 
+.main-content {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  max-width: 1400px;
+  align-items: flex-start;
+}
+
+.stats-sidebar {
+  min-width: 250px;
+  max-width: 300px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 15px;
+  border-radius: 8px;
+  position: sticky;
+  top: 20px;
+}
+
+.stats-sidebar h3 {
+  margin-top: 0;
+  text-align: center;
+}
+
 .stats {
   margin-top: 20px;
   text-align: center;
@@ -232,9 +267,13 @@ body {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 8px;
   margin-top: 10px;
+}
+
+.stats-sidebar .stats-grid {
+  grid-template-columns: 1fr;
 }
 
 .stat-item {
@@ -309,6 +348,160 @@ body {
 *:focus {
   outline: 2px solid #0066cc;
   outline-offset: 2px;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .main-content {
+    flex-direction: column;
+  }
+  
+  .stats-sidebar {
+    position: static;
+    max-width: none;
+    width: 100%;
+  }
+  
+  .stats-sidebar .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .tableau {
+    gap: 5px;
+  }
+  
+  .card-slot, .card {
+    width: 60px;
+    height: 85px;
+  }
+  
+  .top-row {
+    gap: 10px;
+  }
+  
+  .freecells, .foundations {
+    gap: 5px;
+  }
+}
+
+/* Results Player Styles */
+.demo-section {
+  width: 100%;
+  max-width: 1200px;
+  margin-bottom: 20px;
+}
+
+.results-player {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  margin-bottom: 20px;
+}
+
+.results-player h3 {
+  margin: 0 0 15px 0;
+  color: #2d5016;
+  font-size: 1.3rem;
+}
+
+.player-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.file-selection {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.file-selection label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-weight: bold;
+  color: #2d5016;
+}
+
+.file-selection select {
+  padding: 8px;
+  border: 2px solid #4a7c59;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+  min-width: 150px;
+}
+
+.playback-controls {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.playback-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-weight: bold;
+  color: #2d5016;
+}
+
+.playback-controls input[type="range"] {
+  width: 200px;
+}
+
+.playback-controls .buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.player-status {
+  background: rgba(45, 80, 22, 0.1);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.status-info, .file-info, .progress-info {
+  margin: 3px 0;
+  font-size: 14px;
+  color: #2d5016;
+}
+
+.current-move {
+  background: rgba(74, 124, 89, 0.1);
+  padding: 10px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+/* Responsive design for results player */
+@media (max-width: 768px) {
+  .player-controls {
+    gap: 10px;
+  }
+  
+  .file-selection, .playback-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .playback-controls input[type="range"] {
+    width: 100%;
+  }
+  
+  .file-selection select {
+    min-width: auto;
+  }
 }
 
 /* Ensure good contrast for accessibility */

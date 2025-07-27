@@ -74,7 +74,7 @@ const App = () => {
   const makeMove = useCallback((fromLocation, toLocation, cards) => {
     if (!gameState) return false;
 
-    saveGameState();
+      saveGameState();
     
     const newGameState = JSON.parse(JSON.stringify(gameState));
     
@@ -271,7 +271,44 @@ const App = () => {
         </button>
       </div>
 
-      <div className="game-board" role="main" aria-label="Freecell game board">
+      <div className="main-content">
+        <div className="stats-sidebar">
+          <h3>🦴 Fossil Stats</h3>
+          <div className="stats-grid">
+            <div className="stat-item">
+              <strong>Current Seed:</strong> {currentSeed}
+            </div>
+            <div className="stat-item">
+              <strong>Moves:</strong> {moveCount}
+            </div>
+            <div className="stat-item">
+              <strong>Games Played:</strong> {stats?.gamesPlayed || 0}
+            </div>
+            <div className="stat-item">
+              <strong>Win Rate:</strong> {winRate}%
+            </div>
+            <div className="stat-item">
+              <strong>Avg Moves:</strong> {avgMoves}
+            </div>
+            <div className="stat-item">
+              <strong>Best Game:</strong> {stats?.bestMoveCount || 'N/A'} moves
+            </div>
+          </div>
+          
+          {solvedSeeds.length > 0 && (
+            <div className="solved-seeds">
+              <h4>🏆 Conquered Seeds ({solvedSeeds.length})</h4>
+              <div className="seed-list">
+                {solvedSeeds.slice(-20).map(seed => (
+                  <span key={seed} className="seed-tag">{seed}</span>
+                ))}
+                {solvedSeeds.length > 20 && <span className="seed-tag">...</span>}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="game-board" role="main" aria-label="Freecell game board">
         <div className="top-row">
           <div className="foundations" role="region" aria-label="Foundation piles">
             <span className="sr-only">Foundation piles where cards are built up by suit from Ace to King</span>
@@ -378,42 +415,7 @@ const App = () => {
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="stats">
-        <h3>🦴 Fossil Stats</h3>
-        <div className="stats-grid">
-          <div className="stat-item">
-            <strong>Current Seed:</strong> {currentSeed}
-          </div>
-          <div className="stat-item">
-            <strong>Moves:</strong> {moveCount}
-          </div>
-          <div className="stat-item">
-            <strong>Games Played:</strong> {stats?.gamesPlayed || 0}
-          </div>
-          <div className="stat-item">
-            <strong>Win Rate:</strong> {winRate}%
-          </div>
-          <div className="stat-item">
-            <strong>Avg Moves:</strong> {avgMoves}
-          </div>
-          <div className="stat-item">
-            <strong>Best Game:</strong> {stats?.bestMoveCount || 'N/A'} moves
-          </div>
         </div>
-        
-        {solvedSeeds.length > 0 && (
-          <div className="solved-seeds">
-            <h4>🏆 Conquered Seeds ({solvedSeeds.length})</h4>
-            <div className="seed-list">
-              {solvedSeeds.slice(-20).map(seed => (
-                <span key={seed} className="seed-tag">{seed}</span>
-              ))}
-              {solvedSeeds.length > 20 && <span className="seed-tag">...</span>}
-            </div>
-          </div>
-        )}
       </div>
 
       {gameWon && (
