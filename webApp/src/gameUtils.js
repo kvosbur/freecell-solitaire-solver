@@ -1,8 +1,8 @@
 // Card utilities
 export const SUITS = {
-  HEARTS: '♥',
-  DIAMONDS: '♦',
   CLUBS: '♣',
+  DIAMONDS: '♦',
+  HEARTS: '♥',
   SPADES: '♠'
 };
 
@@ -12,8 +12,8 @@ export const createDeck = () => {
   const deck = [];
   const suits = Object.values(SUITS);
   
-  for (let suit of suits) {
-    for (let i = 0; i < RANKS.length; i++) {
+  for (let i = 0; i < RANKS.length; i++) {
+    for (let suit of suits) {
       deck.push({
         suit,
         rank: RANKS[i],
@@ -32,8 +32,8 @@ export const createSeededRandom = (seed) => {
   let state = seed;
   
   return () => {
-    state = (state * 214013 + 2531011) & 0x7fffffff;
-    return state;
+    state = (state * 214013 + 2531011) % 0x80000000;
+    return Math.trunc(state / 0x10000);
   };
 };
 
@@ -52,14 +52,9 @@ export const shuffleDeck = (seed) => {
 
 export const dealCards = (deck) => {
   const tableau = [[], [], [], [], [], [], [], []];
-  let cardIndex = 0;
-  
-  // Deal cards to tableau (first 4 columns get 7 cards, last 4 get 6)
-  for (let col = 0; col < 8; col++) {
-    const numCards = col < 4 ? 7 : 6;
-    for (let row = 0; row < numCards; row++) {
-      tableau[col].push(deck[cardIndex++]);
-    }
+  deck = deck.reverse(); // Reverse deck to deal from the end
+  for (let card = 0; card < deck.length; card++) {
+    tableau[card % 8].push(deck[card]);
   }
   
   return {
