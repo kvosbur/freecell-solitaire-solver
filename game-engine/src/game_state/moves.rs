@@ -383,70 +383,68 @@ impl GameState {
     /// let moves = game.get_tableau_to_tableau_moves();
     /// // Moves may include single cards or multi-card sequences
     /// ```
-    pub fn get_tableau_to_tableau_moves(&self, moves: &mut Vec<Move>) {
-        let max_movable = self.calculate_max_movable_cards();
+    // pub fn get_tableau_to_tableau_moves(&self, moves: &mut Vec<Move>) {
+    //     let max_movable = self.calculate_max_movable_cards();
 
-        // Early exit if no cards can be moved
-        if max_movable == 0 {
-            return;
-        }
+    //     // Early exit if no cards can be moved
+    //     if max_movable == 0 {
+    //         return;
+    //     }
 
-        for from_col in 0..TABLEAU_COLUMN_COUNT {
-            let sequence = self.get_movable_sequence_from_column(from_col);
-            if sequence.is_empty() {
-                continue;
-            }
+    //     for from_col in 0..TABLEAU_COLUMN_COUNT {
+    //         let sequence = self.get_movable_sequence_from_column(from_col);
+    //         if sequence.is_empty() {
+    //             continue;
+    //         }
 
-            for to_col in 0..TABLEAU_COLUMN_COUNT {
-                if from_col == to_col {
-                    continue;
-                }
-                // Try sequence lengths from longest to shortest
-                // This prioritizes more valuable moves and avoids generating redundant shorter moves
-                let max_sequence_length = sequence.len().min(max_movable);
+    //         for to_col in 0..TABLEAU_COLUMN_COUNT {
+    //             if from_col == to_col {
+    //                 continue;
+    //             }
+    //             // Try sequence lengths from longest to shortest
+    //             // This prioritizes more valuable moves and avoids generating redundant shorter moves
+    //             let max_sequence_length = sequence.len().min(max_movable);
 
-                for card_count in (1..=max_sequence_length).rev() {
-                    // The bottom card of the sequence is what we're trying to place
-                    let bottom_card = sequence[card_count - 1];
+    //             for card_count in (1..=max_sequence_length).rev() {
+    //                 // The bottom card of the sequence is what we're trying to place
+    //                 let bottom_card = sequence[card_count - 1];
 
-                    let to_location = crate::location::TableauLocation::new(to_col as u8).unwrap();
-                    if self
-                        .tableau()
-                        .validate_card_placement(to_location, &bottom_card)
-                        .is_ok()
-                    {
-                        if let Ok(m) =
-                            Move::tableau_to_tableau(from_col as u8, to_col as u8, card_count as u8)
-                        {
-                            moves.push(m);
-                        }
-                        break; // Only add the longest valid sequence to avoid redundant moves
-                    }
-                }
-            }
-        }
-    }
+    //                 let to_location = crate::location::TableauLocation::new(to_col as u8).unwrap();
+    //                 if self
+    //                     .tableau()
+    //                     .validate_card_placement(to_location, &bottom_card)
+    //                     .is_ok()
+    //                 {
+    //                     if let Ok(m) =
+    //                         Move::tableau_to_tableau(from_col as u8, to_col as u8, card_count as u8)
+    //                     {
+    //                         moves.push(m);
+    //                     }
+    //                     break; // Only add the longest valid sequence to avoid redundant moves
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     pub fn get_tableau_to_tableau_moves_single_card(&self, moves: &mut Vec<Move>) {
         for from_col in 0..TABLEAU_COLUMN_COUNT {
-            let location = crate::location::TableauLocation::new(from_col as u8).unwrap();
-            let card_result = self.tableau().get_card(location);
+            let card_result = self.tableau().get_card_raw(from_col);
             let card = match card_result {
                 Ok(Some(card)) => card,
                 _ => continue, // Skip this cell if no card or error
             };
 
             for to_col in 0..TABLEAU_COLUMN_COUNT {
-                let to_location = crate::location::TableauLocation::new(to_col as u8).unwrap();
                 if from_col == to_col {
                     continue;
                 }
                 if self
                     .tableau()
-                    .validate_card_placement(to_location, card)
+                    .validate_card_placement_raw(to_col, card)
                     .is_ok()
                 {
-                    if let Ok(m) = Move::tableau_to_tableau(from_col as u8, to_col as u8, 1) {
+                    if let Ok(m) = Move::tableau_to_tableau(from_col as u8, to_col as u8) {
                         moves.push(m);
                     }
                 }

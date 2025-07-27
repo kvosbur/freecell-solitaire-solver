@@ -57,7 +57,7 @@ impl GameState {
                 self.validate_freecell_to_foundation(from.index(), to.index(), m)
             }
             (Tableau(from), Tableau(to)) => {
-                self.validate_tableau_to_tableau(from.index(), to.index(), m.card_count, m)
+                self.validate_tableau_to_tableau(from.index(), to.index(), m)
             }
             _ => Err(GameError::InvalidMove {
                 reason: "Moves between these locations are not supported".to_string(),
@@ -306,12 +306,7 @@ impl GameState {
     ///
     /// * `Ok(())` if the move is legal
     /// * `Err(GameError)` with a specific error if the move is invalid
-    fn validate_tableau_to_tableau(&self, from_column: u8, to_column: u8, card_count: u8, m: &Move) -> Result<(), GameError> {
-        // Only allow single card moves for now
-        if card_count != 1 {
-            return Err(GameError::OnlySingleCardMovesSupported);
-        }
-
+    fn validate_tableau_to_tableau(&self, from_column: u8, to_column: u8, m: &Move) -> Result<(), GameError> {
         let from_location = crate::location::TableauLocation::new(from_column).map_err(GameError::Location)?;
         let card = self.tableau.get_card(from_location)
             .map_err(|e| GameError::Tableau {

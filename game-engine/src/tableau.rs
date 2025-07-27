@@ -262,6 +262,10 @@ impl Tableau {
         Ok(self.columns[location.index() as usize].last())
     }
 
+    pub fn get_card_raw(&self, index: usize) -> Result<Option<&Card>, TableauError> {
+        Ok(self.columns[index].last())
+    }
+
     /// Get a reference to a card at a specific index in a column.
     ///
     /// # Errors
@@ -451,6 +455,40 @@ impl Tableau {
             return Err(TableauError::InvalidColumn(location.index()));
         }
 
+        // Any card can be placed on an empty column
+        if self.columns[column].is_empty() {
+            return Ok(());
+        }
+
+        if let Some(top_card) = self.columns[column].last() {
+            // Check color alternation
+            if top_card.color() == card.color() {
+                return Err(TableauError::InvalidColor {
+                    top_card: *top_card,
+                    new_card: *card,
+                });
+            }
+
+            // Check descending rank
+            if !top_card.is_one_higher_than(card) {
+                return Err(TableauError::InvalidRank {
+                    top_card: *top_card,
+                    new_card: *card,
+                });
+            }
+
+            Ok(())
+        } else {
+            // This shouldn't happen based on the empty check above
+            Ok(())
+        }
+    }
+
+    pub fn validate_card_placement_raw(
+        &self,
+        column: usize,
+        card: &Card,
+    ) -> Result<(), TableauError> {
         // Any card can be placed on an empty column
         if self.columns[column].is_empty() {
             return Ok(());

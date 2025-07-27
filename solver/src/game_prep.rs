@@ -9,27 +9,27 @@ pub fn get_game_solution(seed: u64) -> Vec<Move> {
             Move::freecell_to_foundation(1, 0).unwrap(), // 4
             Move::tableau_to_foundation(5, 1).unwrap(), // 5
             Move::tableau_to_freecell(6, 1).unwrap(), // 6
-            Move::tableau_to_tableau(6, 5, 1).unwrap(), // 7
+            Move::tableau_to_tableau(6, 5).unwrap(), // 7
             Move::tableau_to_freecell(6, 2).unwrap(), // 8
             Move::tableau_to_foundation(6, 2).unwrap(), // 9
             Move::tableau_to_foundation(2, 2).unwrap(), // 10
             Move::tableau_to_freecell(5, 3).unwrap(), // 11
-            Move::tableau_to_tableau(5, 6, 1).unwrap(), // 11
+            Move::tableau_to_tableau(5, 6).unwrap(), // 11
             Move::freecell_to_tableau(3, 6).unwrap(), // 11
-            Move::tableau_to_tableau(2, 1, 1).unwrap(), // 12
+            Move::tableau_to_tableau(2, 1).unwrap(), // 12
             Move::tableau_to_freecell(2, 3).unwrap(), // 13
-            Move::tableau_to_tableau(2, 6, 1).unwrap(), // 14
-            Move::tableau_to_tableau(2, 6, 1).unwrap(), // 15
+            Move::tableau_to_tableau(2, 6).unwrap(), // 14
+            Move::tableau_to_tableau(2, 6).unwrap(), // 15
             Move::freecell_to_tableau(1, 6).unwrap(), // 16
             Move::tableau_to_freecell(7, 1).unwrap(), // 17
-            Move::tableau_to_tableau(7, 6, 1).unwrap(), // 18
-            Move::tableau_to_tableau(4, 6, 1).unwrap(), // 19
-            Move::tableau_to_tableau(4, 2, 1).unwrap(), // 20
-            Move::tableau_to_tableau(7, 2, 1).unwrap(), // 21
+            Move::tableau_to_tableau(7, 6).unwrap(), // 18
+            Move::tableau_to_tableau(4, 6).unwrap(), // 19
+            Move::tableau_to_tableau(4, 2).unwrap(), // 20
+            Move::tableau_to_tableau(7, 2).unwrap(), // 21
             Move::tableau_to_foundation(7, 0).unwrap(), // 22
-            Move::tableau_to_tableau(0, 5, 1).unwrap(), // 23
-            Move::tableau_to_tableau(0, 2, 1).unwrap(), // 24
-            Move::tableau_to_tableau(0, 4, 1).unwrap(), // 25
+            Move::tableau_to_tableau(0, 5).unwrap(), // 23
+            Move::tableau_to_tableau(0, 2).unwrap(), // 24
+            Move::tableau_to_tableau(0, 4).unwrap(), // 25
             Move::tableau_to_foundation(0, 0).unwrap(), // 26
             Move::tableau_to_foundation(0, 1).unwrap(), // 27
             Move::tableau_to_foundation(7, 2).unwrap(), // 28
@@ -38,21 +38,21 @@ pub fn get_game_solution(seed: u64) -> Vec<Move> {
             Move::freecell_to_foundation(3, 1).unwrap(), // 31
             Move::tableau_to_foundation(7, 2).unwrap(), // 32
             Move::tableau_to_foundation(3, 2).unwrap(), // 33
-            Move::tableau_to_tableau(3, 0, 1).unwrap(), // 34
-            Move::tableau_to_tableau(3, 7, 1).unwrap(), // 35
+            Move::tableau_to_tableau(3, 0).unwrap(), // 34
+            Move::tableau_to_tableau(3, 7).unwrap(), // 35
             Move::tableau_to_freecell(1, 3).unwrap(), // 36
-            Move::tableau_to_tableau(1, 7, 1).unwrap(), // 36
+            Move::tableau_to_tableau(1, 7).unwrap(), // 36
             Move::freecell_to_tableau(3, 7).unwrap(), // 36
-            Move::tableau_to_tableau(4, 3, 1).unwrap(), // 37
+            Move::tableau_to_tableau(4, 3).unwrap(), // 37
             Move::tableau_to_foundation(4, 3).unwrap(), // 38
-            Move::tableau_to_tableau(4, 6, 1).unwrap(), // 39
-            Move::tableau_to_tableau(1, 4, 1).unwrap(), // 40
-            Move::tableau_to_tableau(1, 3, 1).unwrap(), // 41
+            Move::tableau_to_tableau(4, 6).unwrap(), // 39
+            Move::tableau_to_tableau(1, 4).unwrap(), // 40
+            Move::tableau_to_tableau(1, 3).unwrap(), // 41
             Move::tableau_to_foundation(1, 0).unwrap(), // 42
             Move::tableau_to_freecell(5, 3).unwrap(), // 43
-            Move::tableau_to_tableau(5, 4, 1).unwrap(), // 43
+            Move::tableau_to_tableau(5, 4).unwrap(), // 43
             Move::freecell_to_tableau(3, 4).unwrap(), // 43
-            Move::tableau_to_tableau(1, 5, 1).unwrap(), // 44
+            Move::tableau_to_tableau(1, 5).unwrap(), // 44
             Move::tableau_to_freecell(1, 3).unwrap(), // 45
             Move::tableau_to_foundation(1, 3).unwrap(), // 46
             Move::freecell_to_foundation(0, 3).unwrap(), // 47
@@ -61,7 +61,7 @@ pub fn get_game_solution(seed: u64) -> Vec<Move> {
             Move::tableau_to_foundation(6, 0).unwrap(), // 50
             Move::tableau_to_freecell(3, 0).unwrap(), // 51
             Move::tableau_to_freecell(3, 2).unwrap(), // 51
-            Move::tableau_to_tableau(3, 5, 1).unwrap(), // 51
+            Move::tableau_to_tableau(3, 5).unwrap(), // 51
             Move::freecell_to_tableau(2, 5).unwrap(), // 51
             Move::freecell_to_tableau(0, 5).unwrap(), // 51
             Move::tableau_to_freecell(3, 0).unwrap(), // 52
@@ -73,15 +73,15 @@ pub fn get_game_solution(seed: u64) -> Vec<Move> {
             Move::tableau_to_foundation(6, 3).unwrap(), // 58
             Move::tableau_to_foundation(4, 1).unwrap(), // 59
             Move::tableau_to_freecell(0, 2).unwrap(), // 60
-            Move::tableau_to_tableau(0, 4, 1).unwrap(), // 60
+            Move::tableau_to_tableau(0, 4).unwrap(), // 60
             Move::freecell_to_tableau(2, 4).unwrap(), // 60
             Move::tableau_to_freecell(6, 2).unwrap(), // 61
             Move::freecell_to_tableau(1, 0).unwrap(), // 61
-            Move::tableau_to_tableau(6, 0, 1).unwrap(), // 61
+            Move::tableau_to_tableau(6, 0).unwrap(), // 61
             Move::freecell_to_tableau(3, 1).unwrap(), // 61
             Move::freecell_to_tableau(0, 1).unwrap(), // 61
             Move::tableau_to_freecell(6, 0).unwrap(), // 61
-            Move::tableau_to_tableau(6, 4, 1).unwrap(), // 61
+            Move::tableau_to_tableau(6, 4).unwrap(), // 61
             Move::tableau_to_freecell(6, 3).unwrap(), // 61
             Move::tableau_to_freecell(6, 1).unwrap(), // 61
             Move::tableau_to_foundation(6, 0).unwrap(), // 62

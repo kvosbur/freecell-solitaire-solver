@@ -40,7 +40,6 @@ use serde::{Deserialize, Serialize};
 pub struct Move {
     pub source: Location,
     pub destination: Location,
-    pub card_count: u8,
 }
 
 impl Move {
@@ -49,16 +48,6 @@ impl Move {
         Self {
             source,
             destination,
-            card_count: 1,
-        }
-    }
-
-    /// Creates a new multi-card sequence move.
-    pub fn sequence(source: Location, destination: Location, card_count: u8) -> Self {
-        Self {
-            source,
-            destination,
-            card_count,
         }
     }
 
@@ -90,11 +79,10 @@ impl Move {
         ))
     }
 
-    pub fn tableau_to_tableau(from: u8, to: u8, card_count: u8) -> Result<Self, LocationError> {
-        Ok(Self::sequence(
+    pub fn tableau_to_tableau(from: u8, to: u8) -> Result<Self, LocationError> {
+        Ok(Self::single(
             Location::Tableau(TableauLocation::new(from)?),
             Location::Tableau(TableauLocation::new(to)?),
-            card_count,
         ))
     }
 
@@ -107,20 +95,11 @@ impl Move {
     pub fn destination(&self) -> Location {
         self.destination
     }
-
-    /// Returns the number of cards moved.
-    pub fn card_count(&self) -> u8 {
-        self.card_count
-    }
 }
 
 impl std::fmt::Display for Move {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.card_count == 1 {
-            write!(f, "{} → {}", self.source, self.destination)
-        } else {
-            write!(f, "{} → {} ({} cards)", self.source, self.destination, self.card_count)
-        }
+        write!(f, "{} → {}", self.source, self.destination)
     }
 }
 

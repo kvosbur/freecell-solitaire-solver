@@ -52,7 +52,7 @@ impl GameState {
                 self.execute_freecell_to_foundation(from.index(), to.index(), m)
             }
             (Tableau(from), Tableau(to)) => {
-                self.execute_tableau_to_tableau(from.index(), to.index(), m.card_count, m)
+                self.execute_tableau_to_tableau(from.index(), to.index(), m)
             }
             _ => Err(GameError::InvalidMove {
                 reason: "Moves between these locations are not supported".to_string(),
@@ -273,12 +273,8 @@ impl GameState {
         &mut self,
         from_column: u8,
         to_column: u8,
-        card_count: u8,
         m: &Move,
     ) -> Result<(), GameError> {
-        if card_count != 1 {
-            return Err(GameError::OnlySingleCardMovesSupported);
-        }
         self.is_move_valid(m)?;
         let from_location =
             crate::location::TableauLocation::new(from_column).map_err(GameError::Location)?;
@@ -386,7 +382,6 @@ impl GameState {
                 self.freecells.place_card_at_no_checks(from_location, card);
             }
             (Tableau(from), Tableau(to)) => {
-                assert_eq!(m.card_count, 1, "Undo only supports single card moves");
                 let to_location = crate::location::TableauLocation::new(to.index()).unwrap();
                 let removed = self
                     .tableau
