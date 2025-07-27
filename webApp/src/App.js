@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Card from './Card';
 import PlaybackControls from './PlaybackControls';
+import Toast from './Toast';
 import { PlaybackController } from './playbackController';
 import {
   shuffleDeck,
@@ -14,8 +15,7 @@ import {
   getSolvedSeeds,
   addSolvedSeed,
   getGameStats,
-  updateGameStats,
-  SUITS
+  updateGameStats
 } from './gameUtils';
 import './index.css';
 
@@ -30,7 +30,6 @@ const App = () => {
   const [gameWon, setGameWon] = useState(false);
   const [solvedSeeds, setSolvedSeeds] = useState([]);
   const [stats, setStats] = useState(null);
-  const [draggedCard, setDraggedCard] = useState(null);
   
   // Playback state
   const [playbackController] = useState(() => new PlaybackController());
@@ -40,10 +39,35 @@ const App = () => {
   const [playbackSpeed, setPlaybackSpeed] = useState(500);
   const [totalMoves, setTotalMoves] = useState(0);
 
-  useEffect(() => {
-    setSolvedSeeds(getSolvedSeeds());
-    setStats(getGameStats());
-    startNewGame();
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+
+  // Toast helper functions
+  const showToast = useCallback((message, type = 'info') => {
+    const id = Date.now() + Math.random();
+    const newToast = { id, message, type };
+    setToasts(prev => [...prev, newToast]);
+  }, []);
+
+  const removeToast = useCallback((id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  }, []);
+
+  // Security: Validate solution file names to prevent path traversal
+  const validateSolutionFile = useCallback((filename) => {
+    // Only allow files matching pattern: number.json
+    const sanitized = filename.replace(/[^0-9.json]/g, '');
+    
+    if (!/^\d+\.json$/.test(sanitized)) {
+      throw new Error('Invalid solution file format');
+    }
+    
+    const seedNumber = parseInt(sanitized.replace('.json', ''));
+    if (seedNumber < 1 || seedNumber > 32000) {
+      throw new Error('Solution file seed out of allowed range');
+    }
+    
+    return sanitized;
   }, []);
 
   const startNewGame = useCallback((seed = null) => {
@@ -61,6 +85,12 @@ const App = () => {
     setGameWon(false);
     setSeedInput(gameSeed.toString());
   }, []);
+
+  useEffect(() => {
+    setSolvedSeeds(getSolvedSeeds());
+    setStats(getGameStats());
+    startNewGame();
+  }, [startNewGame]);
 
   const saveGameState = useCallback(() => {
     if (gameState) {
@@ -154,7 +184,6 @@ const App = () => {
       const sequence = getMovableSequence(sourceTableau, cardIndex);
       
       // Check if we can move this sequence
-      const emptyFreecells = gameState.freecells.filter(cell => cell === null).length;
       const emptyTableaus = gameState.tableau.filter(col => col.length === 0).length;
       const maxMovable = getMaxMovableSequenceLength(gameState.freecells, emptyTableaus);
       
@@ -229,7 +258,7 @@ const App = () => {
       if (parsedSeed >= 1 && parsedSeed <= 32000) {
         startNewGame(parsedSeed);
       } else {
-        alert('Please enter a seed between 1 and 32000');
+        showToast('Please enter a seed between 1 and 32000', 'warning');
         return;
       }
     } else {
@@ -240,8 +269,10 @@ const App = () => {
   // Playback methods
   const loadSolution = useCallback(async (solutionFile) => {
     try {
-      console.log('Loading solution:', solutionFile);
-      const response = await fetch(`/results/${solutionFile}`);
+      // Validate and sanitize solution file name for security
+      const validatedFile = validateSolutionFile(solutionFile);
+      console.log('Loading solution:', validatedFile);
+      const response = await fetch(`/results/${validatedFile}`);
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -278,14 +309,14 @@ const App = () => {
     } catch (error) {
       console.error('Failed to load solution:', error);
       console.error('Error details:', error.message);
-      alert(`Failed to load solution: ${error.message}`);
+      showToast(`Failed to load solution: ${error.message}`, 'error');
     }
-  }, [playbackController, startNewGame]);
+  }, [playbackController, startNewGame, showToast, validateSolutionFile]);
 
   // Auto-solve function that loads solution for current seed
   const autoSolve = useCallback(async () => {
     if (!currentSeed || currentSeed < 1 || currentSeed > 32000) {
-      alert('Auto-solve is only available for seeds 1-32000');
+      showToast('Auto-solve is only available for seeds 1-32000', 'warning');
       return;
     }
     
@@ -294,9 +325,9 @@ const App = () => {
       await loadSolution(solutionFile);
     } catch (error) {
       console.error('Auto-solve failed:', error);
-      alert(`No solution available for seed ${currentSeed}. This game may be unsolvable or the solution hasn't been computed yet.`);
+      showToast(`No solution available for seed ${currentSeed}. This game may be unsolvable or the solution hasn't been computed yet.`, 'error');
     }
-  }, [currentSeed, loadSolution]);
+  }, [currentSeed, loadSolution, showToast]);
 
   const handlePlay = useCallback(async () => {
     setIsPlaying(true);
@@ -599,6 +630,18 @@ const App = () => {
 
       <div className="sr-only" aria-live="polite">
         {selectedCard && `Selected: ${selectedCard.rank} of ${selectedCard.suit}`}
+      </div>
+
+      {/* Toast notifications */}
+      <div className="toast-container">
+        {toasts.map((toast) => (
+          <Toast
+            key={toast.id}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
       </div>
     </div>
   );
