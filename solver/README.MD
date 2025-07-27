@@ -40,4 +40,15 @@ RUSTFLAGS="-Cprofile-use=/tmp/pgo-data/merged.profdata" cargo build --release --
 
 ## Heuristics
     - Open Freecell count
+
+
+## Things to improve
+    35% from_game_state_canonical
+        10.86% get_card_at (Tableau)
+    13% get_available_moves
+        6.38% get_tableau_to_tableau_moves_single_card
+        3.07% get_freecell_to_tableau_moves
+        0.83% get_freecell_to_foundation_moves
+    8.92% score_state
+    4.93% execute_move
     
