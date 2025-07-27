@@ -70,7 +70,7 @@ const App = () => {
     return sanitized;
   }, []);
 
-  const startNewGame = useCallback((seed = null) => {
+  const startNewGame = useCallback((seed = null, resetPlayback = true) => {
     // Limit seeds to 1-32000 range
     const gameSeed = seed || Math.floor(Math.random() * 32000) + 1;
     const deck = shuffleDeck(gameSeed);
@@ -84,7 +84,16 @@ const App = () => {
     setMoveCount(0);
     setGameWon(false);
     setSeedInput(gameSeed.toString());
-  }, []);
+    
+    // Only reset playback state when explicitly requested (manual new game)
+    if (resetPlayback) {
+      setIsPlaybackMode(false);
+      setIsPlaying(false);
+      setCurrentPlaybackMove(0);
+      setTotalMoves(0);
+      playbackController.reset();
+    }
+  }, [playbackController]);
 
   useEffect(() => {
     setSolvedSeeds(getSolvedSeeds());
@@ -295,8 +304,8 @@ const App = () => {
       setIsPlaying(false);
       setCurrentPlaybackMove(0);
       
-      // Start new game with the solution's seed
-      startNewGame(solutionData.seed);
+      // Start new game with the solution's seed (don't reset playback state)
+      startNewGame(solutionData.seed, false);
       
       // Wait a bit for the game state to update
       setTimeout(async () => {
@@ -503,7 +512,7 @@ const App = () => {
           )}
         </div>
 
-        <div className={`game-board ${isPlaybackMode && isPlaying ? 'playback-active' : ''} ${playbackSpeed === 0 ? 'trex-speed' : ''}`} role="main" aria-label="Freecell game board">
+        <div className={`game-board ${isPlaybackMode ? 'playback-mode' : ''} ${isPlaybackMode && isPlaying ? 'playback-active' : ''} ${playbackSpeed === 0 ? 'trex-speed' : ''}`} role="main" aria-label="Freecell game board">
         <div className="top-row">
           <div className="foundations" role="region" aria-label="Foundation piles">
             <span className="sr-only">Foundation piles where cards are built up by suit from Ace to King</span>

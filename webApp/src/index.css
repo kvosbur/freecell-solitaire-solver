@@ -214,8 +214,8 @@ body {
   transition: all 0.05s;
 }
 
-/* Visual indicator for T-Rex speed - only show when not playing */
-.trex-speed:not(.playback-active)::before {
+/* Visual indicator for T-Rex speed - only show when in playback mode but not actively playing */
+.game-board.trex-speed.playback-mode:not(.playback-active)::before {
   content: '🦖 T-REX SPEED ACTIVE';
   position: fixed;
   top: 80px;
