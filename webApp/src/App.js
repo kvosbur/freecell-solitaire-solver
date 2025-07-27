@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Card from './Card';
 import PlaybackControls from './PlaybackControls';
-import SolutionSelector from './SolutionSelector';
 import { PlaybackController } from './playbackController';
 import {
   shuffleDeck,
@@ -48,7 +47,8 @@ const App = () => {
   }, []);
 
   const startNewGame = useCallback((seed = null) => {
-    const gameSeed = seed || Math.floor(Math.random() * 1000000);
+    // Limit seeds to 1-32000 range
+    const gameSeed = seed || Math.floor(Math.random() * 32000) + 1;
     const deck = shuffleDeck(gameSeed);
     const newGameState = dealCards(deck);
     
@@ -225,7 +225,13 @@ const App = () => {
   const handleNewGameClick = () => {
     const seed = seedInput.trim();
     if (seed && !isNaN(seed)) {
-      startNewGame(parseInt(seed));
+      const parsedSeed = parseInt(seed);
+      if (parsedSeed >= 1 && parsedSeed <= 32000) {
+        startNewGame(parsedSeed);
+      } else {
+        alert('Please enter a seed between 1 and 32000');
+        return;
+      }
     } else {
       startNewGame();
     }
@@ -238,7 +244,16 @@ const App = () => {
       const response = await fetch(`/results/${solutionFile}`);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if (response.status === 404) {
+          throw new Error(`Solution file not found. This game may be unsolvable or the solution hasn't been computed yet.`);
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(`Solution file not found. This game may be unsolvable or the solution hasn't been computed yet.`);
       }
       
       const solutionData = await response.json();
@@ -266,6 +281,22 @@ const App = () => {
       alert(`Failed to load solution: ${error.message}`);
     }
   }, [playbackController, startNewGame]);
+
+  // Auto-solve function that loads solution for current seed
+  const autoSolve = useCallback(async () => {
+    if (!currentSeed || currentSeed < 1 || currentSeed > 32000) {
+      alert('Auto-solve is only available for seeds 1-32000');
+      return;
+    }
+    
+    try {
+      const solutionFile = `${currentSeed}.json`;
+      await loadSolution(solutionFile);
+    } catch (error) {
+      console.error('Auto-solve failed:', error);
+      alert(`No solution available for seed ${currentSeed}. This game may be unsolvable or the solution hasn't been computed yet.`);
+    }
+  }, [currentSeed, loadSolution]);
 
   const handlePlay = useCallback(async () => {
     setIsPlaying(true);
@@ -352,9 +383,11 @@ const App = () => {
           type="number"
           value={seedInput}
           onChange={(e) => setSeedInput(e.target.value)}
-          placeholder="Game seed"
+          placeholder="Game seed (1-32000)"
           className="seed-input"
-          aria-label="Game seed number"
+          aria-label="Game seed number between 1 and 32000"
+          min="1"
+          max="32000"
         />
         <button onClick={handleNewGameClick} className="btn btn-primary">
           New Game
@@ -367,10 +400,16 @@ const App = () => {
         >
           Undo ({gameHistory.length})
         </button>
-        <SolutionSelector 
-          onSelectSolution={loadSolution}
-          currentSeed={currentSeed}
-        />
+        <button 
+          onClick={autoSolve} 
+          className="btn btn-secondary"
+          disabled={!currentSeed || currentSeed < 1 || currentSeed > 32000 || isPlaybackMode}
+          title={currentSeed >= 1 && currentSeed <= 32000 ? 
+            `Auto-solve game #${currentSeed}` : 
+            'Auto-solve is only available for seeds 1-32000'}
+        >
+          Auto Solve
+        </button>
         {isPlaybackMode && (
           <button 
             onClick={exitPlaybackMode} 
