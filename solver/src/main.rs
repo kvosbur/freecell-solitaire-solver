@@ -84,13 +84,13 @@ fn save_results_to_json(results: &Vec<GameResult>, filename: &str, timeout_secs:
 
     let json_string = serde_json::to_string_pretty(&benchmark_results).unwrap();
     fs::write(filename, json_string).expect("Failed to write JSON file");
-    println!("Results saved to {}", filename);
+    // println!("Results saved to {}", filename);
 }
 
 fn save_detailed_game_result(detailed_result: &DetailedGameResult, results_dir: &str) {
     // Create results directory if it doesn't exist
     if let Err(e) = fs::create_dir_all(results_dir) {
-        println!("Warning: Failed to create results directory {}: {:?}", results_dir, e);
+        // println!("Warning: Failed to create results directory {}: {:?}", results_dir, e);
         return;
     }
     
@@ -98,7 +98,7 @@ fn save_detailed_game_result(detailed_result: &DetailedGameResult, results_dir: 
     let json_string = serde_json::to_string_pretty(detailed_result).unwrap();
     
     if let Err(e) = fs::write(&filename, json_string) {
-        println!("Warning: Failed to save detailed result for seed {}: {:?}", detailed_result.seed, e);
+        // println!("Warning: Failed to save detailed result for seed {}: {:?}", detailed_result.seed, e);
     }
 }
 
@@ -126,17 +126,17 @@ fn do_seed_benchmark() {
     
     println!("Starting seed benchmark (seeds {}-{}, timeout: {}s)", 
              start_seed, start_seed + max_seeds - 1, allowed_timeout_secs);
-    println!("Summary will be saved to: {}", results_filename);
-    println!("Detailed results will be saved to: {}/", results_dir);
+    // println!("Summary will be saved to: {}", results_filename);
+    // println!("Detailed results will be saved to: {}/", results_dir);
     
     for seed in start_seed..start_seed + max_seeds {
         // Skip if already processed
         if processed_seeds.contains_key(&seed) {
-            println!("Seed {} already processed, skipping", seed);
+            // println!("Seed {} already processed, skipping", seed);
             continue;
         }
         
-        println!("Testing seed {} ({}/{})...", seed, seed - start_seed + 1, max_seeds);
+        // println!("Testing seed {} ({}/{})...", seed, seed - start_seed + 1, max_seeds);
         
         let game_state = match generate_deal(seed) {
             Ok(state) => state,
@@ -177,12 +177,17 @@ fn do_seed_benchmark() {
         
         if harness_result.solved {
             if let Some(ref moves) = harness_result.solution_moves {
-                println!("✓ Seed {} solved in {}ms with {} moves", seed, execution_time_ms, moves.len());
+                // println!("✓ Seed {} solved in {}ms with {} moves", seed, execution_time_ms, moves.len());
             } else {
-                println!("✓ Seed {} solved in {}ms", seed, execution_time_ms);
+                // println!("✓ Seed {} solved in {}ms", seed, execution_time_ms);
             }
         } else {
-            println!("✗ Seed {} failed/timeout after {}ms", seed, execution_time_ms);
+            // println!("✗ Seed {} failed/timeout after {}ms", seed, execution_time_ms);
+        }
+        
+        // Print progress every 100 seeds
+        if (seed - start_seed + 1) % 100 == 0 {
+            println!("Progress: {} / {} seeds completed", seed - start_seed + 1, max_seeds);
         }
         
         // Save summary results after every 10 games or if this is the last one

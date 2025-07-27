@@ -357,12 +357,12 @@ fn process_work_item(
     // Update counter
     let count = shared_state.counter.fetch_add(1, Ordering::SeqCst);
     if count % 100000 == 0 {
-        println!(
-            "Checked {} game states across all threads, time:{:?}, current score: {}",
-            count,
-            shared_state.start_time.elapsed(),
-            score
-        );
+        // println!(
+        //     "Checked {} game states across all threads, time:{:?}, current score: {}",
+        //     count,
+        //     shared_state.start_time.elapsed(),
+        //     score
+        // );
     }
     
     None
@@ -372,10 +372,10 @@ pub fn solve_with_cancel(
     game_state: GameState,
     cancel_flag: Arc<AtomicBool>,
 ) -> SolverResult {
-    println!("Solving FreeCell game using strategy 13 (Multi-threaded strat12) with cancellation support...");
+    // println!("Solving FreeCell game using strategy 13 (Multi-threaded strat12) with cancellation support...");
     
     let start_score = score_state(&game_state);
-    println!("Starting score: {}", start_score);
+    // println!("Starting score: {}", start_score);
     
     // Initialize shared state
     let lru_size = NonZeroUsize::new(1_000_000).unwrap();
@@ -406,7 +406,7 @@ pub fn solve_with_cancel(
     
     // Spawn worker threads
     let num_threads = num_cpus::get().min(8); // Limit to 8 threads max
-    println!("Spawning {} worker threads", num_threads);
+    // println!("Spawning {} worker threads", num_threads);
     
     let mut handles = Vec::new();
     for i in 0..num_threads {
@@ -430,12 +430,12 @@ pub fn solve_with_cancel(
     if shared_state.solution_found.load(Ordering::SeqCst) {
         let solution = shared_state.solution.lock().unwrap().clone();
         if let Some(moves) = solution {
-            println!(
-                "Solution found! {} moves in {:?} after checking {} states",
-                moves.len(),
-                elapsed,
-                final_count
-            );
+            // println!(
+            //     "Solution found! {} moves in {:?} after checking {} states",
+            //     moves.len(),
+            //     elapsed,
+            //     final_count
+            // );
             return SolverResult {
                 solved: true,
                 solution_moves: Some(moves),
@@ -443,11 +443,11 @@ pub fn solve_with_cancel(
         }
     }
     
-    println!(
-        "No solution found. Checked {} states in {:?}",
-        final_count,
-        elapsed
-    );
+    // println!(
+    //     "No solution found. Checked {} states in {:?}",
+    //     final_count,
+    //     elapsed
+    // );
     
     SolverResult {
         solved: false,
@@ -456,10 +456,10 @@ pub fn solve_with_cancel(
 }
 
 pub fn solve(game_state: GameState) {
-    println!("Solving FreeCell game using strategy 13 (Multi-threaded strat12)...");
+    // println!("Solving FreeCell game using strategy 13 (Multi-threaded strat12)...");
     
     let start_score = score_state(&game_state);
-    println!("Starting score: {}", start_score);
+    // println!("Starting score: {}", start_score);
     
     // Initialize shared state
     let lru_size = NonZeroUsize::new(5_000_000).unwrap();
@@ -490,7 +490,7 @@ pub fn solve(game_state: GameState) {
     
     // Spawn worker threads
     let num_threads = num_cpus::get().min(8); // Limit to 8 threads max
-    println!("Spawning {} worker threads", num_threads);
+    // println!("Spawning {} worker threads", num_threads);
     
     let mut handles = Vec::new();
     for i in 0..num_threads {
@@ -513,24 +513,24 @@ pub fn solve(game_state: GameState) {
     if shared_state.solution_found.load(Ordering::SeqCst) {
         let solution = shared_state.solution.lock().unwrap().clone();
         if let Some(moves) = solution {
-            println!(
-                "Solution found! {} moves in {:?} after checking {} states",
-                moves.len(),
-                elapsed,
-                final_count
-            );
+            // println!(
+            //     "Solution found! {} moves in {:?} after checking {} states",
+            //     moves.len(),
+            //     elapsed,
+            //     final_count
+            // );
             // Optionally print moves
             // for m in moves {
             //     println!("{:?}", m);
             // }
         }
     } else {
-        println!("No solution found.");
+        // println!("No solution found.");
     }
     
-    println!(
-        "Checked {} states total in {:?}",
-        final_count,
-        elapsed
-    );
+    // println!(
+    //     "Checked {} states total in {:?}",
+    //     final_count,
+    //     elapsed
+    // );
 }

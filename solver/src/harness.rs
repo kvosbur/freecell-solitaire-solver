@@ -32,10 +32,10 @@ pub fn harness_with_timing(game_state: freecell_game_engine::game_state::GameSta
     while start.elapsed() < timeout {
         if handle.is_finished() {
             let execution_time = start_time.elapsed();
-            println!("Solve completed within timeout in {:?}.", execution_time);
+            // println!("Solve completed within timeout in {:?}.", execution_time);
             match handle.join() {
                 Ok(solver_result) => {
-                    println!("Solve completed: {:?}", solver_result.solved);
+                    // println!("Solve completed: {:?}", solver_result.solved);
                     return HarnessResult {
                         solved: solver_result.solved,
                         execution_time,
@@ -43,7 +43,7 @@ pub fn harness_with_timing(game_state: freecell_game_engine::game_state::GameSta
                     };
                 }
                 Err(e) => {
-                    println!("Error during solve: {:?}", e);
+                    // println!("Error during solve: {:?}", e);
                     return HarnessResult {
                         solved: false,
                         execution_time,
@@ -56,12 +56,12 @@ pub fn harness_with_timing(game_state: freecell_game_engine::game_state::GameSta
     }
     
     let execution_time = start_time.elapsed();
-    println!("Timeout reached, requesting cancellation...");
+    // println!("Timeout reached, requesting cancellation...");
     cancel_flag.store(true, Ordering::SeqCst);
     let result = handle.join();
     match result {
         Ok(solver_result) => {
-            println!("Solve completed: {:?}", solver_result.solved);
+            // println!("Solve completed: {:?}", solver_result.solved);
             return HarnessResult {
                 solved: solver_result.solved,
                 execution_time,
@@ -69,7 +69,7 @@ pub fn harness_with_timing(game_state: freecell_game_engine::game_state::GameSta
             };
         }
         Err(e) => {
-            println!("Error during solve: {:?}", e);
+            // println!("Error during solve: {:?}", e);
             return HarnessResult {
                 solved: false,
                 execution_time,
