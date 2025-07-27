@@ -241,7 +241,7 @@ fn do_benchmark() {
 
 fn do_adhoc() {
     let seed = 70;
-    let allowed_timeout_secs = 60 * 60 * 24; // 24 hours
+    let allowed_timeout_secs = 60; // 24 hours
     let game_state = generate_deal(seed).unwrap();
 
     // Example of solving the game using strategy 1
