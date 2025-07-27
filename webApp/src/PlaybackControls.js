@@ -52,30 +52,30 @@ const PlaybackControls = ({
           <button 
             className="speed-preset" 
             onClick={() => onSpeedChange(100)}
-            title="Very Fast"
+            title="T-Rex Speed - Very Fast"
           >
-            🏃
+            🦖
           </button>
           <button 
             className="speed-preset" 
             onClick={() => onSpeedChange(500)}
-            title="Normal"
+            title="Dino Trot - Normal"
           >
-            🚶
+            🦕
           </button>
           <button 
             className="speed-preset" 
             onClick={() => onSpeedChange(2000)}
-            title="Slow"
+            title="Dino Egg Hatch - Slow"
           >
-            🐌
+            🥚
           </button>
           <button 
             className="speed-preset" 
             onClick={() => onSpeedChange(5000)}
-            title="Very Slow"
+            title="Fossil Study - Very Slow"
           >
-            🐢
+            🦴
           </button>
         </div>
         <input
