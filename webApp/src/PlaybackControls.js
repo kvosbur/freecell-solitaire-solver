@@ -51,8 +51,8 @@ const PlaybackControls = ({
         <div className="speed-presets">
           <button 
             className="speed-preset" 
-            onClick={() => onSpeedChange(100)}
-            title="T-Rex Speed - Very Fast"
+            onClick={() => onSpeedChange(0)}
+            title="T-Rex Speed - Ultra Fast"
           >
             🦖
           </button>
@@ -81,9 +81,9 @@ const PlaybackControls = ({
         <input
           id="speed-slider"
           type="range"
-          min="100"
+          min="0"
           max="10000"
-          step="100"
+          step="10"
           value={speed}
           onChange={(e) => onSpeedChange(Number(e.target.value))}
         />
