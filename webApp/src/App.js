@@ -293,9 +293,19 @@ const App = () => {
   }, [playbackController]);
 
   const handleStepBackward = useCallback(() => {
-    // For now, just show a message
-    console.log('Step backward requires undo functionality');
-  }, []);
+    if (currentPlaybackMove > 0 && gameHistory.length > 0) {
+      // Use the existing undo functionality
+      undoMove();
+      
+      // Update playback controller position
+      playbackController.currentMoveIndex = currentPlaybackMove - 1;
+      setCurrentPlaybackMove(currentPlaybackMove - 1);
+      
+      console.log(`Stepped backward to move ${currentPlaybackMove - 1}`);
+    } else {
+      console.log('Cannot step backward - at beginning of solution');
+    }
+  }, [currentPlaybackMove, gameHistory.length, undoMove, playbackController]);
 
   const handleSpeedChange = useCallback((speed) => {
     setPlaybackSpeed(speed);
