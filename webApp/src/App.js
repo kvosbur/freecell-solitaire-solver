@@ -283,7 +283,7 @@ const App = () => {
                   key={`foundation-${index}`}
                   className="card-slot foundation-slot"
                   onClick={() => handleSlotClick({ type: 'foundation', index })}
-                  tabIndex={0}
+                  tabIndex={-1}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
@@ -328,7 +328,7 @@ const App = () => {
                     card={card}
                     onClick={() => handleCardClick(card, { type: 'freecell', index })}
                     selected={selectedCard && selectedCard.id === card.id}
-                    tabIndex={-1}
+                    tabIndex={0}
                   />
                 )}
               </div>
