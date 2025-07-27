@@ -390,7 +390,7 @@ const App = () => {
           max="32000"
         />
         <button onClick={handleNewGameClick} className="btn btn-primary">
-          New Game
+          Deal Game
         </button>
         <button 
           onClick={undoMove} 
